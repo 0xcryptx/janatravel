@@ -1,0 +1,3609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>JANA Travel - Your Gateway to Paradise</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --aqua-blue: #00CED1;
+            --aqua-light: #7FEFEF;
+            --aqua-dark: #008B8B;
+            --white: #FFFFFF;
+            --light-gray: #F8FAFA;
+            --text-dark: #1A3A3A;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--white);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--aqua-blue);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--aqua-dark);
+        }
+
+        /* Firefox scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--aqua-blue) var(--white);
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 5% 0.5rem 1%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .logo img {
+            height: 70px;
+            width: auto;
+            margin-right: 5px;
+            filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.25)) drop-shadow(0 0 6px rgba(0, 0, 0, 0.2)) drop-shadow(0 0 10px rgba(0, 0, 0, 0.15));
+            transition: transform 0.3s ease;
+        }
+
+        .logo img:hover {
+            transform: scale(1.08);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--white);
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .logo-text:hover {
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .logo img:hover {
+                transform: none;
+            }
+
+            .logo-text:hover {
+                transform: none;
+            }
+
+            .logo:active img,
+            .logo:active .logo-text {
+                transform: scale(1.05);
+            }
+        }
+
+        .logo-text span {
+            color: var(--aqua-light);
+            text-shadow: 0 0 3px rgba(0, 139, 139, 0.5), 0 0 6px rgba(0, 139, 139, 0.3);
+        }
+
+        .nav-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px) {
+            .nav-wrapper {
+                background: var(--white);
+            }
+
+            .nav-wrapper::before {
+                content: '';
+                position: absolute;
+                top: -100px;
+                left: 0;
+                right: 0;
+                height: 100px;
+                background: var(--white);
+            }
+        }
+
+        .nav-links.mobile-nav {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 0.6rem 3% 0.8rem 1%;
+                background: var(--white);
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+                border-bottom: none;
+                box-shadow: none;
+                justify-content: center;
+                position: relative;
+            }
+
+            .logo img {
+                height: 55px;
+                margin-right: 3px;
+            }
+
+            .logo-text {
+                font-size: 1.25rem;
+                color: var(--text-dark);
+                text-shadow: none;
+            }
+
+            .logo-text span {
+                color: var(--aqua-dark);
+                text-shadow: none;
+            }
+
+            .mobile-menu {
+                display: none;
+            }
+
+            .desktop-nav {
+                display: none;
+            }
+
+            .nav-links.mobile-nav {
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-start;
+                gap: 0.5rem;
+                padding: 0.3rem 0;
+                background: transparent;
+                border-bottom: none;
+                box-shadow: none;
+                flex-wrap: nowrap;
+                list-style: none;
+                margin: 0 15%;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                -webkit-mask-image: linear-gradient(to right, transparent, black 1%, black 99%, transparent);
+                mask-image: linear-gradient(to right, transparent, black 1%, black 99%, transparent);
+            }
+
+            .nav-links.mobile-nav::-webkit-scrollbar {
+                display: none;
+            }
+
+            .nav-links.mobile-nav li {
+                flex-shrink: 0;
+            }
+
+            .mobile-nav a {
+                color: var(--text-dark);
+                text-shadow: none;
+                font-size: 0.75rem;
+                padding: 0.2rem 0.4rem;
+                text-decoration: none;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                border-radius: 15px;
+                white-space: nowrap;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .mobile-nav a.active {
+                color: var(--white);
+                background: var(--aqua-blue);
+                text-shadow: none;
+            }
+        }
+
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--white);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.3);
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--white);
+            background: rgba(0, 206, 209, 0.3);
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.3);
+        }
+
+
+        .mobile-menu {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .mobile-menu span {
+            width: 25px;
+            height: 3px;
+            background: var(--white);
+            border-radius: 2px;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: linear-gradient(135deg, rgba(0, 139, 139, 0.8), rgba(0, 206, 209, 0.6)),
+                        url('https://images.unsplash.com/photo-1514282401047-d79a71a590e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--white);
+            position: relative;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: linear-gradient(to top, var(--white), transparent);
+        }
+
+        .hero-content {
+            z-index: 1;
+            max-width: 800px;
+            padding: 0 2rem;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: var(--white);
+            color: var(--aqua-dark);
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            background: var(--aqua-light);
+            color: var(--white);
+        }
+
+        /* Section Styles */
+        section {
+            padding: 5rem 5%;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            color: var(--aqua-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, var(--aqua-blue), var(--aqua-light));
+            margin: 1rem auto 0;
+            border-radius: 2px;
+        }
+
+        /* About Section */
+        .about {
+            background: var(--white);
+        }
+
+        .about-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .about-image {
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 206, 209, 0.2);
+            height: 100%;
+            min-height: 400px;
+        }
+
+        .about-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+            display: block;
+        }
+
+        .about-image:hover img {
+            transform: scale(1.05);
+        }
+
+        .about-content h3 {
+            font-size: 1.8rem;
+            color: var(--aqua-dark);
+            margin-bottom: 1rem;
+        }
+
+        .about-content p {
+            margin-bottom: 1.5rem;
+            color: #555;
+        }
+
+        /* Destinations Section */
+        .destinations {
+            background: var(--white);
+        }
+
+        /* Filter Styles */
+        .filter-container {
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+        }
+
+        .filter-card {
+            background: linear-gradient(135deg, var(--aqua-dark), var(--aqua-blue));
+            border-radius: 20px;
+            padding: 2rem;
+            color: var(--white);
+            box-shadow: 0 15px 40px rgba(0, 206, 209, 0.3);
+        }
+
+        .filter-card h3 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .traveler-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            justify-content: center;
+        }
+
+        .traveler-btn {
+            width: 35px;
+            height: 35px;
+            border: none;
+            background: var(--white);
+            color: var(--aqua-dark);
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .traveler-btn:hover {
+            transform: scale(1.1);
+        }
+
+        #travelerCount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .budget-slider {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .budget-slider input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .budget-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--white);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .budget-display {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: transparent;
+            color: var(--white);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--white);
+            color: var(--aqua-dark);
+            border-color: var(--white);
+        }
+
+        .filter-group select {
+            padding: 0.7rem;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .filter-group select option {
+            background: var(--aqua-dark);
+            color: var(--white);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.primary {
+            background: var(--white);
+            color: var(--aqua-dark);
+        }
+
+        .filter-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-btn.secondary {
+            background: transparent;
+            color: var(--white);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .filter-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-btn.outline {
+            background: transparent;
+            color: var(--white);
+            border: 2px solid var(--white);
+        }
+
+        .filter-btn.outline:hover {
+            background: var(--white);
+            color: var(--aqua-dark);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .no-results a {
+            color: var(--aqua-blue);
+            text-decoration: underline;
+        }
+
+        .destination-card.hidden {
+            display: none;
+        }
+
+        .destination-card.extra-destination {
+            display: none;
+        }
+
+        .destinations-grid.show-all .destination-card.extra-destination {
+            display: block;
+        }
+
+        .featured-packages-heading {
+            text-align: center;
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .featured-packages-heading h3 {
+            font-size: 1.75rem;
+            color: var(--aqua-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .featured-packages-heading p {
+            color: #666;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        .destinations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Gallery Section */
+        .gallery {
+            background: var(--white);
+            min-height: 500px;
+            padding-bottom: 10rem;
+        }
+
+        .gallery-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            min-height: 300px;
+        }
+
+        /* Photo Stack Styles */
+        .photo-stack {
+            position: relative;
+            width: 280px;
+            height: 200px;
+            margin: 0 auto;
+            cursor: pointer;
+            perspective: 1000px;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .photo-stack.hidden {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+            position: absolute;
+            visibility: hidden;
+        }
+
+        .stack-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 3px solid var(--white);
+        }
+
+        .stack-card:nth-child(1) {
+            background-image: url('https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=400&q=80');
+            transform: rotate(-8deg) translateX(-20px) translateY(10px);
+            z-index: 1;
+        }
+
+        .stack-card:nth-child(2) {
+            background-image: url('https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80');
+            transform: rotate(-4deg) translateX(-10px) translateY(5px);
+            z-index: 2;
+        }
+
+        .stack-card:nth-child(3) {
+            background-image: url('https://images.unsplash.com/photo-1540202404-a2f29016b523?w=400&q=80');
+            transform: rotate(0deg);
+            z-index: 3;
+        }
+
+        .stack-card:nth-child(4) {
+            background-image: url('https://images.unsplash.com/photo-1551918120-9739cb430c6d?w=400&q=80');
+            transform: rotate(4deg) translateX(10px) translateY(5px);
+            z-index: 2;
+        }
+
+        .stack-card:nth-child(5) {
+            background-image: url('https://images.unsplash.com/photo-1586375300773-8384e3e4916f?w=400&q=80');
+            transform: rotate(8deg) translateX(20px) translateY(10px);
+            z-index: 1;
+        }
+
+        /* Hover fan effect */
+        .photo-stack:hover .stack-card:nth-child(1),
+        .photo-stack.touch-active .stack-card:nth-child(1) {
+            transform: rotate(-15deg) translateX(-60px) translateY(20px);
+        }
+
+        .photo-stack:hover .stack-card:nth-child(2),
+        .photo-stack.touch-active .stack-card:nth-child(2) {
+            transform: rotate(-8deg) translateX(-30px) translateY(10px);
+        }
+
+        .photo-stack:hover .stack-card:nth-child(3),
+        .photo-stack.touch-active .stack-card:nth-child(3) {
+            transform: rotate(0deg) translateY(-10px) scale(1.05);
+        }
+
+        .photo-stack:hover .stack-card:nth-child(4),
+        .photo-stack.touch-active .stack-card:nth-child(4) {
+            transform: rotate(8deg) translateX(30px) translateY(10px);
+        }
+
+        .photo-stack:hover .stack-card:nth-child(5),
+        .photo-stack.touch-active .stack-card:nth-child(5) {
+            transform: rotate(15deg) translateX(60px) translateY(20px);
+        }
+
+        .stack-label {
+            position: absolute;
+            bottom: -75px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            width: 100%;
+        }
+
+        .stack-count {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--aqua-dark);
+        }
+
+        .stack-text {
+            display: block;
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .stack-hint {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--aqua-blue);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .photo-stack:hover .stack-hint,
+        .photo-stack.touch-active .stack-hint {
+            opacity: 1;
+        }
+
+        /* Expanded Gallery */
+        .gallery-expanded {
+            opacity: 0;
+            padding-top: 0;
+            transform: translateY(40px) scale(0.95);
+            pointer-events: none;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .gallery-expanded.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+            max-height: 3000px;
+        }
+
+        .collapse-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0 auto 1rem;
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(135deg, var(--aqua-blue), var(--aqua-dark));
+            color: var(--white);
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .collapse-btn:hover {
+            box-shadow: 0 10px 25px rgba(0, 206, 209, 0.4);
+        }
+
+        .collapse-btn span {
+            font-size: 1.2rem;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 4/3;
+            opacity: 0;
+            transform: scale(0.3) rotate(var(--rotation, 0deg));
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: center center;
+        }
+
+        .gallery-item.visible {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        .gallery-item.collapsing {
+            opacity: 0;
+            transform: scale(0.3) rotate(var(--rotation, 0deg));
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 206, 209, 0.3);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 206, 209, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .photo-stack {
+                width: 220px;
+                height: 160px;
+            }
+
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .gallery-item {
+                aspect-ratio: 1;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-actions {
+                flex-direction: column;
+            }
+
+            .filter-btn {
+                width: 100%;
+            }
+        }
+
+        .destination-card {
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            background: var(--white);
+        }
+
+        .destination-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 206, 209, 0.3);
+            cursor: pointer;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 20px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: var(--white);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--aqua-dark);
+        }
+
+        .modal-carousel {
+            position: relative;
+            width: 100%;
+        }
+
+        .carousel-container {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+            height: 350px;
+        }
+
+        .carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .carousel-slide-prev {
+            transform: translateX(-100%);
+        }
+
+        .carousel-slide-next {
+            transform: translateX(100%);
+        }
+
+        .carousel-slide img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .carousel-slide-main:hover img {
+            transform: scale(1.02);
+        }
+
+        .carousel-container.swiping .carousel-slide {
+            transition: none;
+        }
+
+        .expand-hint {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .carousel-container:hover .expand-hint {
+            opacity: 1;
+        }
+
+        /* Lightbox styles */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lightbox-overlay.active {
+            display: flex;
+        }
+
+        .lightbox-swipe-container {
+            position: relative;
+            width: 80vw;
+            height: 80vh;
+            overflow: hidden;
+        }
+
+        .lightbox-image-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: zoom-in;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+
+        .lightbox-prev-image {
+            transform: translateX(-100%);
+        }
+
+        .lightbox-next-image {
+            transform: translateX(100%);
+        }
+
+        .lightbox-image-container.zoomed {
+            cursor: grab;
+        }
+
+        .lightbox-image-container.dragging {
+            cursor: grabbing;
+        }
+
+        .lightbox-overlay img {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 10px;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .lightbox-image-container.zoomed img {
+            max-width: none;
+            max-height: none;
+        }
+
+        .lightbox-swipe-container.swiping .lightbox-image-container {
+            transition: none;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .zoom-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: var(--aqua-blue);
+        }
+
+        .zoom-level {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .zoom-controls {
+                display: none;
+            }
+
+            .lightbox-btn {
+                display: none;
+            }
+
+            .lightbox-swipe-container {
+                width: 100vw;
+                height: 80vh;
+            }
+
+            .lightbox-image-container {
+                cursor: default;
+            }
+
+            .lightbox-image-container.zoomed {
+                cursor: default;
+            }
+
+            .lightbox-overlay img {
+                max-width: 100%;
+                max-height: 80vh;
+            }
+
+            .carousel-btn {
+                display: none;
+            }
+
+            .carousel-slide {
+                cursor: default;
+            }
+
+            .expand-hint {
+                display: none;
+            }
+
+            .carousel-slide-main:hover img {
+                transform: none;
+            }
+        }
+
+        @keyframes lightboxZoom {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: none;
+            color: white;
+            border: none;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .lightbox-close:hover {
+            color: var(--aqua-light);
+            transform: rotate(90deg);
+        }
+
+        .lightbox-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lightbox-btn:hover {
+            background: var(--aqua-blue);
+        }
+
+        .lightbox-prev {
+            left: 30px;
+        }
+
+        .lightbox-next {
+            right: 30px;
+        }
+
+        .lightbox-counter {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 20px;
+            border-radius: 20px;
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .carousel-btn:hover {
+            background: var(--aqua-dark);
+        }
+
+        .carousel-prev {
+            left: 15px;
+        }
+
+        .carousel-next {
+            right: 15px;
+        }
+
+        .carousel-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .carousel-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .carousel-dot.active {
+            background: var(--white);
+            transform: scale(1.2);
+        }
+
+        .carousel-dot:hover {
+            background: var(--white);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-body h2 {
+            color: var(--aqua-dark);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-price {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--aqua-blue);
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-description {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-features {
+            background: var(--light-gray);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-features h4 {
+            color: var(--aqua-dark);
+            margin-bottom: 1rem;
+        }
+
+        .modal-features ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+        }
+
+        .modal-features li {
+            color: #555;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .modal-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--aqua-blue);
+            font-weight: bold;
+        }
+
+        .modal-details {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #555;
+        }
+
+        .detail-icon {
+            font-size: 1.3rem;
+        }
+
+        .modal-book-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--aqua-blue), var(--aqua-dark));
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-book-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 206, 209, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .modal-features ul {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-details {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .modal-image img {
+                height: 250px;
+            }
+        }
+
+        .destination-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .destination-info {
+            padding: 1.5rem;
+        }
+
+        .destination-info h4 {
+            font-size: 1.3rem;
+            color: var(--aqua-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .destination-info p {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .destination-price {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--aqua-blue);
+        }
+
+        .book-btn {
+            padding: 0.5rem 1.5rem;
+            background: var(--aqua-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .book-btn:hover {
+            background: var(--aqua-dark);
+        }
+
+        /* Services Section */
+        .services {
+            background: linear-gradient(135deg, var(--aqua-dark), var(--aqua-blue));
+            color: var(--white);
+        }
+
+        .services .section-title h2 {
+            color: var(--white);
+        }
+
+        .services .section-title p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .services .section-title::after {
+            background: var(--white);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .service-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .service-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .service-card h4 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .service-card p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        /* Contact Section */
+        .contact {
+            background: var(--white);
+        }
+
+        .contact-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .contact-info {
+            padding: 2rem;
+        }
+
+        .contact-info h3 {
+            font-size: 1.8rem;
+            color: var(--aqua-dark);
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--aqua-blue), var(--aqua-light));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .contact-item-content h4 {
+            color: var(--aqua-dark);
+            margin-bottom: 0.3rem;
+        }
+
+        .contact-item-content p {
+            color: #666;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .social-link {
+            width: 45px;
+            height: 45px;
+            background: var(--aqua-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: var(--aqua-dark);
+            transform: translateY(-3px);
+        }
+
+        .contact-map {
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+            margin-left: 65px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .contact-map iframe {
+            display: block;
+        }
+
+        /* Contact Form */
+        .contact-form {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 206, 209, 0.15);
+        }
+
+        .contact-form h3 {
+            font-size: 1.5rem;
+            color: var(--aqua-dark);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #E0E0E0;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--aqua-blue);
+            box-shadow: 0 0 0 4px rgba(0, 206, 209, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--aqua-blue), var(--aqua-dark));
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 206, 209, 0.4);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--text-dark);
+            color: var(--white);
+            padding: 3rem 5% 1.5rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto 2rem;
+        }
+
+        .footer-section h4 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--aqua-light);
+        }
+
+        .footer-section p,
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--aqua-blue);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-content {
+            animation: fadeInUp 1s ease-out;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .about-container,
+            .contact-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+.nav-links {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--aqua-dark);
+            flex-direction: column;
+            padding: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu {
+                display: flex;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            section {
+                padding: 3rem 5%;
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+        }
+
+        /* Scroll animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <header class="nav-wrapper">
+        <nav>
+            <a href="#home" class="logo">
+                <img src="public/JanaTravelLogo.webp" alt="JANA Travel Logo">
+                <span class="logo-text">JANA <span>Travel</span></span>
+            </a>
+            <ul class="nav-links desktop-nav">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#destinations">Destinations</a></li>
+                <li><a href="#gallery">Gallery</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="mobile-menu" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+        <ul class="nav-links mobile-nav">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#destinations">Destinations</a></li>
+            <li><a href="#gallery">Gallery</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>Discover Paradise in the Maldives</h1>
+            <p>Let JANA Travel take you to crystal-clear waters, pristine beaches, and unforgettable memories. Your dream vacation awaits.</p>
+            <a href="#destinations" class="cta-button">Explore Destinations</a>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="section-title">
+            <h2>About JANA Travel</h2>
+            <p>Your trusted partner for extraordinary travel experiences</p>
+        </div>
+        <div class="about-container">
+            <div class="about-image fade-in">
+                <img src="https://images.unsplash.com/photo-1573843981267-be1999ff37cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Maldives Resort">
+            </div>
+            <div class="about-content fade-in">
+                <h3>Creating Unforgettable Journeys Since 2010</h3>
+                <p>At JANA Travel, we believe that every journey should be an extraordinary adventure. Specializing in Maldives vacations, we bring you exclusive access to the most breathtaking resorts, hidden gems, and authentic experiences.</p>
+                <p>Our team of expert travel consultants works tirelessly to craft personalized itineraries that match your dreams. From romantic honeymoon getaways to adventurous diving expeditions, we handle every detail with care.</p>
+                <p>With over a decade of experience and partnerships with premium resorts, we guarantee exceptional service and unforgettable memories.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Destinations Section -->
+    <section class="destinations" id="destinations">
+        <div class="section-title">
+            <h2>Featured Destinations</h2>
+            <p>Find your perfect paradise getaway</p>
+        </div>
+        
+        <!-- Filter Section -->
+        <div class="filter-container">
+            <div class="filter-card">
+                <h3>Find Your Perfect Trip</h3>
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>Number of Travelers</label>
+                        <div class="traveler-selector">
+                            <button class="traveler-btn" onclick="changeTravelers(-1)">−</button>
+                            <span id="travelerCount">2</span>
+                            <button class="traveler-btn" onclick="changeTravelers(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label>Budget Range</label>
+                        <div class="budget-slider">
+                            <input type="range" id="budgetRange" min="500" max="5000" value="2500" step="100" oninput="updateBudget()">
+                            <div class="budget-display">Up to $<span id="budgetValue">2,500</span></div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label>Traveling with Kids?</label>
+                        <div class="toggle-buttons">
+                            <button class="toggle-btn active" id="kidsNo" onclick="setKids(false)">No</button>
+                            <button class="toggle-btn" id="kidsYes" onclick="setKids(true)">Yes</button>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label>Trip Type</label>
+                        <select id="tripType" onchange="filterDestinations()">
+                            <option value="all">All Types</option>
+                            <option value="romantic">Romantic</option>
+                            <option value="adventure">Adventure</option>
+                            <option value="family">Family</option>
+                            <option value="luxury">Luxury</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="filter-btn secondary" onclick="resetFilters()">Reset Filters</button>
+                    <button class="filter-btn primary" onclick="filterDestinations()">Search Packages</button>
+                    <button type="button" class="filter-btn outline" id="togglePackagesBtn" onclick="toggleAllDestinations()">Show All Packages</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="featured-packages-heading">
+            <h3>Featured Packages</h3>
+            <p>Hand-picked destinations — use <strong>Show All Packages</strong> in the filters above to see our full collection.</p>
+        </div>
+
+        <div class="destinations-grid" id="destinationsGrid">
+            <div class="destination-card fade-in" data-price="1299" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('male')">
+                <img src="https://images.unsplash.com/photo-1540202404-a2f29016b523?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Male Atoll">
+                <div class="destination-info">
+                    <h4>Malé Atoll</h4>
+                    <p>Experience the vibrant capital and stunning nearby islands with world-class diving spots.</p>
+                    <div class="destination-price">
+                        <span class="price">From $1,299</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in" data-price="1599" data-type="adventure" data-kids="false" data-travelers="4" onclick="openModal('baa')">
+                <img src="https://images.unsplash.com/photo-1586375300773-8384e3e4916f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Baa Atoll">
+                <div class="destination-info">
+                    <h4>Baa Atoll</h4>
+                    <p>UNESCO Biosphere Reserve with incredible marine life and pristine coral reefs.</p>
+                    <div class="destination-price">
+                        <span class="price">From $1,599</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in" data-price="1899" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('ari')">
+                <img src="https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Ari Atoll">
+                <div class="destination-info">
+                    <h4>Ari Atoll</h4>
+                    <p>Luxury overwater villas with breathtaking sunset views and whale shark encounters.</p>
+                    <div class="destination-price">
+                        <span class="price">From $1,899</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in" data-price="999" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('family')">
+                <img src="https://images.unsplash.com/photo-1602002418816-5c0aeef426aa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Family Paradise">
+                <div class="destination-info">
+                    <h4>Family Paradise Resort</h4>
+                    <p>Perfect for families with kids - shallow lagoons, kids club, and family-friendly activities.</p>
+                    <div class="destination-price">
+                        <span class="price">From $999</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in" data-price="2499" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('honeymoon')">
+                <img src="https://images.unsplash.com/photo-1578922746465-3a80a228f223?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Honeymoon Suite">
+                <div class="destination-info">
+                    <h4>Honeymoon Paradise</h4>
+                    <p>Ultimate romantic escape with private pool villa, couples spa, and sunset dinners.</p>
+                    <div class="destination-price">
+                        <span class="price">From $2,499</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in" data-price="1199" data-type="adventure" data-kids="true" data-travelers="6" onclick="openModal('diving')">
+                <img src="https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Diving Adventure">
+                <div class="destination-info">
+                    <h4>Diving Adventure</h4>
+                    <p>Explore coral reefs, swim with manta rays, and discover underwater wonders.</p>
+                    <div class="destination-price">
+                        <span class="price">From $1,199</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="1799" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('lhaviyani')">
+                <img src="https://images.unsplash.com/photo-1439066615861-d1af74d74000?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Lhaviyani Atoll">
+                <div class="destination-info">
+                    <h4>Lhaviyani Atoll</h4>
+                    <p>Pristine uninhabited islands with spectacular diving and exclusive resorts.</p>
+                    <div class="destination-price">
+                        <span class="price">From $1,799</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2199" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('raa')">
+                <img src="https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Raa Atoll">
+                <div class="destination-info">
+                    <h4>Raa Atoll</h4>
+                    <p>Ultimate privacy and exclusivity in the most remote paradise resorts.</p>
+                    <div class="destination-price">
+                        <span class="price">From $2,199</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="1899" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('wellness')">
+                <img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Wellness Retreat">
+                <div class="destination-info">
+                    <h4>Wellness Retreat</h4>
+                    <p>Rejuvenate with yoga, meditation, spa treatments, and healthy cuisine.</p>
+                    <div class="destination-price">
+                        <span class="price">From $1,899</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="699" data-type="adventure" data-kids="true" data-travelers="4" onclick="openModal('budget')">
+                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Budget Paradise">
+                <div class="destination-info">
+                    <h4>Budget Paradise</h4>
+                    <p>Experience Maldives magic with our affordable guesthouse package.</p>
+                    <div class="destination-price">
+                        <span class="price">From $699</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2299" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('photography')">
+                <img src="https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Photography Tour">
+                <div class="destination-info">
+                    <h4>Photography Tour</h4>
+                    <p>Capture breathtaking moments with professional photo guides.</p>
+                    <div class="destination-price">
+                        <span class="price">From $2,299</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="1499" data-type="adventure" data-kids="false" data-travelers="4" onclick="openModal('surfing')">
+                <img src="https://images.unsplash.com/photo-1502680390469-be75c86b636f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Surfing Safari">
+                <div class="destination-info">
+                    <h4>Surfing Safari</h4>
+                    <p>Ride perfect waves with expert guides at the best surf breaks.</p>
+                    <div class="destination-price">
+                        <span class="price">From $1,499</span>
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="no-results" id="noResults" style="display: none;">
+            <p>No packages match your criteria. Try adjusting your filters or <a href="#" onclick="showAllDestinations(); return false;">view all packages</a>.</p>
+        </div>
+    </section>
+
+    <!-- Destination Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div class="modal-carousel">
+                <button class="carousel-btn carousel-prev" onclick="changeSlide(-1)">&#10094;</button>
+                <div class="carousel-container" id="carouselSwipeContainer">
+                    <div class="carousel-slide carousel-slide-main" id="carouselSlideMain" onclick="openLightbox()">
+                        <img id="modalImage" src="" alt="">
+                        <div class="expand-hint">🔍 Click to expand</div>
+                    </div>
+                    <div class="carousel-slide carousel-slide-prev" id="carouselSlidePrev">
+                        <img id="carouselPrevImage" src="" alt="">
+                    </div>
+                    <div class="carousel-slide carousel-slide-next" id="carouselSlideNext">
+                        <img id="carouselNextImage" src="" alt="">
+                    </div>
+                </div>
+                <button class="carousel-btn carousel-next" onclick="changeSlide(1)">&#10095;</button>
+                <div class="carousel-dots" id="carouselDots"></div>
+            </div>
+            <div class="modal-body">
+                <h2 id="modalTitle"></h2>
+                <p class="modal-price" id="modalPrice"></p>
+                <div class="modal-description" id="modalDescription"></div>
+                <div class="modal-features">
+                    <h4>Package Includes:</h4>
+                    <ul id="modalFeatures"></ul>
+                </div>
+                <div class="modal-details">
+                    <div class="detail-item">
+                        <span class="detail-icon">📅</span>
+                        <span id="modalDuration"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">🏨</span>
+                        <span id="modalAccommodation"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">✈️</span>
+                        <span id="modalTransport"></span>
+                    </div>
+                </div>
+                <button class="modal-book-btn" onclick="alert('Booking request sent! Our team will contact you shortly.')">Book This Package</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox for fullscreen image -->
+    <div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <button class="lightbox-btn lightbox-prev" onclick="event.stopPropagation(); changeSlide(-1)">&#10094;</button>
+        <div class="lightbox-swipe-container" id="lightboxSwipeContainer" onclick="event.stopPropagation()">
+            <div class="lightbox-image-container" id="lightboxContainer" onclick="toggleZoom(event)">
+                <img id="lightboxImage" src="" alt="">
+            </div>
+            <div class="lightbox-image-container lightbox-prev-image" id="lightboxPrevContainer">
+                <img id="lightboxPrevImage" src="" alt="">
+            </div>
+            <div class="lightbox-image-container lightbox-next-image" id="lightboxNextContainer">
+                <img id="lightboxNextImage" src="" alt="">
+            </div>
+        </div>
+        <button class="lightbox-btn lightbox-next" onclick="event.stopPropagation(); changeSlide(1)">&#10095;</button>
+        <div class="zoom-controls" onclick="event.stopPropagation()">
+            <button class="zoom-btn" onclick="zoomOut()">−</button>
+            <span class="zoom-level" id="zoomLevel">100%</span>
+            <button class="zoom-btn" onclick="zoomIn()">+</button>
+        </div>
+        <div class="lightbox-counter" id="lightboxCounter"></div>
+    </div>
+
+    <!-- Gallery Section -->
+    <section class="gallery" id="gallery">
+        <div class="section-title">
+            <h2>Photo Gallery</h2>
+            <p>Click the stack to explore our paradise collection</p>
+        </div>
+        
+        <div class="gallery-container">
+            <!-- Photo Stack (Collapsed) -->
+            <div class="photo-stack" id="photoStack" onclick="expandGallery()">
+                <div class="stack-card" style="--i: 0;"></div>
+                <div class="stack-card" style="--i: 1;"></div>
+                <div class="stack-card" style="--i: 2;"></div>
+                <div class="stack-card" style="--i: 3;"></div>
+                <div class="stack-card" style="--i: 4;"></div>
+                <div class="stack-label">
+                    <span class="stack-hint">Click to explore</span>
+                </div>
+            </div>
+
+            <!-- Grid Gallery (Expanded) -->
+            <div class="gallery-expanded" id="galleryExpanded">
+                <button class="collapse-btn" onclick="collapseGallery()">
+                    <span>✕</span> Back to Stack
+                </button>
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Images loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="services" id="services">
+        <div class="section-title">
+            <h2>Our Services</h2>
+            <p>Everything you need for a perfect vacation</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card fade-in">
+                <div class="service-icon">✈️</div>
+                <h4>Flight Booking</h4>
+                <p>Best rates on international and domestic flights with premium airline partners.</p>
+            </div>
+            <div class="service-card fade-in">
+                <div class="service-icon">🏨</div>
+                <h4>Resort Reservations</h4>
+                <p>Exclusive access to luxury resorts and overwater villas in the Maldives.</p>
+            </div>
+            <div class="service-card fade-in">
+                <div class="service-icon">🤿</div>
+                <h4>Diving Excursions</h4>
+                <p>Professional diving tours to explore vibrant coral reefs and marine life.</p>
+            </div>
+            <div class="service-card fade-in">
+                <div class="service-icon">💑</div>
+                <h4>Honeymoon Packages</h4>
+                <p>Romantic getaways with special amenities for couples.</p>
+            </div>
+            <div class="service-card fade-in">
+                <div class="service-icon">🚤</div>
+                <h4>Private Transfers</h4>
+                <p>Seaplane and speedboat transfers to your island paradise.</p>
+            </div>
+            <div class="service-card fade-in">
+                <div class="service-icon">📋</div>
+                <h4>Custom Itineraries</h4>
+                <p>Personalized travel plans tailored to your preferences and budget.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <div class="section-title">
+            <h2>Contact Us</h2>
+            <p>Ready to plan your dream vacation? Get in touch!</p>
+        </div>
+        <div class="contact-container">
+            <div class="contact-info fade-in">
+                <h3>Get In Touch</h3>
+                <div class="contact-item">
+                    <div class="contact-icon">📍</div>
+                    <div class="contact-item-content">
+                        <h4>Our Office</h4>
+                        <p>Dubai, United Arab Emirates</p>
+                    </div>
+                </div>
+                <div class="contact-map">
+                    <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d462560.68279754975!2d54.89782544316406!3d25.076280448509045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43496ad9c645%3A0xbde66e5084295162!2sDubai%20-%20United%20Arab%20Emirates!5e0!3m2!1sen!2s!4v1679900000000!5m2!1sen!2s" 
+                        width="100%" 
+                        height="200" 
+                        style="border:0; border-radius: 15px;" 
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">📞</div>
+                    <div class="contact-item-content">
+                        <h4>Phone</h4>
+                        <p>+960 123 4567<br>+960 765 4321</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">✉️</div>
+                    <div class="contact-item-content">
+                        <h4>Email</h4>
+                        <p>info@janatravel.com<br>bookings@janatravel.com</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">⏰</div>
+                    <div class="contact-item-content">
+                        <h4>Working Hours</h4>
+                        <p>Mon - Fri: 9:00 AM - 6:00 PM<br>Sat: 10:00 AM - 4:00 PM</p>
+                    </div>
+                </div>
+                <div class="social-links">
+                    <a href="#" class="social-link">f</a>
+                    <a href="#" class="social-link">in</a>
+                    <a href="#" class="social-link">ig</a>
+                    <a href="#" class="social-link">tw</a>
+                </div>
+            </div>
+            <form class="contact-form fade-in" onsubmit="handleSubmit(event)">
+                <h3>Send Us a Message</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name *</label>
+                        <input type="text" id="firstName" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name *</label>
+                        <input type="text" id="lastName" name="lastName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
+                <div class="form-group">
+                    <label for="interest">I'm Interested In</label>
+                    <select id="interest" name="interest">
+                        <option value="">Select an option</option>
+                        <option value="honeymoon">Honeymoon Package</option>
+                        <option value="family">Family Vacation</option>
+                        <option value="diving">Diving Adventure</option>
+                        <option value="luxury">Luxury Resort Stay</option>
+                        <option value="custom">Custom Itinerary</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="message">Your Message *</label>
+                    <textarea id="message" name="message" placeholder="Tell us about your dream vacation..." required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Send Message</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>JANA Travel</h4>
+                <p>Your gateway to paradise. We specialize in creating unforgettable Maldives experiences tailored to your dreams.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="#home">Home</a>
+                <a href="#about">About Us</a>
+                <a href="#destinations">Destinations</a>
+                <a href="#services">Services</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="footer-section">
+                <h4>Popular Destinations</h4>
+                <a href="#">Malé Atoll</a>
+                <a href="#">Baa Atoll</a>
+                <a href="#">Ari Atoll</a>
+                <a href="#">Lhaviyani Atoll</a>
+                <a href="#">Raa Atoll</a>
+            </div>
+            <div class="footer-section">
+                <h4>Newsletter</h4>
+                <p>Subscribe for exclusive deals and travel tips.</p>
+                <input type="email" placeholder="Your email" style="padding: 0.8rem; border-radius: 5px; border: none; width: 100%; margin-top: 0.5rem;">
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 JANA Travel. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        function toggleMenu() {
+            document.querySelector('.nav-links').classList.toggle('active');
+        }
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const navHeight = document.querySelector('.nav-wrapper').offsetHeight;
+                    const sectionHeight = target.offsetHeight;
+                    const windowHeight = window.innerHeight;
+                    
+                    let targetPosition;
+                    if (sectionHeight < windowHeight) {
+                        targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight - ((windowHeight - sectionHeight) / 3);
+                    } else {
+                        targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight - 20;
+                    }
+                    
+                    window.scrollTo({
+                        top: Math.max(0, targetPosition),
+                        behavior: 'smooth'
+                    });
+                    document.querySelector('.nav-links').classList.remove('active');
+                }
+            });
+        });
+
+        // Form submission handler
+        function handleSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            alert('Thank you for your message, ' + data.firstName + '! Our team will contact you within 24 hours.');
+            e.target.reset();
+        }
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Active nav link based on scroll position
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-links a');
+
+        function updateActiveNav() {
+            const navHeight = document.querySelector('.nav-wrapper').offsetHeight;
+            const windowHeight = window.innerHeight;
+            const scrollPosition = window.scrollY + (windowHeight / 2);
+
+            let currentSection = null;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.offsetHeight;
+                const sectionBottom = sectionTop + sectionHeight;
+
+                if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (currentSection && link.getAttribute('href') === '#' + currentSection) {
+                    link.classList.add('active');
+                }
+            });
+
+            // Scroll mobile nav to show active link
+            const mobileNav = document.querySelector('.mobile-nav');
+            const activeLink = mobileNav ? mobileNav.querySelector('a.active') : null;
+            if (mobileNav && activeLink) {
+                const linkLeft = activeLink.offsetLeft;
+                const linkWidth = activeLink.offsetWidth;
+                const navWidth = mobileNav.offsetWidth;
+                const scrollLeft = linkLeft - (navWidth / 2) + (linkWidth / 2);
+                mobileNav.scrollTo({
+                    left: scrollLeft,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        window.addEventListener('scroll', updateActiveNav);
+        updateActiveNav();
+
+        // Destination data
+        const destinations = {
+            male: {
+                title: 'Malé Atoll',
+                price: 'From $1,299',
+                images: [
+                    'https://images.unsplash.com/photo-1540202404-a2f29016b523?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1602002418816-5c0aeef426aa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Malé Atoll is the heart of the Maldives, home to the vibrant capital city and some of the most stunning islands in the archipelago. This atoll offers the perfect blend of cultural experiences and natural beauty, with crystal-clear lagoons, pristine beaches, and world-renowned diving spots. Explore local markets, historical mosques, and enjoy easy access to luxury resorts just minutes from the capital.',
+                features: [
+                    'Round-trip flights included',
+                    '5 nights luxury resort stay',
+                    'Daily breakfast & dinner',
+                    'Airport transfers',
+                    'Snorkeling equipment',
+                    'Island hopping tour',
+                    'Sunset dolphin cruise',
+                    'Spa credit included'
+                ],
+                duration: '6 Days / 5 Nights',
+                accommodation: '5-Star Overwater Villa',
+                transport: 'Speedboat Transfer'
+            },
+            baa: {
+                title: 'Baa Atoll',
+                price: 'From $1,599',
+                images: [
+                    'https://images.unsplash.com/photo-1586375300773-8384e3e4916f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Baa Atoll is a UNESCO World Biosphere Reserve, famous for Hanifaru Bay where manta rays and whale sharks gather in spectacular numbers. This pristine atoll offers some of the best marine experiences in the world, with untouched coral reefs, abundant marine life, and exclusive eco-friendly resorts. Perfect for nature lovers and underwater enthusiasts seeking an extraordinary adventure.',
+                features: [
+                    'Round-trip flights included',
+                    '7 nights eco-resort stay',
+                    'Full board meals',
+                    'Seaplane transfers',
+                    'Manta ray excursion',
+                    'Guided reef snorkeling',
+                    'Night fishing trip',
+                    'Marine biologist tour'
+                ],
+                duration: '8 Days / 7 Nights',
+                accommodation: 'Eco-Luxury Beach Villa',
+                transport: 'Seaplane Transfer'
+            },
+            ari: {
+                title: 'Ari Atoll',
+                price: 'From $1,899',
+                images: [
+                    'https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1578922746465-3a80a228f223?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1512100356356-de1b84283e18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1580541631950-7282082b03fe?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Ari Atoll is renowned for its stunning overwater villas, breathtaking sunsets, and exceptional diving opportunities. Home to some of the most exclusive resorts in the Maldives, this atoll offers year-round whale shark sightings, pristine beaches, and unparalleled luxury. Whether you\'re seeking romance, adventure, or pure relaxation, Ari Atoll delivers an unforgettable experience.',
+                features: [
+                    'Round-trip flights included',
+                    '7 nights overwater villa',
+                    'All-inclusive package',
+                    'Seaplane transfers',
+                    'Whale shark adventure',
+                    'Private sandbank picnic',
+                    'Couples spa treatment',
+                    'Sunset yacht cruise'
+                ],
+                duration: '8 Days / 7 Nights',
+                accommodation: 'Premium Overwater Suite',
+                transport: 'Luxury Seaplane'
+            },
+            family: {
+                title: 'Family Paradise Resort',
+                price: 'From $999',
+                images: [
+                    'https://images.unsplash.com/photo-1602002418816-5c0aeef426aa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'The perfect family getaway! Our Family Paradise Resort features shallow lagoons safe for children, an exciting kids club with daily activities, and family-friendly dining options. Parents can relax knowing their children are having the time of their lives while enjoying their own peaceful moments.',
+                features: [
+                    'Round-trip flights for family',
+                    '5 nights family villa',
+                    'Kids club access',
+                    'Family activities daily',
+                    'Shallow lagoon beach',
+                    'Child-friendly meals',
+                    'Babysitting service',
+                    'Water sports for all ages'
+                ],
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Family Beach Villa',
+                transport: 'Speedboat Transfer'
+            },
+            honeymoon: {
+                title: 'Honeymoon Paradise',
+                price: 'From $2,499',
+                images: [
+                    'https://images.unsplash.com/photo-1578922746465-3a80a228f223?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1580541631950-7282082b03fe?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1512100356356-de1b84283e18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Begin your forever in paradise! This ultimate romantic escape features a private pool villa over crystal-clear waters, intimate couples spa treatments, candlelit beach dinners, and sunset cruises. Every detail is crafted to celebrate your love.',
+                features: [
+                    'Round-trip flights included',
+                    '7 nights private pool villa',
+                    'Couples spa package',
+                    'Private beach dinner',
+                    'Sunset champagne cruise',
+                    'In-villa breakfast daily',
+                    'Romantic turndown service',
+                    'Photography session'
+                ],
+                duration: '8 Days / 7 Nights',
+                accommodation: 'Private Pool Villa',
+                transport: 'Seaplane Transfer'
+            },
+            diving: {
+                title: 'Diving Adventure',
+                price: 'From $1,199',
+                images: [
+                    'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1586375300773-8384e3e4916f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Dive into adventure! Explore vibrant coral reefs, swim alongside manta rays and whale sharks, and discover the underwater wonders of the Maldives. Perfect for certified divers and those wanting to learn, with PADI-certified instructors available.',
+                features: [
+                    'Round-trip flights included',
+                    '6 nights dive resort stay',
+                    '10 guided dive sessions',
+                    'All equipment included',
+                    'Manta ray night dive',
+                    'Underwater photography',
+                    'PADI certification available',
+                    'Marine life guide'
+                ],
+                duration: '7 Days / 6 Nights',
+                accommodation: 'Dive Resort Room',
+                transport: 'Speedboat Transfer'
+            },
+            lhaviyani: {
+                title: 'Lhaviyani Atoll',
+                price: 'From $1,799',
+                images: [
+                    'https://images.unsplash.com/photo-1439066615861-d1af74d74000?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1506929562872-bb421503ef21?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Lhaviyani Atoll offers pristine uninhabited islands, spectacular diving sites, and exclusive resort experiences. Known for its shipwreck diving and vibrant marine life, this atoll is perfect for those seeking adventure and tranquility.',
+                features: [
+                    'Round-trip flights included',
+                    '6 nights luxury resort stay',
+                    'All-inclusive dining',
+                    'Seaplane transfers',
+                    'Shipwreck diving tour',
+                    'Private island picnic',
+                    'Sunset fishing trip',
+                    'Spa treatments included'
+                ],
+                duration: '7 Days / 6 Nights',
+                accommodation: 'Beachfront Villa',
+                transport: 'Seaplane Transfer'
+            },
+            raa: {
+                title: 'Raa Atoll',
+                price: 'From $2,199',
+                images: [
+                    'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1602002418082-a4443e081dd1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1540202404-a2f29016b523?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Raa Atoll is home to some of the most exclusive and remote resorts in the Maldives. Experience ultimate privacy, world-class service, and untouched natural beauty in this hidden paradise.',
+                features: [
+                    'Round-trip flights included',
+                    '7 nights exclusive resort stay',
+                    'Butler service',
+                    'Seaplane transfers',
+                    'Private dining experiences',
+                    'Personalized excursions',
+                    'Unlimited spa access',
+                    'Yacht day trip'
+                ],
+                duration: '8 Days / 7 Nights',
+                accommodation: 'Presidential Suite',
+                transport: 'Private Seaplane'
+            },
+            wellness: {
+                title: 'Wellness Retreat',
+                price: 'From $1,899',
+                images: [
+                    'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Rejuvenate your mind, body, and soul at our exclusive wellness retreat. Featuring daily yoga sessions, meditation classes, spa treatments, and healthy gourmet cuisine in a serene island setting.',
+                features: [
+                    'Round-trip flights included',
+                    '7 nights wellness resort stay',
+                    'Daily yoga & meditation',
+                    'Unlimited spa treatments',
+                    'Healthy gourmet meals',
+                    'Personal wellness coach',
+                    'Sound healing sessions',
+                    'Beach fitness classes'
+                ],
+                duration: '8 Days / 7 Nights',
+                accommodation: 'Wellness Villa',
+                transport: 'Speedboat Transfer'
+            },
+            budget: {
+                title: 'Budget Paradise',
+                price: 'From $699',
+                images: [
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1506929562872-bb421503ef21?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1439066615861-d1af74d74000?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Experience the magic of Maldives without breaking the bank! Our budget-friendly package includes comfortable guesthouse stays on local islands, authentic Maldivian experiences, and stunning beaches.',
+                features: [
+                    'Round-trip flights included',
+                    '4 nights guesthouse stay',
+                    'Daily breakfast',
+                    'Speedboat transfers',
+                    'Snorkeling trip',
+                    'Local island tour',
+                    'Sunset cruise',
+                    'Beach barbecue dinner'
+                ],
+                duration: '5 Days / 4 Nights',
+                accommodation: 'Beach Guesthouse',
+                transport: 'Speedboat Transfer'
+            },
+            photography: {
+                title: 'Photography Tour',
+                price: 'From $2,299',
+                images: [
+                    'https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1578922746465-3a80a228f223?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1586375300773-8384e3e4916f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Capture the breathtaking beauty of the Maldives with our exclusive photography tour. Led by professional photographers, explore the most photogenic locations above and below water.',
+                features: [
+                    'Round-trip flights included',
+                    '6 nights resort stay',
+                    'Professional photo guide',
+                    'Sunrise & sunset shoots',
+                    'Underwater photography',
+                    'Drone photography session',
+                    'Post-processing workshop',
+                    'Portfolio review'
+                ],
+                duration: '7 Days / 6 Nights',
+                accommodation: 'Overwater Bungalow',
+                transport: 'Seaplane Transfer'
+            },
+            surfing: {
+                title: 'Surfing Safari',
+                price: 'From $1,499',
+                images: [
+                    'https://images.unsplash.com/photo-1502680390469-be75c86b636f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1506929562872-bb421503ef21?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+                ],
+                description: 'Ride the perfect waves of the Maldives! Our surfing safari takes you to the best breaks in the atolls, suitable for beginners and experienced surfers alike.',
+                features: [
+                    'Round-trip flights included',
+                    '7 nights surf resort stay',
+                    'Daily surf sessions',
+                    'Surf guide included',
+                    'Board rental',
+                    'Boat trips to breaks',
+                    'Video analysis',
+                    'Sunset sessions'
+                ],
+                duration: '8 Days / 7 Nights',
+                accommodation: 'Surf Lodge',
+                transport: 'Speedboat Transfer'
+            }
+        };
+
+        // Filter state
+        let travelerCount = 2;
+        let budgetMax = 2500;
+        let hasKids = false;
+
+        function changeTravelers(delta) {
+            travelerCount = Math.max(1, Math.min(10, travelerCount + delta));
+            document.getElementById('travelerCount').textContent = travelerCount;
+        }
+
+        function updateBudget() {
+            budgetMax = parseInt(document.getElementById('budgetRange').value);
+            document.getElementById('budgetValue').textContent = budgetMax.toLocaleString();
+        }
+
+        function setKids(value) {
+            hasKids = value;
+            document.getElementById('kidsNo').classList.toggle('active', !value);
+            document.getElementById('kidsYes').classList.toggle('active', value);
+        }
+
+        function filterDestinations() {
+            const tripType = document.getElementById('tripType').value;
+            const cards = document.querySelectorAll('.destination-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const price = parseInt(card.dataset.price);
+                const type = card.dataset.type;
+                const kidsAllowed = card.dataset.kids === 'true';
+                const maxTravelers = parseInt(card.dataset.travelers);
+
+                let show = true;
+
+                if (price > budgetMax) show = false;
+                if (tripType !== 'all' && type !== tripType) show = false;
+                if (hasKids && !kidsAllowed) show = false;
+                if (travelerCount > maxTravelers) show = false;
+
+                card.classList.toggle('hidden', !show);
+                if (show) visibleCount++;
+            });
+
+            document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        function resetFilters() {
+            travelerCount = 2;
+            budgetMax = 2500;
+            hasKids = false;
+            
+            document.getElementById('travelerCount').textContent = '2';
+            document.getElementById('budgetRange').value = 2500;
+            document.getElementById('budgetValue').textContent = '2,500';
+            document.getElementById('tripType').value = 'all';
+            document.getElementById('kidsNo').classList.add('active');
+            document.getElementById('kidsYes').classList.remove('active');
+            
+            showAllDestinations();
+        }
+
+        function showAllDestinations() {
+            const cards = document.querySelectorAll('.destination-card');
+            cards.forEach(card => card.classList.remove('hidden'));
+            document.getElementById('noResults').style.display = 'none';
+        }
+
+        function toggleAllDestinations() {
+            const grid = document.getElementById('destinationsGrid');
+            const btn = document.getElementById('togglePackagesBtn');
+            
+            if (grid.classList.contains('show-all')) {
+                grid.classList.remove('show-all');
+                if (btn) btn.textContent = 'Show All Packages';
+            } else {
+                grid.classList.add('show-all');
+                if (btn) btn.textContent = 'Show Featured Only';
+                
+                // Trigger fade-in animation for newly visible cards
+                const extraCards = document.querySelectorAll('.extra-destination');
+                extraCards.forEach(card => {
+                    card.classList.add('visible');
+                });
+            }
+        }
+
+        // Gallery images
+        const galleryImages = [
+            'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=1600&q=80',
+            'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=1600&q=80',
+            'https://images.unsplash.com/photo-1540202404-a2f29016b523?w=1600&q=80',
+            'https://images.unsplash.com/photo-1551918120-9739cb430c6d?w=1600&q=80',
+            'https://images.unsplash.com/photo-1586375300773-8384e3e4916f?w=1600&q=80',
+            'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1600&q=80',
+            'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1600&q=80',
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&q=80',
+            'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1600&q=80',
+            'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1600&q=80',
+            'https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=1600&q=80',
+            'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=1600&q=80'
+        ];
+
+        function openGalleryImage(index) {
+            currentImages = galleryImages;
+            currentSlide = index;
+            openLightbox();
+        }
+
+        // Stack Gallery Variables
+        let galleryScrollPosition = 0;
+        let isGalleryExpanded = false;
+
+        // Initialize gallery on load
+        function initGallery() {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '';
+            
+            const rotations = [-15, -10, -5, 0, 5, 10, 15, -12, 8, -8, 12, -6];
+            
+            galleryImages.forEach((src, index) => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.style.setProperty('--rotation', `${rotations[index % rotations.length]}deg`);
+                item.onclick = () => openGalleryImage(index);
+                item.innerHTML = `
+                    <img src="${src.replace('w=1600', 'w=600')}" alt="Gallery Image ${index + 1}">
+                    <div class="gallery-overlay"></div>
+                `;
+                grid.appendChild(item);
+            });
+
+            // Update stack count
+            const countEl = document.querySelector('.stack-count');
+            if (countEl) countEl.textContent = galleryImages.length;
+        }
+
+        function expandGallery() {
+            // Save the exact scroll position before expanding
+            galleryScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+            isGalleryExpanded = true;
+            
+            const stack = document.getElementById('photoStack');
+            const expanded = document.getElementById('galleryExpanded');
+            const stackCards = document.querySelectorAll('.stack-card');
+            
+            // Animate stack cards bursting out downwards
+            stackCards.forEach((card, index) => {
+                const angles = [-30, -15, 0, 15, 30];
+                const distances = [150, 100, 80, 100, 150];
+                card.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                card.style.transform = `rotate(${angles[index]}deg) translateY(${distances[index]}px) scale(0.5)`;
+                card.style.opacity = '0';
+            });
+            
+            // Then hide stack and show gallery
+            setTimeout(() => {
+                stack.classList.add('hidden');
+                expanded.classList.add('active');
+                
+                // Reset stack cards for later
+                stackCards.forEach(card => {
+                    card.style.transition = '';
+                    card.style.transform = '';
+                    card.style.opacity = '';
+                });
+                
+                // Stagger animation for items bursting from center
+                setTimeout(() => {
+                    const items = document.querySelectorAll('.gallery-item');
+                    items.forEach((item, index) => {
+                        setTimeout(() => {
+                            item.classList.add('visible');
+                        }, index * 80);
+                    });
+                }, 100);
+            }, 400);
+        }
+
+        function collapseGallery() {
+            isGalleryExpanded = false;
+            
+            const stack = document.getElementById('photoStack');
+            const expanded = document.getElementById('galleryExpanded');
+            const items = document.querySelectorAll('.gallery-item');
+            
+            // Collapse items back to center with rotation
+            const itemsArray = Array.from(items).reverse();
+            itemsArray.forEach((item, index) => {
+                setTimeout(() => {
+                    item.classList.add('collapsing');
+                    item.classList.remove('visible');
+                }, index * 40);
+            });
+            
+            // Then collapse gallery and show stack with cards flying in
+            setTimeout(() => {
+                expanded.classList.remove('active');
+                
+                // Remove collapsing class
+                items.forEach(item => item.classList.remove('collapsing'));
+                
+                setTimeout(() => {
+                    const stackCards = document.querySelectorAll('.stack-card');
+                    
+                    // Set initial positions (scattered downwards)
+                    stackCards.forEach((card, index) => {
+                        const angles = [-30, -15, 0, 15, 30];
+                        const distances = [150, 100, 80, 100, 150];
+                        card.style.transition = 'none';
+                        card.style.transform = `rotate(${angles[index]}deg) translateY(${distances[index]}px) scale(0.5)`;
+                        card.style.opacity = '0';
+                    });
+                    
+                    stack.classList.remove('hidden');
+                    
+                    // Animate cards flying back into stack
+                    setTimeout(() => {
+                        stackCards.forEach((card, index) => {
+                            card.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                            card.style.transform = '';
+                            card.style.opacity = '';
+                        });
+                    }, 50);
+                    
+                    // Scroll back after animation
+                    setTimeout(() => {
+                        const gallerySection = document.getElementById('gallery');
+                        const navHeight = document.querySelector('.nav-wrapper').offsetHeight;
+                        const sectionHeight = gallerySection.offsetHeight;
+                        const windowHeight = window.innerHeight;
+                        
+                        let targetPosition;
+                        if (sectionHeight < windowHeight) {
+                            targetPosition = gallerySection.getBoundingClientRect().top + window.pageYOffset - navHeight - ((windowHeight - sectionHeight) / 3);
+                        } else {
+                            targetPosition = gallerySection.getBoundingClientRect().top + window.pageYOffset - navHeight - 20;
+                        }
+                        
+                        window.scrollTo({
+                            top: Math.max(0, targetPosition),
+                            left: 0,
+                            behavior: 'smooth'
+                        });
+                    }, 700);
+                }, 300);
+            }, items.length * 40 + 200);
+        }
+
+        // Touch support for mobile
+        const photoStack = document.getElementById('photoStack');
+        if (photoStack) {
+            photoStack.addEventListener('touchstart', function() {
+                this.classList.add('touch-active');
+            });
+            
+            photoStack.addEventListener('touchend', function() {
+                setTimeout(() => {
+                    this.classList.remove('touch-active');
+                }, 300);
+            });
+        }
+
+        // Initialize gallery
+        document.addEventListener('DOMContentLoaded', initGallery);
+
+        // Carousel state
+        let currentSlide = 0;
+        let currentImages = [];
+
+        // Utility function
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+
+        // Modal functions
+        let modalScrollPosition = 0;
+
+        function openModal(destinationId) {
+            const dest = destinations[destinationId];
+            if (!dest) return;
+
+            // Save scroll position
+            modalScrollPosition = window.scrollY;
+
+            currentImages = dest.images;
+            currentSlide = 0;
+            
+            updateCarouselImage();
+            createCarouselDots();
+
+            document.getElementById('modalTitle').textContent = dest.title;
+            document.getElementById('modalPrice').textContent = dest.price;
+            document.getElementById('modalDescription').textContent = dest.description;
+            document.getElementById('modalDuration').textContent = dest.duration;
+            document.getElementById('modalAccommodation').textContent = dest.accommodation;
+            document.getElementById('modalTransport').textContent = dest.transport;
+
+            const featuresList = document.getElementById('modalFeatures');
+            featuresList.innerHTML = dest.features.map(f => `<li>${f}</li>`).join('');
+
+            document.getElementById('modalOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.top = `-${modalScrollPosition}px`;
+            document.documentElement.style.overflow = 'hidden';
+        }
+
+        function updateCarouselImage() {
+            document.getElementById('modalImage').src = currentImages[currentSlide];
+            updateDots();
+            updateLightbox();
+            updateCarouselAdjacentImages();
+        }
+
+        function updateCarouselAdjacentImages() {
+            const prevIndex = currentSlide === 0 ? currentImages.length - 1 : currentSlide - 1;
+            const nextIndex = currentSlide === currentImages.length - 1 ? 0 : currentSlide + 1;
+            
+            document.getElementById('carouselPrevImage').src = currentImages[prevIndex];
+            document.getElementById('carouselNextImage').src = currentImages[nextIndex];
+        }
+
+        function createCarouselDots() {
+            const dotsContainer = document.getElementById('carouselDots');
+            dotsContainer.innerHTML = currentImages.map((_, index) => 
+                `<button class="carousel-dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></button>`
+            ).join('');
+        }
+
+        function updateDots() {
+            const dots = document.querySelectorAll('.carousel-dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            if (currentSlide >= currentImages.length) currentSlide = 0;
+            if (currentSlide < 0) currentSlide = currentImages.length - 1;
+            updateCarouselImage();
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateCarouselImage();
+        }
+
+        // Carousel swipe for mobile
+        let carouselTouchStartX = 0;
+        let carouselTouchCurrentX = 0;
+        let isCarouselSwiping = false;
+        const carouselSwipeThreshold = 50;
+        const carouselSwipeContainer = document.getElementById('carouselSwipeContainer');
+
+        carouselSwipeContainer.addEventListener('touchstart', function(e) {
+            if (!isMobile()) return;
+            carouselTouchStartX = e.touches[0].clientX;
+            carouselTouchCurrentX = carouselTouchStartX;
+            isCarouselSwiping = true;
+            carouselSwipeContainer.classList.add('swiping');
+            updateCarouselAdjacentImages();
+        }, { passive: true });
+
+        carouselSwipeContainer.addEventListener('touchmove', function(e) {
+            if (!isCarouselSwiping || !isMobile()) return;
+            carouselTouchCurrentX = e.touches[0].clientX;
+            const diff = carouselTouchCurrentX - carouselTouchStartX;
+            
+            document.getElementById('carouselSlideMain').style.transform = `translateX(${diff}px)`;
+            document.getElementById('carouselSlidePrev').style.transform = `translateX(calc(-100% + ${diff}px))`;
+            document.getElementById('carouselSlideNext').style.transform = `translateX(calc(100% + ${diff}px))`;
+        }, { passive: true });
+
+        carouselSwipeContainer.addEventListener('touchend', function(e) {
+            if (!isCarouselSwiping || !isMobile()) return;
+            isCarouselSwiping = false;
+            carouselSwipeContainer.classList.remove('swiping');
+            
+            const diff = carouselTouchCurrentX - carouselTouchStartX;
+            
+            if (Math.abs(diff) > carouselSwipeThreshold) {
+                if (diff > 0) {
+                    animateCarouselSwipe('right');
+                } else {
+                    animateCarouselSwipe('left');
+                }
+            } else {
+                resetCarouselSwipePositions();
+            }
+        }, { passive: true });
+
+        function animateCarouselSwipe(direction) {
+            const mainSlide = document.getElementById('carouselSlideMain');
+            const prevSlide = document.getElementById('carouselSlidePrev');
+            const nextSlide = document.getElementById('carouselSlideNext');
+            const mainImage = document.getElementById('modalImage');
+            
+            mainSlide.style.transition = 'transform 0.3s ease';
+            prevSlide.style.transition = 'transform 0.3s ease';
+            nextSlide.style.transition = 'transform 0.3s ease';
+            
+            if (direction === 'right') {
+                mainSlide.style.transform = 'translateX(100%)';
+                prevSlide.style.transform = 'translateX(0)';
+            } else {
+                mainSlide.style.transform = 'translateX(-100%)';
+                nextSlide.style.transform = 'translateX(0)';
+            }
+            
+            setTimeout(() => {
+                // Update slide index
+                if (direction === 'right') {
+                    currentSlide--;
+                    if (currentSlide < 0) currentSlide = currentImages.length - 1;
+                } else {
+                    currentSlide++;
+                    if (currentSlide >= currentImages.length) currentSlide = 0;
+                }
+                
+                // Update main image
+                mainImage.src = currentImages[currentSlide];
+                
+                // Instantly reset positions
+                mainSlide.style.transition = 'none';
+                prevSlide.style.transition = 'none';
+                nextSlide.style.transition = 'none';
+                
+                mainSlide.style.transform = 'translateX(0)';
+                prevSlide.style.transform = 'translateX(-100%)';
+                nextSlide.style.transform = 'translateX(100%)';
+                
+                // Force reflow
+                mainSlide.offsetHeight;
+                
+                // Clear transitions
+                mainSlide.style.transition = '';
+                prevSlide.style.transition = '';
+                nextSlide.style.transition = '';
+                
+                // Update dots and adjacent images
+                updateDots();
+                updateCarouselAdjacentImages();
+                updateLightbox();
+            }, 300);
+        }
+
+        function resetCarouselSwipePositions(instant) {
+            const mainSlide = document.getElementById('carouselSlideMain');
+            const prevSlide = document.getElementById('carouselSlidePrev');
+            const nextSlide = document.getElementById('carouselSlideNext');
+            
+            mainSlide.style.transition = 'transform 0.3s ease';
+            prevSlide.style.transition = 'transform 0.3s ease';
+            nextSlide.style.transition = 'transform 0.3s ease';
+            
+            mainSlide.style.transform = 'translateX(0)';
+            prevSlide.style.transform = 'translateX(-100%)';
+            nextSlide.style.transform = 'translateX(100%)';
+            
+            setTimeout(() => {
+                mainSlide.style.transition = '';
+                prevSlide.style.transition = '';
+                nextSlide.style.transition = '';
+            }, 300);
+        }
+
+        // Lightbox functions
+        let lightboxOpen = false;
+        let lightboxScrollPosition = 0;
+        let zoomLevel = 100;
+        const zoomStep = 50;
+        const maxZoom = 300;
+        const minZoom = 100;
+
+        function openLightbox() {
+            // Save scroll position before applying fixed positioning
+            // Check if body is already fixed (from modal) and get position from top style
+            if (document.body.style.position === 'fixed') {
+                lightboxScrollPosition = parseInt(document.body.style.top || '0') * -1;
+            } else {
+                lightboxScrollPosition = window.scrollY;
+            }
+            
+            zoomLevel = 100;
+            updateZoomDisplay();
+            document.getElementById('lightboxImage').src = currentImages[currentSlide];
+            document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
+            document.getElementById('lightboxOverlay').classList.add('active');
+            document.getElementById('lightboxContainer').classList.remove('zoomed');
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.top = `-${lightboxScrollPosition}px`;
+            document.documentElement.style.overflow = 'hidden';
+            lightboxOpen = true;
+            
+            // Load adjacent images for swipe preview
+            if (typeof updateAdjacentImages === 'function') {
+                updateAdjacentImages();
+            }
+            if (typeof resetSwipePositions === 'function') {
+                resetSwipePositions();
+            }
+        }
+
+        function updateLightbox() {
+            if (lightboxOpen) {
+                document.getElementById('lightboxImage').src = currentImages[currentSlide];
+                document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
+                resetZoom();
+                
+                // Update adjacent images for swipe
+                if (typeof updateAdjacentImages === 'function') {
+                    updateAdjacentImages();
+                }
+            }
+        }
+
+        let hasDragged = false;
+
+        function toggleZoom(event) {
+            if (isMobile()) return;
+            if (hasDragged) {
+                hasDragged = false;
+                return;
+            }
+            if (zoomLevel === 100) {
+                zoomIn();
+            } else {
+                resetZoom();
+            }
+        }
+
+        function zoomIn() {
+            if (isMobile()) return;
+            if (zoomLevel < maxZoom) {
+                zoomLevel += zoomStep;
+                applyZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (isMobile()) return;
+            if (zoomLevel > minZoom) {
+                zoomLevel -= zoomStep;
+                applyZoom();
+            }
+        }
+
+        function resetZoom() {
+            zoomLevel = 100;
+            panX = 0;
+            panY = 0;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            const container = document.getElementById('lightboxContainer');
+            const image = document.getElementById('lightboxImage');
+            
+            if (zoomLevel > 100) {
+                container.classList.add('zoomed');
+            } else {
+                container.classList.remove('zoomed');
+                panX = 0;
+                panY = 0;
+            }
+            
+            updateImageTransform();
+            updateZoomDisplay();
+        }
+
+        function updateImageTransform() {
+            const image = document.getElementById('lightboxImage');
+            image.style.transform = `scale(${zoomLevel / 100}) translate(${panX}px, ${panY}px)`;
+        }
+
+        function updateZoomDisplay() {
+            document.getElementById('zoomLevel').textContent = `${zoomLevel}%`;
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightboxOverlay').classList.remove('active');
+            resetZoom();
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+            document.documentElement.style.overflow = '';
+            window.scrollTo(0, lightboxScrollPosition);
+            lightboxOpen = false;
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            closeLightbox();
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+            document.documentElement.style.overflow = '';
+            window.scrollTo(0, modalScrollPosition);
+        }
+
+        // Pan/drag variables
+        let isDragging = false;
+        let startX, startY;
+        let panX = 0, panY = 0;
+        let lastPanX = 0, lastPanY = 0;
+        const lightboxContainer = document.getElementById('lightboxContainer');
+
+        // Mouse wheel zoom (desktop only)
+        lightboxContainer.addEventListener('wheel', function(e) {
+            if (isMobile()) return;
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        });
+
+        lightboxContainer.addEventListener('mousedown', function(e) {
+            if (isMobile()) return;
+            if (zoomLevel > 100) {
+                e.preventDefault();
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                lastPanX = panX;
+                lastPanY = panY;
+                lightboxContainer.classList.add('dragging');
+            }
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (isMobile()) return;
+            if (!isDragging || zoomLevel <= 100) return;
+            e.preventDefault();
+            
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            
+            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                hasDragged = true;
+            }
+            
+            panX = lastPanX + deltaX / (zoomLevel / 100);
+            panY = lastPanY + deltaY / (zoomLevel / 100);
+            
+            updateImageTransform();
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                lightboxContainer.classList.remove('dragging');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (lightboxOpen) {
+                    closeLightbox();
+                } else {
+                    closeModal();
+                }
+            }
+            if (e.key === 'ArrowLeft' && document.getElementById('modalOverlay').classList.contains('active')) changeSlide(-1);
+            if (e.key === 'ArrowRight' && document.getElementById('modalOverlay').classList.contains('active')) changeSlide(1);
+            if (lightboxOpen && e.key === '+') zoomIn();
+            if (lightboxOpen && e.key === '-') zoomOut();
+            if (lightboxOpen && e.key === '0') resetZoom();
+        });
+
+        // Touch swipe for mobile lightbox navigation
+        let touchStartX = 0;
+        let touchCurrentX = 0;
+        let isSwiping = false;
+        const swipeThreshold = 50;
+        const swipeContainer = document.getElementById('lightboxSwipeContainer');
+
+        function updateAdjacentImages() {
+            const prevIndex = currentSlide === 0 ? currentImages.length - 1 : currentSlide - 1;
+            const nextIndex = currentSlide === currentImages.length - 1 ? 0 : currentSlide + 1;
+            
+            document.getElementById('lightboxPrevImage').src = currentImages[prevIndex];
+            document.getElementById('lightboxNextImage').src = currentImages[nextIndex];
+        }
+
+        swipeContainer.addEventListener('touchstart', function(e) {
+            if (!isMobile()) return;
+            touchStartX = e.touches[0].clientX;
+            touchCurrentX = touchStartX;
+            isSwiping = true;
+            swipeContainer.classList.add('swiping');
+            updateAdjacentImages();
+        }, { passive: true });
+
+        swipeContainer.addEventListener('touchmove', function(e) {
+            if (!isSwiping || !isMobile()) return;
+            touchCurrentX = e.touches[0].clientX;
+            const diff = touchCurrentX - touchStartX;
+            
+            // Move all three containers
+            document.getElementById('lightboxContainer').style.transform = `translateX(${diff}px)`;
+            document.getElementById('lightboxPrevContainer').style.transform = `translateX(calc(-100% + ${diff}px))`;
+            document.getElementById('lightboxNextContainer').style.transform = `translateX(calc(100% + ${diff}px))`;
+        }, { passive: true });
+
+        swipeContainer.addEventListener('touchend', function(e) {
+            if (!isSwiping || !isMobile()) return;
+            isSwiping = false;
+            swipeContainer.classList.remove('swiping');
+            
+            const diff = touchCurrentX - touchStartX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swiped right - go to previous
+                    animateSwipe('right');
+                } else {
+                    // Swiped left - go to next
+                    animateSwipe('left');
+                }
+            } else {
+                // Reset positions
+                resetSwipePositions();
+            }
+        }, { passive: true });
+
+        function animateSwipe(direction) {
+            const mainContainer = document.getElementById('lightboxContainer');
+            const prevContainer = document.getElementById('lightboxPrevContainer');
+            const nextContainer = document.getElementById('lightboxNextContainer');
+            const mainImage = document.getElementById('lightboxImage');
+            
+            mainContainer.style.transition = 'transform 0.3s ease';
+            prevContainer.style.transition = 'transform 0.3s ease';
+            nextContainer.style.transition = 'transform 0.3s ease';
+            
+            if (direction === 'right') {
+                mainContainer.style.transform = 'translateX(100%)';
+                prevContainer.style.transform = 'translateX(0)';
+            } else {
+                mainContainer.style.transform = 'translateX(-100%)';
+                nextContainer.style.transform = 'translateX(0)';
+            }
+            
+            setTimeout(() => {
+                // Update slide index
+                if (direction === 'right') {
+                    currentSlide--;
+                    if (currentSlide < 0) currentSlide = currentImages.length - 1;
+                } else {
+                    currentSlide++;
+                    if (currentSlide >= currentImages.length) currentSlide = 0;
+                }
+                
+                // Update main image to new current image BEFORE resetting positions
+                mainImage.src = currentImages[currentSlide];
+                document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
+                
+                // Instantly reset positions (no transition)
+                mainContainer.style.transition = 'none';
+                prevContainer.style.transition = 'none';
+                nextContainer.style.transition = 'none';
+                
+                mainContainer.style.transform = 'translateX(0)';
+                prevContainer.style.transform = 'translateX(-100%)';
+                nextContainer.style.transform = 'translateX(100%)';
+                
+                // Force reflow
+                mainContainer.offsetHeight;
+                
+                // Clear inline transitions
+                mainContainer.style.transition = '';
+                prevContainer.style.transition = '';
+                nextContainer.style.transition = '';
+                
+                // Update adjacent images and carousel dots
+                updateAdjacentImages();
+                updateDots();
+                document.getElementById('modalImage').src = currentImages[currentSlide];
+            }, 300);
+        }
+
+        function resetSwipePositions(instant) {
+            const mainContainer = document.getElementById('lightboxContainer');
+            const prevContainer = document.getElementById('lightboxPrevContainer');
+            const nextContainer = document.getElementById('lightboxNextContainer');
+            
+            if (instant) {
+                // Instant reset after successful swipe - no animation
+                mainContainer.style.transition = 'none';
+                prevContainer.style.transition = 'none';
+                nextContainer.style.transition = 'none';
+            } else {
+                // Animated reset when swipe is cancelled
+                mainContainer.style.transition = 'transform 0.3s ease';
+                prevContainer.style.transition = 'transform 0.3s ease';
+                nextContainer.style.transition = 'transform 0.3s ease';
+            }
+            
+            mainContainer.style.transform = 'translateX(0)';
+            prevContainer.style.transform = 'translateX(-100%)';
+            nextContainer.style.transform = 'translateX(100%)';
+            
+            if (instant) {
+                // Force reflow then clear transition
+                mainContainer.offsetHeight;
+                mainContainer.style.transition = '';
+                prevContainer.style.transition = '';
+                nextContainer.style.transition = '';
+            } else {
+                setTimeout(() => {
+                    mainContainer.style.transition = '';
+                    prevContainer.style.transition = '';
+                    nextContainer.style.transition = '';
+                }, 300);
+            }
+        }
+
+    </script>
+</body>
+</html>
