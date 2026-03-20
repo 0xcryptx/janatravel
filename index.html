@@ -4,6 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>JANA Travel - Your Gateway to Paradise</title>
+    
+    <!-- Favicon / App icons (use site logo) -->
+    <link rel="icon" href="public/JanaTravelLogo.webp" type="image/webp">
+    <link rel="shortcut icon" href="public/JanaTravelLogo.webp" type="image/webp">
+    <link rel="apple-touch-icon" href="public/JanaTravelLogo.webp">
+    <meta name="theme-color" content="#00CED1">
+    <link rel="canonical" href="/">
+
+    <!-- Social previews (Open Graph / Twitter) -->
+    <meta name="description" content="Explore JANA Travel destinations and curated paradise stays. Discover islands, packages, and travel tips for your next unforgettable getaway.">
+    <meta property="og:title" content="JANA Travel - Your Gateway to Paradise">
+    <meta property="og:description" content="Explore JANA Travel destinations and curated paradise stays. Discover islands, packages, and travel tips for your next unforgettable getaway.">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="JANA Travel">
+    <meta property="og:image" content="public/JanaTravelLogo.webp">
+    <meta property="og:image:alt" content="JANA Travel logo">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="JANA Travel - Your Gateway to Paradise">
+    <meta name="twitter:description" content="Explore JANA Travel destinations and curated paradise stays. Discover islands, packages, and travel tips for your next unforgettable getaway.">
+    <meta name="twitter:image" content="public/JanaTravelLogo.webp">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="JANA Travel">
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -1902,10 +1929,9 @@
                 <img src="https://images.unsplash.com/photo-1573843981267-be1999ff37cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Maldives Resort">
             </div>
             <div class="about-content fade-in">
-                <h3>Creating Unforgettable Journeys Since 2010</h3>
-                <p>At JANA Travel, we believe that every journey should be an extraordinary adventure. Specializing in Maldives vacations, we bring you exclusive access to the most breathtaking resorts, hidden gems, and authentic experiences.</p>
-                <p>Our team of expert travel consultants works tirelessly to craft personalized itineraries that match your dreams. From romantic honeymoon getaways to adventurous diving expeditions, we handle every detail with care.</p>
-                <p>With over a decade of experience and partnerships with premium resorts, we guarantee exceptional service and unforgettable memories.</p>
+                <h3>Crafting Extraordinary Journeys Across the Maldives and Beyond</h3>
+                <p>At JANA Travel, we create exceptional travel experiences designed around you. Specializing in the Maldives and the Indian Ocean, we craft personalized journeys that combine luxury, comfort, and unforgettable moments.</p>
+                <p>Whether it’s a romantic escape, a family holiday, or a special celebration, our team is dedicated to handling every detail with care. From handpicked resorts to seamless itineraries, we make every trip effortless, elegant, and truly memorable.</p>
             </div>
         </div>
     </section>
@@ -1965,138 +1991,73 @@
 
         <div class="featured-packages-heading">
             <h3>Featured Packages</h3>
-            <p>Hand-picked destinations — use <strong>Show All Packages</strong> in the filters above to see our full collection.</p>
+            <p>Hand-picked resorts from our curated selection across the Maldives and Indian Ocean.</p>
         </div>
 
         <div class="destinations-grid" id="destinationsGrid">
-            <div class="destination-card fade-in" data-price="1299" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('male')">
-                <img src="https://images.unsplash.com/photo-1540202404-a2f29016b523?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Male Atoll">
+            <!-- Featured (first 6) -->
+            <div class="destination-card fade-in" data-price="2499" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('male')">
+                <img src="assets/Niyama%20Private%20Islands%20Maldives/1.jpg" alt="Niyama Private Islands Maldives">
                 <div class="destination-info">
-                    <h4>Malé Atoll</h4>
-                    <p>Experience the vibrant capital and stunning nearby islands with world-class diving spots.</p>
-                    <div class="destination-price">
-                        <span class="price">From $1,299</span>
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in" data-price="1599" data-type="adventure" data-kids="false" data-travelers="4" onclick="openModal('baa')">
-                <img src="https://images.unsplash.com/photo-1586375300773-8384e3e4916f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Baa Atoll">
-                <div class="destination-info">
-                    <h4>Baa Atoll</h4>
-                    <p>UNESCO Biosphere Reserve with incredible marine life and pristine coral reefs.</p>
-                    <div class="destination-price">
-                        <span class="price">From $1,599</span>
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in" data-price="1899" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('ari')">
-                <img src="https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Ari Atoll">
-                <div class="destination-info">
-                    <h4>Ari Atoll</h4>
-                    <p>Luxury overwater villas with breathtaking sunset views and whale shark encounters.</p>
-                    <div class="destination-price">
-                        <span class="price">From $1,899</span>
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in" data-price="999" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('family')">
-                <img src="https://images.unsplash.com/photo-1602002418816-5c0aeef426aa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Family Paradise">
-                <div class="destination-info">
-                    <h4>Family Paradise Resort</h4>
-                    <p>Perfect for families with kids - shallow lagoons, kids club, and family-friendly activities.</p>
-                    <div class="destination-price">
-                        <span class="price">From $999</span>
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in" data-price="2499" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('honeymoon')">
-                <img src="https://images.unsplash.com/photo-1578922746465-3a80a228f223?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Honeymoon Suite">
-                <div class="destination-info">
-                    <h4>Honeymoon Paradise</h4>
-                    <p>Ultimate romantic escape with private pool villa, couples spa, and sunset dinners.</p>
+                    <h4>Niyama Private Islands Maldives</h4>
+                    <p>Iconic private-island luxury with secluded villas, vibrant marine life, and unforgettable sunsets.</p>
                     <div class="destination-price">
                         <span class="price">From $2,499</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
             </div>
-            <div class="destination-card fade-in" data-price="1199" data-type="adventure" data-kids="true" data-travelers="6" onclick="openModal('diving')">
-                <img src="https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Diving Adventure">
+            <div class="destination-card fade-in" data-price="1999" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('baa')">
+                <img src="assets/Kandima%20Maldives/1.jpg" alt="Kandima Maldives">
                 <div class="destination-info">
-                    <h4>Diving Adventure</h4>
-                    <p>Explore coral reefs, swim with manta rays, and discover underwater wonders.</p>
+                    <h4>Kandima Maldives</h4>
+                    <p>Lively lagoon resort with spacious accommodation, playful island energy, and family-friendly comfort.</p>
                     <div class="destination-price">
-                        <span class="price">From $1,199</span>
+                        <span class="price">From $1,999</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
             </div>
-            <div class="destination-card fade-in extra-destination" data-price="1799" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('lhaviyani')">
-                <img src="https://images.unsplash.com/photo-1439066615861-d1af74d74000?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Lhaviyani Atoll">
+            <div class="destination-card fade-in" data-price="2399" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('ari')">
+                <img src="assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/1.jpg" alt="Waldorf Astoria Maldives Ithaafushi">
                 <div class="destination-info">
-                    <h4>Lhaviyani Atoll</h4>
-                    <p>Pristine uninhabited islands with spectacular diving and exclusive resorts.</p>
+                    <h4>Waldorf Astoria Maldives Ithaafushi</h4>
+                    <p>Sophisticated island living with attentive service, spa-led relaxation, and panoramic ocean views.</p>
                     <div class="destination-price">
-                        <span class="price">From $1,799</span>
+                        <span class="price">From $2,399</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
             </div>
-            <div class="destination-card fade-in extra-destination" data-price="2199" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('raa')">
-                <img src="https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Raa Atoll">
+            <div class="destination-card fade-in" data-price="2199" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('family')">
+                <img src="assets/Jumeirah%20Olhahali%20Island/1.jpg" alt="Jumeirah Olhahali Island">
                 <div class="destination-info">
-                    <h4>Raa Atoll</h4>
-                    <p>Ultimate privacy and exclusivity in the most remote paradise resorts.</p>
+                    <h4>Jumeirah Olhahali Island</h4>
+                    <p>A secluded retreat with elegant beach villas, curated dining, and calm lagoons for meaningful getaways.</p>
                     <div class="destination-price">
                         <span class="price">From $2,199</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
             </div>
-            <div class="destination-card fade-in extra-destination" data-price="1899" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('wellness')">
-                <img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Wellness Retreat">
+            <div class="destination-card fade-in" data-price="2299" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('honeymoon')">
+                <img src="assets/InterContinental%20Maldives%20Maamunagau%20Resort/2.jpg" alt="InterContinental Maldives Maamunagau Resort">
                 <div class="destination-info">
-                    <h4>Wellness Retreat</h4>
-                    <p>Rejuvenate with yoga, meditation, spa treatments, and healthy cuisine.</p>
-                    <div class="destination-price">
-                        <span class="price">From $1,899</span>
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="699" data-type="adventure" data-kids="true" data-travelers="4" onclick="openModal('budget')">
-                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Budget Paradise">
-                <div class="destination-info">
-                    <h4>Budget Paradise</h4>
-                    <p>Experience Maldives magic with our affordable guesthouse package.</p>
-                    <div class="destination-price">
-                        <span class="price">From $699</span>
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2299" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('photography')">
-                <img src="https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Photography Tour">
-                <div class="destination-info">
-                    <h4>Photography Tour</h4>
-                    <p>Capture breathtaking moments with professional photo guides.</p>
+                    <h4>InterContinental Maldives Maamunagau Resort</h4>
+                    <p>Modern Maldivian hospitality—perfect for romance, families, and smooth resort-to-resort experiences.</p>
                     <div class="destination-price">
                         <span class="price">From $2,299</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
             </div>
-            <div class="destination-card fade-in extra-destination" data-price="1499" data-type="adventure" data-kids="false" data-travelers="4" onclick="openModal('surfing')">
-                <img src="https://images.unsplash.com/photo-1502680390469-be75c86b636f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Surfing Safari">
+            <div class="destination-card fade-in" data-price="1399" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('diving')">
+                <img src="assets/Radisson%20Blu%20Resort%20Maldives/2.jpg" alt="Radisson Blu Resort Maldives">
                 <div class="destination-info">
-                    <h4>Surfing Safari</h4>
-                    <p>Ride perfect waves with expert guides at the best surf breaks.</p>
+                    <h4>Radisson Blu Resort Maldives</h4>
+                    <p>Relaxed premium comfort with warm hospitality, great access to the reef, and easy island adventures.</p>
                     <div class="destination-price">
-                        <span class="price">From $1,499</span>
+                        <span class="price">From $1,399</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
@@ -2156,13 +2117,13 @@
     </div>
 
     <!-- Lightbox for fullscreen image -->
-    <div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">
+        <div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">
         <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
         <button class="lightbox-btn lightbox-prev" onclick="event.stopPropagation(); changeSlide(-1)">&#10094;</button>
-        <div class="lightbox-swipe-container" id="lightboxSwipeContainer" onclick="event.stopPropagation()">
-            <div class="lightbox-image-container" id="lightboxContainer" onclick="toggleZoom(event)">
-                <img id="lightboxImage" src="" alt="">
-            </div>
+            <div class="lightbox-swipe-container" id="lightboxSwipeContainer">
+                <div class="lightbox-image-container" id="lightboxContainer">
+                    <img id="lightboxImage" src="" alt="" onclick="toggleZoom(event)">
+                </div>
             <div class="lightbox-image-container lightbox-prev-image" id="lightboxPrevContainer">
                 <img id="lightboxPrevImage" src="" alt="">
             </div>
@@ -2219,34 +2180,44 @@
         </div>
         <div class="services-grid">
             <div class="service-card fade-in">
-                <div class="service-icon">✈️</div>
-                <h4>Flight Booking</h4>
-                <p>Best rates on international and domestic flights with premium airline partners.</p>
+                <div class="service-icon">🏝️</div>
+                <h4>Luxury Resort Selection</h4>
+                <p>Handpicked resorts across the Maldives and Indian Ocean, matched to your style, budget, and travel goals.</p>
             </div>
             <div class="service-card fade-in">
-                <div class="service-icon">🏨</div>
-                <h4>Resort Reservations</h4>
-                <p>Exclusive access to luxury resorts and overwater villas in the Maldives.</p>
+                <div class="service-icon">🗓️</div>
+                <h4>Tailor-Made Itineraries</h4>
+                <p>Personalized travel plans crafted around your preferences, from romantic escapes to family holidays and celebrations.</p>
             </div>
             <div class="service-card fade-in">
-                <div class="service-icon">🤿</div>
-                <h4>Diving Excursions</h4>
-                <p>Professional diving tours to explore vibrant coral reefs and marine life.</p>
+                <div class="service-icon">🛥️</div>
+                <h4>Seamless Transfers</h4>
+                <p>Smooth seaplane, speedboat, and private transfer arrangements designed for a stress-free journey from arrival to resort.</p>
             </div>
             <div class="service-card fade-in">
-                <div class="service-icon">💑</div>
-                <h4>Honeymoon Packages</h4>
-                <p>Romantic getaways with special amenities for couples.</p>
+                <div class="service-icon">✨</div>
+                <h4>Curated Excursions</h4>
+                <p>Exclusive experiences and unforgettable activities, carefully selected to make your trip more than just a stay.</p>
             </div>
             <div class="service-card fade-in">
-                <div class="service-icon">🚤</div>
-                <h4>Private Transfers</h4>
-                <p>Seaplane and speedboat transfers to your island paradise.</p>
+                <div class="service-icon">👑</div>
+                <h4>VIP Travel Services</h4>
+                <p>Premium attention to detail, flawless execution, and elevated support throughout every stage of your journey.</p>
             </div>
             <div class="service-card fade-in">
-                <div class="service-icon">📋</div>
-                <h4>Custom Itineraries</h4>
-                <p>Personalized travel plans tailored to your preferences and budget.</p>
+                <div class="service-icon">🧑‍✈️</div>
+                <h4>Private Butler &amp; Expert Guides</h4>
+                <p>Access to personalized assistance and knowledgeable local expertise for a refined, effortless travel experience.</p>
+            </div>
+            <div class="service-card fade-in">
+                <div class="service-icon">💎</div>
+                <h4>Romantic Escapes &amp; Special Events</h4>
+                <p>Bespoke travel experiences for honeymoons, anniversaries, proposals, and meaningful celebrations.</p>
+            </div>
+            <div class="service-card fade-in">
+                <div class="service-icon">🌊</div>
+                <h4>Indian Ocean Travel Experts</h4>
+                <p>Specialized knowledge of the Maldives and wider Indian Ocean region, helping clients choose the right destination and property.</p>
             </div>
         </div>
     </section>
@@ -2264,12 +2235,12 @@
                     <div class="contact-icon">📍</div>
                     <div class="contact-item-content">
                         <h4>Our Office</h4>
-                        <p>Dubai, United Arab Emirates</p>
+                        <p>Office 1208, Donna Tower, Dubai Silicon Oasis Dubai, United Arab Emirates</p>
                     </div>
                 </div>
                 <div class="contact-map">
                     <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d462560.68279754975!2d54.89782544316406!3d25.076280448509045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43496ad9c645%3A0xbde66e5084295162!2sDubai%20-%20United%20Arab%20Emirates!5e0!3m2!1sen!2s!4v1679900000000!5m2!1sen!2s" 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d903.1359732785955!2d55.36880296969521!3d25.117296498610173!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f64480bcae551%3A0xe74f65bb6987012c!2sDonna%20Towers%20-%20Nadd%20Hessa%20-%20Dubai%20Silicon%20Oasis%20-%20Dubai!5e0!3m2!1sen!2sae!4v1773993077929!5m2!1sen!2sae" 
                         width="100%" 
                         height="200" 
                         style="border:0; border-radius: 15px;" 
@@ -2282,14 +2253,14 @@
                     <div class="contact-icon">📞</div>
                     <div class="contact-item-content">
                         <h4>Phone</h4>
-                        <p>+960 123 4567<br>+960 765 4321</p>
+                        <p>+97144558750</p>
                     </div>
                 </div>
                 <div class="contact-item">
                     <div class="contact-icon">✉️</div>
                     <div class="contact-item-content">
                         <h4>Email</h4>
-                        <p>info@janatravel.com<br>bookings@janatravel.com</p>
+                        <p>book@jana.travel.com</p>
                     </div>
                 </div>
                 <div class="contact-item">
@@ -2352,7 +2323,7 @@
         <div class="footer-content">
             <div class="footer-section">
                 <h4>JANA Travel</h4>
-                <p>Your gateway to paradise. We specialize in creating unforgettable Maldives experiences tailored to your dreams.</p>
+                <p>Specializing in luxury travel, JANA Travel designs unforgettable holidays with handpicked resorts, tailored itineraries, and exceptional service.</p>
             </div>
             <div class="footer-section">
                 <h4>Quick Links</h4>
@@ -2370,14 +2341,9 @@
                 <a href="#">Lhaviyani Atoll</a>
                 <a href="#">Raa Atoll</a>
             </div>
-            <div class="footer-section">
-                <h4>Newsletter</h4>
-                <p>Subscribe for exclusive deals and travel tips.</p>
-                <input type="email" placeholder="Your email" style="padding: 0.8rem; border-radius: 5px; border: none; width: 100%; margin-top: 0.5rem;">
-            </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 JANA Travel. All rights reserved.</p>
+            <p>&copy; 2024 JANA Travel. All rights reserved.</p>
         </div>
     </footer>
 
@@ -2779,6 +2745,419 @@
             }
         };
 
+        // Destination overrides: swap tiles + modal content to your resort list.
+        // Images are sourced from Unsplash by query so each destination has a rich carousel.
+        const destinationOverrides = {
+            male: {
+                title: 'Niyama Private Islands Maldives',
+                price: 'From $2,499',
+                images: [
+                    'assets/Niyama%20Private%20Islands%20Maldives/1.jpg',
+                    'assets/Niyama%20Private%20Islands%20Maldives/2.jpg',
+                    'assets/Niyama%20Private%20Islands%20Maldives/3.jpg',
+                    'assets/Niyama%20Private%20Islands%20Maldives/4.jpg'
+                ],
+                description: 'Iconic private-island luxury with secluded villas, vibrant marine life, and unforgettable sunsets.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Private Island Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            baa: {
+                title: 'Kandima Maldives',
+                price: 'From $1,999',
+                images: [
+                    'assets/Kandima%20Maldives/1.jpg',
+                    'assets/Kandima%20Maldives/2.avif',
+                    'assets/Kandima%20Maldives/3.jpg',
+                    'assets/Kandima%20Maldives/4.png'
+                ],
+                description: 'Lively lagoon resort with spacious accommodation, playful island energy, and family-friendly comfort.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Lagoon View Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            ari: {
+                title: 'Waldorf Astoria Maldives Ithaafushi',
+                price: 'From $2,399',
+                images: [
+                    'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/1.jpg',
+                    'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/2.jpg',
+                    'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/3.avif',
+                    'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/4.jpeg'
+                ],
+                description: 'Sophisticated island living with attentive service, spa-led relaxation, and panoramic ocean views.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Overwater Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            family: {
+                title: 'Jumeirah Olhahali Island',
+                price: 'From $2,199',
+                images: [
+                    'assets/Jumeirah%20Olhahali%20Island/1.jpg',
+                    'assets/Jumeirah%20Olhahali%20Island/2.jpg',
+                    'assets/Jumeirah%20Olhahali%20Island/3.jpg',
+                    'assets/Jumeirah%20Olhahali%20Island/4.avif'
+                ],
+                description: 'A secluded retreat with elegant beach villas, curated dining, and calm lagoons for meaningful getaways.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Private Beach Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            honeymoon: {
+                title: 'InterContinental Maldives Maamunagau Resort',
+                price: 'From $2,299',
+                images: [
+                    'assets/InterContinental%20Maldives%20Maamunagau%20Resort/2.jpg',
+                    'assets/InterContinental%20Maldives%20Maamunagau%20Resort/1.avif',
+                    'assets/InterContinental%20Maldives%20Maamunagau%20Resort/3.webp',
+                    'assets/InterContinental%20Maldives%20Maamunagau%20Resort/4.webp'
+                ],
+                description: 'Modern Maldivian hospitality—perfect for romance, families, and smooth resort-to-resort experiences.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Luxury Overwater Suite',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            diving: {
+                title: 'Radisson Blu Resort Maldives',
+                price: 'From $1,399',
+                images: [
+                    'assets/Radisson%20Blu%20Resort%20Maldives/2.jpg',
+                    'assets/Radisson%20Blu%20Resort%20Maldives/1.webp',
+                    'assets/Radisson%20Blu%20Resort%20Maldives/3.webp',
+                    'assets/Radisson%20Blu%20Resort%20Maldives/4.jpg'
+                ],
+                description: 'Relaxed premium comfort with warm hospitality, great access to the reef, and easy island adventures.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Oceanview Room',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            lhaviyani: {
+                title: 'Naladhu Private Island Maldives Resort',
+                price: 'From $2,499',
+                images: [
+                    'https://source.unsplash.com/1200x800/?naladhu,maldives,private,island',
+                    'https://source.unsplash.com/1200x800/?naladhu,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?naladhu,maldives,villa',
+                    'https://source.unsplash.com/1200x800/?naladhu,maldives,sunset'
+                ],
+                description: 'Ultra-private barefoot luxury for couples and discerning travelers seeking complete serenity.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Private Island Suite',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            raa: {
+                title: 'Mövenpick Resort Kuredhivaru Maldives',
+                price: 'From $2,299',
+                images: [
+                    'https://source.unsplash.com/1200x800/?movenpick,kuredhivaru,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?kuredhivaru,maldives,overwater',
+                    'https://source.unsplash.com/1200x800/?movenpick,maldives,lagoon',
+                    'https://source.unsplash.com/1200x800/?movenpick,maldives,sunset'
+                ],
+                description: 'Relaxed premium comfort with vibrant island moments—ideal for family-friendly escapes.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Family Beach Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            wellness: {
+                title: 'Kuda Villingili Resort Maldives',
+                price: 'From $1,799',
+                images: [
+                    'https://source.unsplash.com/1200x800/?kuda,villingili,maldives',
+                    'https://source.unsplash.com/1200x800/?villingili,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?kuda,maldives,villa',
+                    'https://source.unsplash.com/1200x800/?kuda,maldives,lagoon'
+                ],
+                description: 'A warm, welcoming resort where relaxed days meet stylish villas and memorable activities.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Beachfront Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            budget: {
+                title: 'Radisson Blu Resort Maldives',
+                price: 'From $1,399',
+                images: [
+                    'https://source.unsplash.com/1200x800/?radisson,blu,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?radisson,maldives,lagoon',
+                    'https://source.unsplash.com/1200x800/?radisson,blu,maldives,water',
+                    'https://source.unsplash.com/1200x800/?radisson,blu,maldives,sunset'
+                ],
+                description: 'Convenient luxury with spacious comfort, welcoming service, and easy access to island adventures.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Oceanview Room',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            photography: {
+                title: 'Anantara Veli Maldives Resort',
+                price: 'From $2,199',
+                images: [
+                    'https://source.unsplash.com/1200x800/?anantara,veli,maldives,overwater',
+                    'https://source.unsplash.com/1200x800/?veli,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?anantara,maldives,villa',
+                    'https://source.unsplash.com/1200x800/?anantara,maldives,sunset'
+                ],
+                description: 'A serene, intimate hideaway with overwater beauty and elegant, low-key luxury.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Overwater Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            surfing: {
+                title: 'Anantara Dhigu Maldives Resort',
+                price: 'From $2,299',
+                images: [
+                    'https://source.unsplash.com/1200x800/?anantara,dhigu,maldives,overwater',
+                    'https://source.unsplash.com/1200x800/?dhigu,maldives,private,pool',
+                    'https://source.unsplash.com/1200x800/?anantara,dhigu,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?anantara,dhigu,maldives,sunset'
+                ],
+                description: 'Contemporary romance with private-pool options, reef-ready adventures, and refined service.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Private Pool Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+
+            // Newly added grid tiles
+            siyamworld: {
+                title: 'Siyam World Maldives',
+                price: 'From $1,999',
+                images: [
+                    'https://source.unsplash.com/1200x800/?siyam,world,maldives',
+                    'https://source.unsplash.com/1200x800/?siyam,world,maldives,fun',
+                    'https://source.unsplash.com/1200x800/?siyam,world,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?siyam,world,maldives,sunset'
+                ],
+                description: 'A design-forward family destination with immersive activities and an energetic island vibe.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Family Suite',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            grandpark: {
+                title: 'Grand Park Kodhipparu',
+                price: 'From $1,699',
+                images: [
+                    'https://source.unsplash.com/1200x800/?grand,park,kodhipparu,maldives',
+                    'https://source.unsplash.com/1200x800/?kodhipparu,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?grand,park,maldives,villa',
+                    'https://source.unsplash.com/1200x800/?kodhipparu,maldives,sunset'
+                ],
+                description: 'Modern comfort with standout sunsets, elegant villas, and beautifully planned excursions.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Beach Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            somaldives: {
+                title: 'SO/ Maldives',
+                price: 'From $2,399',
+                images: [
+                    'https://source.unsplash.com/1200x800/?so,maldives,overwater',
+                    'https://source.unsplash.com/1200x800/?so,maldives,spa',
+                    'https://source.unsplash.com/1200x800/?so,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?so,maldives,sunset'
+                ],
+                description: 'Chic modern island living with wellness-forward vibes and unforgettable ocean views.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Oceanfront Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            },
+            kihavah: {
+                title: 'Anantara Kihavah',
+                price: 'From $2,499',
+                images: [
+                    'https://source.unsplash.com/1200x800/?anantara,kihavah,maldives',
+                    'https://source.unsplash.com/1200x800/?kihavah,maldives,overwater',
+                    'https://source.unsplash.com/1200x800/?anantara,kihavah,maldives,beach',
+                    'https://source.unsplash.com/1200x800/?anantara,kihavah,maldives,sunset'
+                ],
+                description: 'A tranquil, premium villa retreat with refined service, peaceful waters, and lasting island memories.',
+                duration: '6 Days / 5 Nights',
+                accommodation: 'Water Villa',
+                transport: 'Seaplane Transfer',
+                features: [
+                    'Curated resort recommendations',
+                    'Seamless transfers arranged',
+                    'Handpicked experiences',
+                    'Dedicated support throughout',
+                    'Unforgettable dining moments',
+                    'Premium island hospitality',
+                    'Comfort-focused itinerary planning',
+                    'Luxury stays prioritized'
+                ]
+            }
+        };
+
+        Object.keys(destinationOverrides).forEach(key => {
+            destinations[key] = {
+                ...(destinations[key] || {}),
+                ...destinationOverrides[key]
+            };
+        });
+
+        // Ensure modal carousel images always load (avoid unreliable source.unsplash.com redirects).
+        const destinationFallbackImages = [
+            'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=1200&q=80',
+            'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=1200&q=80',
+            'https://images.unsplash.com/photo-1540202404-a2f29016b523?w=1200&q=80',
+            'https://images.unsplash.com/photo-1551918120-9739cb430c6d?w=1200&q=80'
+        ];
+        Object.keys(destinationOverrides).forEach(key => {
+            const imgs = destinations[key] && destinations[key].images ? destinations[key].images : [];
+            const hasSourceUnsplash = Array.isArray(imgs) && imgs.some(img => typeof img === 'string' && img.includes('source.unsplash.com'));
+            if (hasSourceUnsplash) {
+                destinations[key].images = destinationFallbackImages;
+            }
+        });
+
         // Filter state
         let travelerCount = 2;
         let budgetMax = 2500;
@@ -2867,18 +3246,35 @@
 
         // Gallery images
         const galleryImages = [
-            'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=1600&q=80',
-            'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=1600&q=80',
-            'https://images.unsplash.com/photo-1540202404-a2f29016b523?w=1600&q=80',
-            'https://images.unsplash.com/photo-1551918120-9739cb430c6d?w=1600&q=80',
-            'https://images.unsplash.com/photo-1586375300773-8384e3e4916f?w=1600&q=80',
-            'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1600&q=80',
-            'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1600&q=80',
-            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&q=80',
-            'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1600&q=80',
-            'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1600&q=80',
-            'https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=1600&q=80',
-            'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=1600&q=80'
+            'assets/Niyama%20Private%20Islands%20Maldives/1.jpg',
+            'assets/Niyama%20Private%20Islands%20Maldives/2.jpg',
+            'assets/Niyama%20Private%20Islands%20Maldives/3.jpg',
+            'assets/Niyama%20Private%20Islands%20Maldives/4.jpg',
+
+            'assets/Kandima%20Maldives/1.jpg',
+            'assets/Kandima%20Maldives/2.avif',
+            'assets/Kandima%20Maldives/3.jpg',
+            'assets/Kandima%20Maldives/4.png',
+
+            'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/1.jpg',
+            'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/2.jpg',
+            'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/3.avif',
+            'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/4.jpeg',
+
+            'assets/Jumeirah%20Olhahali%20Island/1.jpg',
+            'assets/Jumeirah%20Olhahali%20Island/2.jpg',
+            'assets/Jumeirah%20Olhahali%20Island/3.jpg',
+            'assets/Jumeirah%20Olhahali%20Island/4.avif',
+
+            'assets/InterContinental%20Maldives%20Maamunagau%20Resort/1.avif',
+            'assets/InterContinental%20Maldives%20Maamunagau%20Resort/2.jpg',
+            'assets/InterContinental%20Maldives%20Maamunagau%20Resort/3.webp',
+            'assets/InterContinental%20Maldives%20Maamunagau%20Resort/4.webp',
+
+            'assets/Radisson%20Blu%20Resort%20Maldives/1.webp',
+            'assets/Radisson%20Blu%20Resort%20Maldives/2.jpg',
+            'assets/Radisson%20Blu%20Resort%20Maldives/3.webp',
+            'assets/Radisson%20Blu%20Resort%20Maldives/4.jpg'
         ];
 
         function openGalleryImage(index) {
@@ -2904,7 +3300,7 @@
                 item.style.setProperty('--rotation', `${rotations[index % rotations.length]}deg`);
                 item.onclick = () => openGalleryImage(index);
                 item.innerHTML = `
-                    <img src="${src.replace('w=1600', 'w=600')}" alt="Gallery Image ${index + 1}">
+                    <img src="${src}" alt="Gallery Image ${index + 1}">
                     <div class="gallery-overlay"></div>
                 `;
                 grid.appendChild(item);
@@ -3302,6 +3698,13 @@
         let hasDragged = false;
 
         function toggleZoom(event) {
+            // Only toggle zoom when clicking the actual main image.
+            // This prevents zooming when clicking the letterboxed area around the image.
+            const mainImg = document.getElementById('lightboxImage');
+            if (!event || event.target !== mainImg) return;
+
+            // Prevent overlay click handler from firing.
+            if (typeof event.stopPropagation === 'function') event.stopPropagation();
             if (isMobile()) return;
             if (hasDragged) {
                 hasDragged = false;
