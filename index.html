@@ -962,6 +962,8 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             background: var(--white);
+            display: flex;
+            flex-direction: column;
         }
 
         .destination-card:hover {
@@ -1491,6 +1493,9 @@
 
         .destination-info {
             padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         .destination-info h4 {
@@ -1507,8 +1512,9 @@
 
         .destination-price {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
+            margin-top: auto;
         }
 
         .price {
@@ -2002,7 +2008,6 @@
                     <h4>Niyama Private Islands Maldives</h4>
                     <p>Iconic private-island luxury with secluded villas, vibrant marine life, and unforgettable sunsets.</p>
                     <div class="destination-price">
-                        <span class="price">From $2,499</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
@@ -2013,7 +2018,6 @@
                     <h4>Kandima Maldives</h4>
                     <p>Lively lagoon resort with spacious accommodation, playful island energy, and family-friendly comfort.</p>
                     <div class="destination-price">
-                        <span class="price">From $1,999</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
@@ -2024,7 +2028,6 @@
                     <h4>Waldorf Astoria Maldives Ithaafushi</h4>
                     <p>Sophisticated island living with attentive service, spa-led relaxation, and panoramic ocean views.</p>
                     <div class="destination-price">
-                        <span class="price">From $2,399</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
@@ -2035,7 +2038,6 @@
                     <h4>Jumeirah Olhahali Island</h4>
                     <p>A secluded retreat with elegant beach villas, curated dining, and calm lagoons for meaningful getaways.</p>
                     <div class="destination-price">
-                        <span class="price">From $2,199</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
@@ -2046,7 +2048,6 @@
                     <h4>InterContinental Maldives Maamunagau Resort</h4>
                     <p>Modern Maldivian hospitality—perfect for romance, families, and smooth resort-to-resort experiences.</p>
                     <div class="destination-price">
-                        <span class="price">From $2,299</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
@@ -2057,7 +2058,6 @@
                     <h4>Radisson Blu Resort Maldives</h4>
                     <p>Relaxed premium comfort with warm hospitality, great access to the reef, and easy island adventures.</p>
                     <div class="destination-price">
-                        <span class="price">From $1,399</span>
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
@@ -2091,7 +2091,6 @@
             </div>
             <div class="modal-body">
                 <h2 id="modalTitle"></h2>
-                <p class="modal-price" id="modalPrice"></p>
                 <div class="modal-description" id="modalDescription"></div>
                 <div class="modal-features">
                     <h4>Package Includes:</h4>
@@ -2457,7 +2456,6 @@
         const destinations = {
             male: {
                 title: 'Malé Atoll',
-                price: 'From $1,299',
                 images: [
                     'https://images.unsplash.com/photo-1540202404-a2f29016b523?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2481,7 +2479,6 @@
             },
             baa: {
                 title: 'Baa Atoll',
-                price: 'From $1,599',
                 images: [
                     'https://images.unsplash.com/photo-1586375300773-8384e3e4916f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2505,7 +2502,6 @@
             },
             ari: {
                 title: 'Ari Atoll',
-                price: 'From $1,899',
                 images: [
                     'https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1578922746465-3a80a228f223?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2529,7 +2525,6 @@
             },
             family: {
                 title: 'Family Paradise Resort',
-                price: 'From $999',
                 images: [
                     'https://images.unsplash.com/photo-1602002418816-5c0aeef426aa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2553,7 +2548,6 @@
             },
             honeymoon: {
                 title: 'Honeymoon Paradise',
-                price: 'From $2,499',
                 images: [
                     'https://images.unsplash.com/photo-1578922746465-3a80a228f223?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2577,7 +2571,6 @@
             },
             diving: {
                 title: 'Diving Adventure',
-                price: 'From $1,199',
                 images: [
                     'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2601,7 +2594,6 @@
             },
             lhaviyani: {
                 title: 'Lhaviyani Atoll',
-                price: 'From $1,799',
                 images: [
                     'https://images.unsplash.com/photo-1439066615861-d1af74d74000?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1506929562872-bb421503ef21?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2625,7 +2617,6 @@
             },
             raa: {
                 title: 'Raa Atoll',
-                price: 'From $2,199',
                 images: [
                     'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1602002418082-a4443e081dd1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2649,7 +2640,6 @@
             },
             wellness: {
                 title: 'Wellness Retreat',
-                price: 'From $1,899',
                 images: [
                     'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2673,7 +2663,6 @@
             },
             budget: {
                 title: 'Budget Paradise',
-                price: 'From $699',
                 images: [
                     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1506929562872-bb421503ef21?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2697,7 +2686,6 @@
             },
             photography: {
                 title: 'Photography Tour',
-                price: 'From $2,299',
                 images: [
                     'https://images.unsplash.com/photo-1551918120-9739cb430c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1578922746465-3a80a228f223?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2721,7 +2709,6 @@
             },
             surfing: {
                 title: 'Surfing Safari',
-                price: 'From $1,499',
                 images: [
                     'https://images.unsplash.com/photo-1502680390469-be75c86b636f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
@@ -2750,7 +2737,6 @@
         const destinationOverrides = {
             male: {
                 title: 'Niyama Private Islands Maldives',
-                price: 'From $2,499',
                 images: [
                     'assets/Niyama%20Private%20Islands%20Maldives/1.jpg',
                     'assets/Niyama%20Private%20Islands%20Maldives/2.jpg',
@@ -2774,7 +2760,6 @@
             },
             baa: {
                 title: 'Kandima Maldives',
-                price: 'From $1,999',
                 images: [
                     'assets/Kandima%20Maldives/1.jpg',
                     'assets/Kandima%20Maldives/2.avif',
@@ -2798,7 +2783,6 @@
             },
             ari: {
                 title: 'Waldorf Astoria Maldives Ithaafushi',
-                price: 'From $2,399',
                 images: [
                     'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/1.jpg',
                     'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/2.jpg',
@@ -2822,7 +2806,6 @@
             },
             family: {
                 title: 'Jumeirah Olhahali Island',
-                price: 'From $2,199',
                 images: [
                     'assets/Jumeirah%20Olhahali%20Island/1.jpg',
                     'assets/Jumeirah%20Olhahali%20Island/2.jpg',
@@ -2846,7 +2829,6 @@
             },
             honeymoon: {
                 title: 'InterContinental Maldives Maamunagau Resort',
-                price: 'From $2,299',
                 images: [
                     'assets/InterContinental%20Maldives%20Maamunagau%20Resort/2.jpg',
                     'assets/InterContinental%20Maldives%20Maamunagau%20Resort/1.avif',
@@ -2870,7 +2852,6 @@
             },
             diving: {
                 title: 'Radisson Blu Resort Maldives',
-                price: 'From $1,399',
                 images: [
                     'assets/Radisson%20Blu%20Resort%20Maldives/2.jpg',
                     'assets/Radisson%20Blu%20Resort%20Maldives/1.webp',
@@ -2894,7 +2875,6 @@
             },
             lhaviyani: {
                 title: 'Naladhu Private Island Maldives Resort',
-                price: 'From $2,499',
                 images: [
                     'https://source.unsplash.com/1200x800/?naladhu,maldives,private,island',
                     'https://source.unsplash.com/1200x800/?naladhu,maldives,beach',
@@ -2918,7 +2898,6 @@
             },
             raa: {
                 title: 'Mövenpick Resort Kuredhivaru Maldives',
-                price: 'From $2,299',
                 images: [
                     'https://source.unsplash.com/1200x800/?movenpick,kuredhivaru,maldives,beach',
                     'https://source.unsplash.com/1200x800/?kuredhivaru,maldives,overwater',
@@ -2942,7 +2921,6 @@
             },
             wellness: {
                 title: 'Kuda Villingili Resort Maldives',
-                price: 'From $1,799',
                 images: [
                     'https://source.unsplash.com/1200x800/?kuda,villingili,maldives',
                     'https://source.unsplash.com/1200x800/?villingili,maldives,beach',
@@ -2966,7 +2944,6 @@
             },
             budget: {
                 title: 'Radisson Blu Resort Maldives',
-                price: 'From $1,399',
                 images: [
                     'https://source.unsplash.com/1200x800/?radisson,blu,maldives,beach',
                     'https://source.unsplash.com/1200x800/?radisson,maldives,lagoon',
@@ -2990,7 +2967,6 @@
             },
             photography: {
                 title: 'Anantara Veli Maldives Resort',
-                price: 'From $2,199',
                 images: [
                     'https://source.unsplash.com/1200x800/?anantara,veli,maldives,overwater',
                     'https://source.unsplash.com/1200x800/?veli,maldives,beach',
@@ -3014,7 +2990,6 @@
             },
             surfing: {
                 title: 'Anantara Dhigu Maldives Resort',
-                price: 'From $2,299',
                 images: [
                     'https://source.unsplash.com/1200x800/?anantara,dhigu,maldives,overwater',
                     'https://source.unsplash.com/1200x800/?dhigu,maldives,private,pool',
@@ -3040,7 +3015,6 @@
             // Newly added grid tiles
             siyamworld: {
                 title: 'Siyam World Maldives',
-                price: 'From $1,999',
                 images: [
                     'https://source.unsplash.com/1200x800/?siyam,world,maldives',
                     'https://source.unsplash.com/1200x800/?siyam,world,maldives,fun',
@@ -3064,7 +3038,6 @@
             },
             grandpark: {
                 title: 'Grand Park Kodhipparu',
-                price: 'From $1,699',
                 images: [
                     'https://source.unsplash.com/1200x800/?grand,park,kodhipparu,maldives',
                     'https://source.unsplash.com/1200x800/?kodhipparu,maldives,beach',
@@ -3088,7 +3061,6 @@
             },
             somaldives: {
                 title: 'SO/ Maldives',
-                price: 'From $2,399',
                 images: [
                     'https://source.unsplash.com/1200x800/?so,maldives,overwater',
                     'https://source.unsplash.com/1200x800/?so,maldives,spa',
@@ -3112,7 +3084,6 @@
             },
             kihavah: {
                 title: 'Anantara Kihavah',
-                price: 'From $2,499',
                 images: [
                     'https://source.unsplash.com/1200x800/?anantara,kihavah,maldives',
                     'https://source.unsplash.com/1200x800/?kihavah,maldives,overwater',
@@ -3466,7 +3437,6 @@
             createCarouselDots();
 
             document.getElementById('modalTitle').textContent = dest.title;
-            document.getElementById('modalPrice').textContent = dest.price;
             document.getElementById('modalDescription').textContent = dest.description;
             document.getElementById('modalDuration').textContent = dest.duration;
             document.getElementById('modalAccommodation').textContent = dest.accommodation;
