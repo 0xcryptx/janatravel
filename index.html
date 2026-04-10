@@ -51,6 +51,12 @@
         html, body {
             margin: 0;
             padding: 0;
+            overscroll-behavior: none;
+        }
+
+        html {
+            /* Prevent white flash when iOS/macOS rubber-band overscroll reveals page root */
+            background: var(--aqua-dark);
         }
 
         body {
