@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maldives | JANA Travel</title>
-    <link rel="icon" href="public/JanaTravelLogo.webp" type="image/webp">
+    <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -21,23 +21,11 @@
             background: linear-gradient(180deg, #f6ffff 0%, #eff9f8 100%);
             line-height: 1.7;
         }
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--white);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--aqua-blue);
-            border-radius: 5px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--aqua-dark);
-        }
-        * {
-            scrollbar-width: thin;
-            scrollbar-color: var(--aqua-blue) var(--white);
-        }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--white); }
+        ::-webkit-scrollbar-thumb { background: var(--aqua-blue); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--aqua-dark); }
+        * { scrollbar-width: thin; scrollbar-color: var(--aqua-blue) var(--white); }
         .topbar {
             position: sticky;
             top: 0;
@@ -89,11 +77,7 @@
             justify-self: start;
         }
         .topbar-spacer { justify-self: end; width: 64px; }
-
-        .wrap {
-            width: 100%;
-            padding: 2.2rem clamp(1rem, 4vw, 4rem) 3rem;
-        }
+        .wrap { width: 100%; padding: 2.2rem clamp(1rem, 4vw, 4rem) 3rem; }
         .flow-row {
             display: grid;
             grid-template-columns: 1.05fr 0.95fr;
@@ -103,19 +87,11 @@
         }
         .flow-row.reverse .flow-copy { order: 2; }
         .flow-row.reverse .flow-media { order: 1; }
-        .flow-copy h1, .flow-copy h2 {
-            color: var(--aqua-dark);
-            margin-bottom: 0.55rem;
-            line-height: 1.25;
-        }
+        .flow-copy h1, .flow-copy h2 { color: var(--aqua-dark); margin-bottom: 0.55rem; line-height: 1.25; }
         .flow-copy h1 { font-size: clamp(1.8rem, 3.2vw, 2.7rem); }
         .flow-copy h2 { font-size: clamp(1.2rem, 2vw, 1.55rem); }
         .flow-copy p + p { margin-top: 0.65rem; }
-        .flow-media {
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 12px 28px rgba(0, 139, 139, 0.14);
-        }
+        .flow-media { border-radius: 14px; overflow: hidden; box-shadow: 0 12px 28px rgba(0, 139, 139, 0.14); }
         .flow-media img {
             width: 100%;
             height: clamp(220px, 30vw, 360px);
@@ -123,25 +99,10 @@
             display: block;
             transition: transform 0.5s ease;
         }
-        .travel-modes {
-            margin: 3rem 0 3.2rem;
-            padding: 1.6rem 0 1.8rem;
-        }
-        .travel-modes h2 {
-            color: var(--aqua-dark);
-            margin-bottom: 0.9rem;
-            font-size: clamp(1.3rem, 2.4vw, 1.95rem);
-        }
-        .travel-modes-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 1rem;
-        }
-        .travel-mode-media {
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 12px 24px rgba(0, 139, 139, 0.14);
-        }
+        .travel-modes { margin: 3rem 0 3.2rem; padding: 1.6rem 0 1.8rem; }
+        .travel-modes h2 { color: var(--aqua-dark); margin-bottom: 0.9rem; font-size: clamp(1.3rem, 2.4vw, 1.95rem); }
+        .travel-modes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+        .travel-mode-media { border-radius: 14px; overflow: hidden; box-shadow: 0 12px 24px rgba(0, 139, 139, 0.14); }
         .travel-mode-card img {
             width: 100%;
             height: clamp(180px, 22vw, 260px);
@@ -149,43 +110,21 @@
             display: block;
             transition: transform 0.5s ease;
         }
-        .travel-mode-card h3 {
-            text-align: center;
-            color: #0f2f2f;
-            font-size: 1.05rem;
-            margin-top: 0.8rem;
-            margin-bottom: 0;
-        }
-        .flow-media:hover img,
-        .travel-mode-media:hover img {
-            transform: scale(1.05);
-        }
-        .map-end {
-            margin-top: 1.4rem;
-        }
-        .map-end h2 {
-            color: var(--aqua-dark);
-            margin-bottom: 0.65rem;
-            font-size: clamp(1.2rem, 2vw, 1.55rem);
-        }
+        .travel-mode-card h3 { text-align: center; color: #0f2f2f; font-size: 1.05rem; margin-top: 0.8rem; margin-bottom: 0; }
+        .flow-media:hover img, .travel-mode-media:hover img { transform: scale(1.05); }
+        .map-end { margin-top: 1.4rem; }
+        .map-end h2 { color: var(--aqua-dark); margin-bottom: 0.65rem; font-size: clamp(1.2rem, 2vw, 1.55rem); }
         .map-end-layout {
             display: grid;
             grid-template-columns: minmax(230px, 1fr) minmax(220px, 300px) minmax(230px, 1fr);
             gap: clamp(0.9rem, 2.2vw, 1.6rem);
             align-items: start;
         }
-        .map-center {
-            grid-column: 2;
-            grid-row: 1 / span 4;
-        }
+        .map-center { grid-column: 2; grid-row: 1 / span 4; border-radius: 14px; overflow: hidden; }
         .area-1 { grid-row: 1; }
         .area-2 { grid-row: 2; }
         .area-3 { grid-row: 3; }
         .area-4 { grid-row: 4; }
-        .map-center {
-            border-radius: 14px;
-            overflow: hidden;
-        }
         .map-end img {
             width: 100%;
             max-width: 100%;
@@ -194,56 +133,26 @@
             box-shadow: 0 10px 24px rgba(0, 139, 139, 0.12);
             display: block;
         }
-        .area-item {
-            padding: 0.35rem 0.15rem;
-        }
-        .area-left {
-            grid-column: 1;
-        }
-        .area-right {
-            grid-column: 3;
-        }
-        .area-item h3 {
-            color: var(--aqua-dark);
-            font-size: 1.08rem;
-            margin-bottom: 0.45rem;
-        }
-        .area-item p {
-            margin: 0;
-        }
+        .area-item { padding: 0.35rem 0.15rem; }
+        .area-left { grid-column: 1; }
+        .area-right { grid-column: 3; }
+        .area-item h3 { color: var(--aqua-dark); font-size: 1.08rem; margin-bottom: 0.45rem; }
+        .area-item p { margin: 0; }
         @media (max-width: 880px) {
-            .flow-row,
-            .flow-row.reverse {
-                grid-template-columns: 1fr;
-            }
-            .flow-row.reverse .flow-copy,
-            .flow-row.reverse .flow-media {
-                order: initial;
-            }
-            .travel-modes-grid {
-                grid-template-columns: 1fr;
-            }
-            .map-end-layout {
-                display: flex;
-                flex-direction: column;
-            }
-            .map-center,
-            .area-left,
-            .area-right {
-                grid-column: auto;
-                grid-row: auto;
-            }
-            .map-center {
-                order: -1;
-            }
+            .flow-row, .flow-row.reverse { grid-template-columns: 1fr; }
+            .flow-row.reverse .flow-copy, .flow-row.reverse .flow-media { order: initial; }
+            .travel-modes-grid { grid-template-columns: 1fr; }
+            .map-end-layout { display: flex; flex-direction: column; }
+            .map-center, .area-left, .area-right { grid-column: auto; grid-row: auto; }
+            .map-center { order: -1; }
         }
     </style>
 </head>
 <body>
     <header class="topbar">
-        <a class="back-link" href="index.html" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Back</a>
-        <a class="brand" href="index.html" onclick="sessionStorage.removeItem('jana:indexScrollY')">
-            <img src="public/JanaTravelLogo.webp" alt="JANA Travel logo">
+        <a class="back-link" href="/explore/">Back</a>
+        <a class="brand" href="/" onclick="sessionStorage.removeItem('jana:indexScrollY')">
+            <img src="/public/JanaTravelLogo.webp" alt="JANA Travel logo">
             <span class="brand-text">JANA <span>Travel</span></span>
         </a>
         <div class="topbar-spacer" aria-hidden="true"></div>
@@ -256,7 +165,7 @@
                 <p>Escape to turquoise lagoons, white-sand beaches, luxury island resorts, and unforgettable ocean adventures. The Maldives is perfect for honeymoons, family holidays, romantic escapes, diving trips, and peaceful private-island stays.</p>
             </div>
             <div class="flow-media">
-                <img src="assets/images/maldives_1.jpg" alt="Maldives overwater villas">
+                <img src="/assets/images/maldives_1.jpg" alt="Maldives overwater villas">
             </div>
         </section>
 
@@ -266,7 +175,7 @@
                 <p>The Maldives is beautiful all year round, but the most popular months are usually December to April, when the weather is sunnier and the sea is calmer. From May to November, prices may be lower, with a higher chance of rain and tropical showers.</p>
             </div>
             <div class="flow-media">
-                <img src="assets/images/maldives_2.avif" alt="Maldives lagoon">
+                <img src="/assets/images/maldives_2.avif" alt="Maldives lagoon">
             </div>
         </section>
 
@@ -276,7 +185,7 @@
                 <p>Maldives is more than just beaches. Visitors can enjoy local island culture, fresh seafood, traditional music, water sports, and peaceful resort life. From the capital Malé to private island resorts in Ari Atoll, Baa Atoll, and North Malé Atoll, every area offers a different kind of experience.</p>
             </div>
             <div class="flow-media">
-                <img src="assets/images/maldives_3.jpg" alt="Maldives island beach">
+                <img src="/assets/images/maldives_3.jpg" alt="Maldives island beach">
             </div>
         </section>
 
@@ -285,19 +194,19 @@
             <div class="travel-modes-grid">
                 <article class="travel-mode-card">
                     <div class="travel-mode-media">
-                        <img src="assets/images/seaplane.jpg" alt="Seaplane transfer in Maldives">
+                        <img src="/assets/images/seaplane.jpg" alt="Seaplane transfer in Maldives">
                     </div>
                     <h3>Seaplanes</h3>
                 </article>
                 <article class="travel-mode-card">
                     <div class="travel-mode-media">
-                        <img src="assets/images/speedboat.jpeg" alt="Speedboat transfer in Maldives">
+                        <img src="/assets/images/speedboat.jpeg" alt="Speedboat transfer in Maldives">
                     </div>
                     <h3>Speedboat</h3>
                 </article>
                 <article class="travel-mode-card">
                     <div class="travel-mode-media">
-                        <img src="assets/images/domestic_flights.jpg" alt="Domestic flight to Maldives islands">
+                        <img src="/assets/images/domestic_flights.jpg" alt="Domestic flight to Maldives islands">
                     </div>
                     <h3>Domestic Flight</h3>
                 </article>
@@ -311,21 +220,17 @@
                     <h3>Malé</h3>
                     <p>The capital city and main arrival point, perfect for short cultural stops, local markets, mosques, and quick city tours before heading to the islands.</p>
                 </article>
-
                 <div class="map-center">
-                    <img src="assets/images/maldives_map.jpg" alt="Map of Maldives">
+                    <img src="/assets/images/maldives_map.jpg" alt="Map of Maldives">
                 </div>
-
                 <article class="area-item area-right area-2">
                     <h3>North &amp; South Malé Atolls</h3>
                     <p>Great for first-time visitors because they are close to the airport and have many luxury resorts, beaches, water sports, and easy speedboat transfers.</p>
                 </article>
-
                 <article class="area-item area-left area-3">
                     <h3>Ari Atoll</h3>
                     <p>Known for stunning resorts, diving spots, whale shark experiences, and beautiful overwater villas. A great choice for couples, honeymooners, and ocean lovers.</p>
                 </article>
-
                 <article class="area-item area-right area-4">
                     <h3>Baa Atoll</h3>
                     <p>A peaceful luxury area famous for marine life, nature, and premium island resorts. Ideal for travelers looking for privacy, relaxation, and high-end stays.</p>
