@@ -32,6 +32,7 @@
     <meta name="apple-mobile-web-app-title" content="JANA Travel">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/css/intlTelInput.css">
     <style>
         * {
             margin: 0;
@@ -451,10 +452,31 @@
             margin-bottom: 1.5rem;
             color: #555;
         }
+        .about-learn-more {
+            display: inline-block;
+            padding: 0.85rem 1.7rem;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--aqua-dark), var(--aqua-blue));
+            box-shadow: 0 10px 24px rgba(0, 206, 209, 0.26);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .about-learn-more-wrap {
+            text-align: center;
+            margin-top: 5rem;
+            margin-bottom: 1.5rem;
+        }
+        .about-learn-more:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(0, 206, 209, 0.34);
+        }
 
         /* Destinations Section */
         .destinations {
             background: var(--white);
+            scroll-margin-top: 6.5rem;
         }
 
         /* Filter Styles */
@@ -528,37 +550,6 @@
             text-align: center;
         }
 
-        .budget-slider {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .budget-slider input[type="range"] {
-            width: 100%;
-            height: 8px;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.3);
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .budget-slider input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--white);
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        .budget-display {
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
         .toggle-buttons {
             display: flex;
             gap: 0.5rem;
@@ -602,6 +593,98 @@
             gap: 1rem;
             justify-content: center;
             flex-wrap: wrap;
+        }
+
+        .packages-catalog-nav {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 1.35rem auto 2.75rem;
+            padding: 0 5%;
+            max-width: 1200px;
+        }
+
+        .packages-catalog-nav__inner {
+            display: inline-flex;
+            background: var(--white);
+            border-radius: 14px;
+            padding: 5px;
+            box-shadow: 0 10px 35px rgba(0, 139, 139, 0.12);
+            border: 1px solid rgba(0, 206, 209, 0.25);
+            gap: 4px;
+        }
+
+        .packages-catalog-nav__btn {
+            border: none;
+            padding: 0.7rem 1.85rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--aqua-dark);
+            transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
+        }
+
+        .packages-catalog-nav__btn:hover {
+            background: rgba(0, 206, 209, 0.1);
+        }
+
+        .packages-catalog-nav__btn.is-active {
+            background: linear-gradient(135deg, var(--aqua-blue), var(--aqua-dark));
+            color: var(--white);
+            box-shadow: 0 4px 16px rgba(0, 206, 209, 0.35);
+        }
+
+        .packages-catalog-nav--neutral .packages-catalog-nav__btn {
+            opacity: 0.45;
+            color: #5a7a7a;
+        }
+
+        .packages-catalog-nav--neutral .packages-catalog-nav__btn:hover {
+            opacity: 0.75;
+            background: rgba(0, 206, 209, 0.08);
+        }
+
+        .packages-catalog-nav__countries {
+            display: none;
+            margin-top: 0.7rem;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .packages-catalog-nav--all-active .packages-catalog-nav__countries {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .packages-country-chip {
+            border: 1px solid rgba(0, 206, 209, 0.28);
+            background: rgba(0, 206, 209, 0.1);
+            color: var(--aqua-dark);
+            padding: 0.42rem 0.8rem;
+            border-radius: 999px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .packages-country-chip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0, 139, 139, 0.14);
+        }
+
+        .packages-country-chip.is-active {
+            color: var(--white);
+            background: linear-gradient(135deg, var(--aqua-blue), var(--aqua-dark));
+            border-color: transparent;
+            box-shadow: 0 6px 18px rgba(0, 206, 209, 0.3);
         }
 
         .filter-btn {
@@ -663,8 +746,13 @@
             display: none;
         }
 
-        .destinations-grid.show-all .destination-card.extra-destination {
+        .destinations-grid.show-all .destination-card.extra-destination:not(.hidden) {
             display: block;
+        }
+
+        /* Search / trip-type filter: allow catalog cards to appear when they match criteria (not only on “All packages”). */
+        .destinations-grid.destinations-grid--filtering .destination-card.extra-destination:not(.hidden) {
+            display: flex;
         }
 
         .featured-packages-heading {
@@ -687,9 +775,22 @@
             margin: 0;
         }
 
+        .packages-country-tag {
+            display: inline-flex;
+            margin-top: 0.7rem;
+            padding: 0.28rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--aqua-dark);
+            background: rgba(0, 206, 209, 0.12);
+            border: 1px solid rgba(0, 206, 209, 0.25);
+            letter-spacing: 0.01em;
+        }
+
         .destinations-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 2rem;
             max-width: 1200px;
             margin: 0 auto;
@@ -960,6 +1061,20 @@
             .filter-btn {
                 width: 100%;
             }
+
+            .packages-catalog-nav__inner {
+                width: 100%;
+                max-width: 360px;
+            }
+
+            .packages-catalog-nav__btn {
+                flex: 1;
+                padding: 0.65rem 1rem;
+            }
+
+            .destinations-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .destination-card {
@@ -1079,10 +1194,6 @@
             transition: transform 0.3s ease;
         }
 
-        .carousel-slide-main:hover img {
-            transform: scale(1.02);
-        }
-
         .carousel-container.swiping .carousel-slide {
             transition: none;
         }
@@ -1136,7 +1247,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            cursor: zoom-in;
+            overflow: hidden;
+            cursor: default;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -1151,14 +1263,6 @@
             transform: translateX(100%);
         }
 
-        .lightbox-image-container.zoomed {
-            cursor: grab;
-        }
-
-        .lightbox-image-container.dragging {
-            cursor: grabbing;
-        }
-
         .lightbox-overlay img {
             max-width: 100%;
             max-height: 80vh;
@@ -1166,61 +1270,15 @@
             border-radius: 10px;
             user-select: none;
             -webkit-user-drag: none;
-        }
-
-        .lightbox-image-container.zoomed img {
-            max-width: none;
-            max-height: none;
+            transform-origin: center center;
+            will-change: transform;
         }
 
         .lightbox-swipe-container.swiping .lightbox-image-container {
             transition: none;
         }
 
-        .zoom-controls {
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 10;
-        }
-
-        .zoom-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .zoom-btn:hover {
-            background: var(--aqua-blue);
-        }
-
-        .zoom-level {
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-        }
-
         @media (max-width: 768px) {
-            .zoom-controls {
-                display: none;
-            }
-
             .lightbox-btn {
                 display: none;
             }
@@ -1228,14 +1286,6 @@
             .lightbox-swipe-container {
                 width: 100vw;
                 height: 80vh;
-            }
-
-            .lightbox-image-container {
-                cursor: default;
-            }
-
-            .lightbox-image-container.zoomed {
-                cursor: default;
             }
 
             .lightbox-overlay img {
@@ -1253,21 +1303,6 @@
 
             .expand-hint {
                 display: none;
-            }
-
-            .carousel-slide-main:hover img {
-                transform: none;
-            }
-        }
-
-        @keyframes lightboxZoom {
-            from {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
             }
         }
 
@@ -1651,6 +1686,16 @@
             color: #666;
         }
 
+        .contact-item-content p a[href^="tel:"] {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .contact-item-content p a[href^="tel:"]:hover {
+            color: var(--aqua-blue);
+            text-decoration: underline;
+        }
+
         .social-links {
             display: flex;
             gap: 1rem;
@@ -1738,6 +1783,207 @@
         .form-group textarea {
             resize: vertical;
             min-height: 120px;
+        }
+
+        /* intl-tel-input (country + dial code) — JANA theme */
+        .contact-form .iti {
+            width: 100%;
+            min-width: 0;
+            position: relative;
+            z-index: 4;
+            font-family: 'Poppins', sans-serif;
+            /* One hover color for list rows (library uses this for .iti__highlight) */
+            --iti-hover-color: rgba(0, 206, 209, 0.16);
+        }
+
+        .contact-form .form-group-phone {
+            position: relative;
+            z-index: 8;
+        }
+
+        .contact-form .iti__tel-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 1rem;
+            border: 2px solid #E0E0E0;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .contact-form .iti--separate-dial-code .iti__tel-input {
+            padding-left: var(--phone-input-offset, 7.25rem);
+        }
+
+        .contact-form .iti__country-container .iti__selected-country {
+            background: var(--light-gray);
+            border-right: 2px solid #E0E0E0;
+            border-radius: 8px 0 0 8px;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            padding-right: 0.65rem;
+        }
+
+        .contact-form .iti__country-container .iti__selected-country:hover {
+            background: rgba(0, 206, 209, 0.12);
+            border-right-color: var(--aqua-blue);
+        }
+
+        /* Keep selected-country trigger as one hover surface (no nested hover patch) */
+        .contact-form .iti__country-container .iti__selected-country .iti__selected-country-primary,
+        .contact-form .iti__country-container .iti__selected-country .iti__flag-container,
+        .contact-form .iti__country-container .iti__selected-country .iti__flag-box {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            outline: 0 !important;
+            transition: none !important;
+        }
+
+        .contact-form .iti__country-container .iti__selected-country:hover .iti__selected-country-primary,
+        .contact-form .iti__country-container .iti__selected-country:hover .iti__flag-container,
+        .contact-form .iti__country-container .iti__selected-country:hover .iti__flag-box {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            outline: 0 !important;
+        }
+
+        .contact-form .iti .iti__selected-dial-code {
+            margin-left: 6px;
+            margin-right: 10px;
+        }
+
+        .contact-form .iti__selected-dial-code,
+        .contact-form .iti__arrow {
+            color: var(--text-dark);
+        }
+
+        .contact-form .iti__tel-input:focus {
+            outline: none;
+            border-color: var(--aqua-blue);
+            box-shadow: 0 0 0 4px rgba(0, 206, 209, 0.1);
+        }
+
+        .contact-form .iti__dropdown-content {
+            top: calc(100% + 0.35rem);
+            left: 0;
+            width: min(18rem, calc(100vw - 3rem)) !important;
+            border: 2px solid #E0E0E0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 14px 40px rgba(0, 139, 139, 0.18);
+            background: var(--white);
+        }
+
+        .contact-form .iti__country-list {
+            width: 100%;
+            max-height: 11rem;
+            overflow-x: hidden;
+            background: var(--white);
+            border: 0;
+            color: var(--text-dark);
+        }
+
+        .contact-form .iti__country-name,
+        .contact-form .iti__dial-code {
+            color: var(--text-dark);
+        }
+
+        .contact-form .iti__country-list .iti__dial-code {
+            opacity: 1;
+        }
+
+        /* Single hover for whole country row (flag + name + code); ignore child hitboxes */
+        .contact-form .iti__country-list .iti__country {
+            cursor: pointer;
+            pointer-events: auto;
+            transition: background-color 0.18s ease;
+        }
+
+        .contact-form .iti__country-list .iti__country * {
+            pointer-events: none;
+            transition: none !important;
+        }
+
+        .contact-form .iti__country-list .iti__country:hover,
+        .contact-form .iti__country-list .iti__country.iti__highlight {
+            background-color: var(--iti-hover-color) !important;
+        }
+
+        .contact-form .iti__country-list .iti__country:hover *,
+        .contact-form .iti__country-list .iti__country.iti__highlight * {
+            background-color: transparent !important;
+        }
+
+        /* Prevent any separate hover patch on the flag area itself */
+        .contact-form .iti__country-list .iti__country .iti__flag-box,
+        .contact-form .iti__country-list .iti__country:hover .iti__flag-box,
+        .contact-form .iti__country-list .iti__country.iti__highlight .iti__flag-box,
+        .contact-form .iti__country-list .iti__country .iti__flag-container,
+        .contact-form .iti__country-list .iti__country:hover .iti__flag-container,
+        .contact-form .iti__country-list .iti__country.iti__highlight .iti__flag-container {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            outline: 0 !important;
+        }
+
+        .contact-form .iti__country-list .iti__country .iti__flag-box::before,
+        .contact-form .iti__country-list .iti__country .iti__flag-box::after,
+        .contact-form .iti__country-list .iti__country .iti__flag-container::before,
+        .contact-form .iti__country-list .iti__country .iti__flag-container::after {
+            content: none !important;
+            display: none !important;
+        }
+
+        /* Global fallback: dropdown may be portaled outside .contact-form in some builds */
+        .iti__country-list .iti__country:hover .iti__flag-box,
+        .iti__country-list .iti__country.iti__highlight .iti__flag-box,
+        .iti__country-list .iti__country:hover .iti__flag-container,
+        .iti__country-list .iti__country.iti__highlight .iti__flag-container {
+            background: transparent !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            outline: 0 !important;
+        }
+
+        .iti__country-list .iti__country:hover .iti__flag,
+        .iti__country-list .iti__country.iti__highlight .iti__flag {
+            box-shadow: none !important;
+            outline: 0 !important;
+            filter: none !important;
+        }
+
+        .iti__selected-country .iti__selected-country-primary,
+        .iti__selected-country:hover .iti__selected-country-primary,
+        .iti__selected-country .iti__flag-container,
+        .iti__selected-country:hover .iti__flag-container,
+        .iti__selected-country .iti__flag-box,
+        .iti__selected-country:hover .iti__flag-box {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            outline: 0 !important;
+        }
+
+        .contact-form .iti__country-list .iti__country:hover .iti__country-name,
+        .contact-form .iti__country-list .iti__country:hover .iti__dial-code,
+        .contact-form .iti__country-list .iti__country.iti__highlight .iti__country-name,
+        .contact-form .iti__country-list .iti__country.iti__highlight .iti__dial-code {
+            color: var(--text-dark) !important;
+            opacity: 1 !important;
+        }
+
+        .contact-form .iti__divider {
+            border-color: #E0E0E0;
+        }
+
+        .contact-form .iti__search-input-wrapper,
+        .contact-form .iti__search-input {
+            display: none;
         }
 
         .form-row {
@@ -1946,12 +2192,15 @@
                 <p>Whether it’s a romantic escape, a family holiday, or a special celebration, our team is dedicated to handling every detail with care. From handpicked resorts to seamless itineraries, we make every trip effortless, elegant, and truly memorable.</p>
             </div>
         </div>
+        <div class="about-learn-more-wrap">
+            <a class="about-learn-more footer-explore-link" href="explore.html">Learn More</a>
+        </div>
     </section>
 
     <!-- Destinations Section -->
     <section class="destinations" id="destinations">
         <div class="section-title">
-            <h2>Featured Destinations</h2>
+            <h2>Explore Destinations</h2>
             <p>Find your perfect paradise getaway</p>
         </div>
         
@@ -1969,13 +2218,6 @@
                         </div>
                     </div>
                     <div class="filter-group">
-                        <label>Budget Range</label>
-                        <div class="budget-slider">
-                            <input type="range" id="budgetRange" min="500" max="5000" value="2500" step="100" oninput="updateBudget()">
-                            <div class="budget-display">Up to $<span id="budgetValue">2,500</span></div>
-                        </div>
-                    </div>
-                    <div class="filter-group">
                         <label>Traveling with Kids?</label>
                         <div class="toggle-buttons">
                             <button class="toggle-btn active" id="kidsNo" onclick="setKids(false)">No</button>
@@ -1984,7 +2226,7 @@
                     </div>
                     <div class="filter-group">
                         <label>Trip Type</label>
-                        <select id="tripType" onchange="filterDestinations()">
+                        <select id="tripType">
                             <option value="all">All Types</option>
                             <option value="romantic">Romantic</option>
                             <option value="adventure">Adventure</option>
@@ -1992,43 +2234,45 @@
                             <option value="luxury">Luxury</option>
                         </select>
                     </div>
+                    <div class="filter-group">
+                        <label>Country</label>
+                        <select id="countryFilter">
+                            <option value="all">All Countries</option>
+                            <option value="maldives">Maldives</option>
+                            <option value="seychelles">Seychelles</option>
+                            <option value="mauritius">Mauritius</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="filter-actions">
                     <button class="filter-btn secondary" onclick="resetFilters()">Reset Filters</button>
-                    <button class="filter-btn primary" onclick="filterDestinations()">Search Packages</button>
-                    <button type="button" class="filter-btn outline" id="togglePackagesBtn" onclick="toggleAllDestinations()">Show All Packages</button>
+                    <button class="filter-btn primary" onclick="runPackagesFilterSearch()">Search Packages</button>
                 </div>
+            </div>
+        </div>
+
+        <div class="packages-catalog-nav" id="packagesCatalogNav" role="tablist" aria-label="Browse packages">
+            <div class="packages-catalog-nav__inner">
+                <button type="button" class="packages-catalog-nav__btn is-active" role="tab" id="tabPackagesFeatured" aria-selected="true" onclick="selectPackagesCatalog('featured')">Featured</button>
+                <button type="button" class="packages-catalog-nav__btn" role="tab" id="tabPackagesAll" aria-selected="false" onclick="selectPackagesCatalog('all')">All packages</button>
+            </div>
+            <div class="packages-catalog-nav__countries" id="packagesCatalogCountries" aria-label="Filter all packages by country">
+                <button type="button" class="packages-country-chip is-active" data-country-chip="all" onclick="togglePackagesCountryFilter('all')">All</button>
+                <button type="button" class="packages-country-chip is-active" data-country-chip="seychelles" onclick="togglePackagesCountryFilter('seychelles')">Seychelles</button>
+                <button type="button" class="packages-country-chip is-active" data-country-chip="maldives" onclick="togglePackagesCountryFilter('maldives')">Maldives</button>
+                <button type="button" class="packages-country-chip is-active" data-country-chip="mauritius" onclick="togglePackagesCountryFilter('mauritius')">Mauritius</button>
             </div>
         </div>
 
         <div class="featured-packages-heading">
-            <h3>Featured Packages</h3>
-            <p>Hand-picked resorts from our curated selection across the Maldives and Indian Ocean.</p>
+            <h3 id="packagesHeadingTitle">Featured Packages</h3>
+            <p id="packagesHeadingSubtitle">Handpicked packages for unforgettable getaways.</p>
+            <span class="packages-country-tag" id="packagesCountryTag">All countries</span>
         </div>
 
         <div class="destinations-grid" id="destinationsGrid">
-            <!-- Featured (first 6) -->
-            <div class="destination-card fade-in" data-price="2499" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('male')">
-                <img src="assets/Niyama%20Private%20Islands%20Maldives/1.jpg" alt="Niyama Private Islands Maldives">
-                <div class="destination-info">
-                    <h4>Niyama Private Islands Maldives</h4>
-                    <p>Iconic private-island luxury with secluded villas, vibrant marine life, and unforgettable sunsets.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in" data-price="1999" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('baa')">
-                <img src="assets/Kandima%20Maldives/1.jpg" alt="Kandima Maldives">
-                <div class="destination-info">
-                    <h4>Kandima Maldives</h4>
-                    <p>Lively lagoon resort with spacious accommodation, playful island energy, and family-friendly comfort.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in" data-price="2399" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('ari')">
+            <!-- Featured: 3 hand-picked (more packages under All packages) -->
+            <div class="destination-card fade-in" data-price="2399" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('ari')">
                 <img src="assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/1.jpg" alt="Waldorf Astoria Maldives Ithaafushi">
                 <div class="destination-info">
                     <h4>Waldorf Astoria Maldives Ithaafushi</h4>
@@ -2038,17 +2282,17 @@
                     </div>
                 </div>
             </div>
-            <div class="destination-card fade-in" data-price="2199" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('family')">
-                <img src="assets/Jumeirah%20Olhahali%20Island/1.jpg" alt="Jumeirah Olhahali Island">
+            <div class="destination-card fade-in" data-price="2499" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('male')">
+                <img src="assets/Niyama%20Private%20Islands%20Maldives/1.jpg" alt="Niyama Private Islands Maldives">
                 <div class="destination-info">
-                    <h4>Jumeirah Olhahali Island</h4>
-                    <p>A secluded retreat with elegant beach villas, curated dining, and calm lagoons for meaningful getaways.</p>
+                    <h4>Niyama Private Islands Maldives</h4>
+                    <p>Iconic private-island luxury with secluded villas, vibrant marine life, and unforgettable sunsets.</p>
                     <div class="destination-price">
                         <button class="book-btn">View Details</button>
                     </div>
                 </div>
             </div>
-            <div class="destination-card fade-in" data-price="2299" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('honeymoon')">
+            <div class="destination-card fade-in" data-price="2299" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('honeymoon')">
                 <img src="assets/InterContinental%20Maldives%20Maamunagau%20Resort/2.jpg" alt="InterContinental Maldives Maamunagau Resort">
                 <div class="destination-info">
                     <h4>InterContinental Maldives Maamunagau Resort</h4>
@@ -2058,7 +2302,27 @@
                     </div>
                 </div>
             </div>
-            <div class="destination-card fade-in" data-price="1399" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('diving')">
+            <div class="destination-card fade-in extra-destination" data-price="1999" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('baa')">
+                <img src="assets/Kandima%20Maldives/1.jpg" alt="Kandima Maldives">
+                <div class="destination-info">
+                    <h4>Kandima Maldives</h4>
+                    <p>Lively lagoon resort with spacious accommodation, playful island energy, and family-friendly comfort.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2199" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('family')">
+                <img src="assets/Jumeirah%20Olhahali%20Island/1.jpg" alt="Jumeirah Olhahali Island">
+                <div class="destination-info">
+                    <h4>Jumeirah Olhahali Island</h4>
+                    <p>A secluded retreat with elegant beach villas, curated dining, and calm lagoons for meaningful getaways.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="1399" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('diving')">
                 <img src="assets/Radisson%20Blu%20Resort%20Maldives/2.jpg" alt="Radisson Blu Resort Maldives">
                 <div class="destination-info">
                     <h4>Radisson Blu Resort Maldives</h4>
@@ -2068,9 +2332,109 @@
                     </div>
                 </div>
             </div>
+            <div class="destination-card fade-in extra-destination" data-price="2680" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('lhaviyani')">
+                <img src="https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=800&q=80" alt="Naladhu Private Island Maldives Resort">
+                <div class="destination-info">
+                    <h4>Naladhu Private Island Maldives Resort</h4>
+                    <p>Ultra-private barefoot luxury for couples and discerning travelers seeking complete serenity.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2099" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('raa')">
+                <img src="https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=800&q=80" alt="Mövenpick Resort Kuredhivaru Maldives">
+                <div class="destination-info">
+                    <h4>Mövenpick Resort Kuredhivaru Maldives</h4>
+                    <p>Relaxed premium comfort with vibrant island moments—ideal for family-friendly escapes.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2450" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('wellness')">
+                <img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80" alt="Kuda Villingili Resort Maldives">
+                <div class="destination-info">
+                    <h4>Kuda Villingili Resort Maldives</h4>
+                    <p>A warm, welcoming resort where relaxed days meet stylish villas and memorable activities.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="899" data-type="adventure" data-kids="true" data-travelers="4" onclick="openModal('budget')">
+                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80" alt="Guesthouse island stay">
+                <div class="destination-info">
+                    <h4>Radisson Blu Resort Maldives</h4>
+                    <p>Convenient luxury with spacious comfort, welcoming service, and easy access to island adventures.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2199" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('photography')">
+                <img src="https://images.unsplash.com/photo-1551918120-9739cb430c6d?w=800&q=80" alt="Anantara Veli Maldives Resort">
+                <div class="destination-info">
+                    <h4>Anantara Veli Maldives Resort</h4>
+                    <p>A serene, intimate hideaway with overwater beauty and elegant, low-key luxury.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2299" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('surfing')">
+                <img src="https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=800&q=80" alt="Anantara Dhigu Maldives Resort">
+                <div class="destination-info">
+                    <h4>Anantara Dhigu Maldives Resort</h4>
+                    <p>Contemporary romance with private-pool options, reef-ready adventures, and refined service.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="1899" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('siyamworld')">
+                <img src="https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=800&q=80" alt="Siyam World Maldives">
+                <div class="destination-info">
+                    <h4>Siyam World Maldives</h4>
+                    <p>A design-forward family destination with immersive activities and an energetic island vibe.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2399" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('grandpark')">
+                <img src="https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80" alt="Grand Park Kodhipparu">
+                <div class="destination-info">
+                    <h4>Grand Park Kodhipparu</h4>
+                    <p>Modern comfort with standout sunsets, elegant villas, and beautifully planned excursions.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2499" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('somaldives')">
+                <img src="https://images.unsplash.com/photo-1540202404-a2f29016b523?w=800&q=80" alt="SO/ Maldives">
+                <div class="destination-info">
+                    <h4>SO/ Maldives</h4>
+                    <p>Chic modern island living with wellness-forward vibes and unforgettable ocean views.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
+            <div class="destination-card fade-in extra-destination" data-price="2499" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('kihavah')">
+                <img src="https://images.unsplash.com/photo-1578922746465-3a80a228f223?w=800&q=80" alt="Anantara Kihavah">
+                <div class="destination-info">
+                    <h4>Anantara Kihavah</h4>
+                    <p>A tranquil, premium villa retreat with refined service, peaceful waters, and lasting island memories.</p>
+                    <div class="destination-price">
+                        <button class="book-btn">View Details</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="no-results" id="noResults" style="display: none;">
-            <p>No packages match your criteria. Try adjusting your filters or <a href="#" onclick="showAllDestinations(); return false;">view all packages</a>.</p>
+            <p>No packages match your criteria. Try adjusting your filters or <a href="#" onclick="viewAllPackagesFromEmpty(); return false;">view all packages</a>.</p>
         </div>
     </section>
 
@@ -2083,7 +2447,7 @@
                 <div class="carousel-container" id="carouselSwipeContainer">
                     <div class="carousel-slide carousel-slide-main" id="carouselSlideMain" onclick="openLightbox()">
                         <img id="modalImage" src="" alt="">
-                        <div class="expand-hint">🔍 Click to expand</div>
+                        <div class="expand-hint">Click to expand</div>
                     </div>
                     <div class="carousel-slide carousel-slide-prev" id="carouselSlidePrev">
                         <img id="carouselPrevImage" src="" alt="">
@@ -2116,7 +2480,7 @@
                         <span id="modalTransport"></span>
                     </div>
                 </div>
-                <button class="modal-book-btn" onclick="alert('Booking request sent! Our team will contact you shortly.')">Book This Package</button>
+                <button class="modal-book-btn" onclick="bookCurrentPackageViaWhatsApp()">Book This Package</button>
             </div>
         </div>
     </div>
@@ -2127,7 +2491,7 @@
         <button class="lightbox-btn lightbox-prev" onclick="event.stopPropagation(); changeSlide(-1)">&#10094;</button>
             <div class="lightbox-swipe-container" id="lightboxSwipeContainer">
                 <div class="lightbox-image-container" id="lightboxContainer">
-                    <img id="lightboxImage" src="" alt="" onclick="toggleZoom(event)">
+                    <img id="lightboxImage" src="" alt="">
                 </div>
             <div class="lightbox-image-container lightbox-prev-image" id="lightboxPrevContainer">
                 <img id="lightboxPrevImage" src="" alt="">
@@ -2137,11 +2501,6 @@
             </div>
         </div>
         <button class="lightbox-btn lightbox-next" onclick="event.stopPropagation(); changeSlide(1)">&#10095;</button>
-        <div class="zoom-controls" onclick="event.stopPropagation()">
-            <button class="zoom-btn" onclick="zoomOut()">−</button>
-            <span class="zoom-level" id="zoomLevel">100%</span>
-            <button class="zoom-btn" onclick="zoomIn()">+</button>
-        </div>
         <div class="lightbox-counter" id="lightboxCounter"></div>
     </div>
 
@@ -2245,7 +2604,7 @@
                 </div>
                 <div class="contact-map">
                     <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d903.1359732785955!2d55.36880296969521!3d25.117296498610173!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f64480bcae551%3A0xe74f65bb6987012c!2sDonna%20Towers%20-%20Nadd%20Hessa%20-%20Dubai%20Silicon%20Oasis%20-%20Dubai!5e0!3m2!1sen!2sae!4v1773993077929!5m2!1sen!2sae" 
+                        src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d1266.0935675628348!2d55.36972815553035!3d25.117064283373693!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43f1c16c46dd%3A0x9478c8fe4e82ec1f!2sJana%20Travel!5e0!3m2!1sen!2sae!4v1778554295695!5m2!1sen!2sae" 
                         width="100%" 
                         height="200" 
                         style="border:0; border-radius: 15px;" 
@@ -2258,7 +2617,7 @@
                     <div class="contact-icon">📞</div>
                     <div class="contact-item-content">
                         <h4>Phone</h4>
-                        <p>+97144558750</p>
+                        <p><a href="tel:+97144558750">+971 4 455 8750</a></p>
                     </div>
                 </div>
                 <div class="contact-item">
@@ -2298,9 +2657,9 @@
                     <label for="email">Email Address *</label>
                     <input type="email" id="email" name="email" required>
                 </div>
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone">
+                <div class="form-group form-group-phone">
+                    <label for="contact-phone">Phone Number</label>
+                    <input type="tel" id="contact-phone" name="phone" autocomplete="tel-national" inputmode="tel">
                 </div>
                 <div class="form-group">
                     <label for="interest">I'm Interested In</label>
@@ -2328,7 +2687,7 @@
         <div class="footer-content">
             <div class="footer-section">
                 <h4>JANA Travel</h4>
-                <p>Specializing in luxury travel, JANA Travel designs unforgettable holidays with handpicked resorts, tailored itineraries, and exceptional service.</p>
+                <p>JANA Travel creates tailor-made luxury holidays with handpicked resorts, seamless planning, and personal service from start to finish.</p>
             </div>
             <div class="footer-section">
                 <h4>Quick Links</h4>
@@ -2339,12 +2698,16 @@
                 <a href="#contact">Contact</a>
             </div>
             <div class="footer-section">
-                <h4>Popular Destinations</h4>
-                <a href="#">Malé Atoll</a>
-                <a href="#">Baa Atoll</a>
-                <a href="#">Ari Atoll</a>
-                <a href="#">Lhaviyani Atoll</a>
-                <a href="#">Raa Atoll</a>
+                <h4>Explore</h4>
+                <a class="footer-explore-link" href="maldives.html">Maldives</a>
+                <a class="footer-explore-link" href="seychelles.html">Seychelles</a>
+                <a class="footer-explore-link" href="mauritius.html">Mauritius</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact Details</h4>
+                <p><a href="tel:+97144558750">+971 4 455 8750</a></p>
+                <p><a href="mailto:book@jana.travel.com">book@jana.travel.com</a></p>
+                <p><a href="https://maps.app.goo.gl/NTWDDfnBYraZsZgDA" target="_blank" rel="noopener noreferrer">Office 1208, Donna Tower, Dubai Silicon Oasis, Dubai, UAE</a></p>
             </div>
         </div>
         <div class="footer-bottom">
@@ -2352,7 +2715,38 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/js/intlTelInput.min.js"></script>
     <script>
+        const INDEX_SCROLL_KEY = 'jana:indexScrollY';
+
+        function saveIndexScrollForExploreNavigation() {
+            try {
+                sessionStorage.setItem(INDEX_SCROLL_KEY, String(window.scrollY || 0));
+            } catch (e) {
+                // Ignore storage failures (private mode / disabled storage).
+            }
+        }
+
+        function restoreIndexScrollIfNeeded() {
+            try {
+                const saved = sessionStorage.getItem(INDEX_SCROLL_KEY);
+                if (saved == null) return;
+                sessionStorage.removeItem(INDEX_SCROLL_KEY);
+                const y = parseInt(saved, 10);
+                if (!Number.isNaN(y)) {
+                    window.requestAnimationFrame(() => window.scrollTo(0, y));
+                }
+            } catch (e) {
+                // Ignore storage failures (private mode / disabled storage).
+            }
+        }
+
+        window.addEventListener('pageshow', restoreIndexScrollIfNeeded);
+
+        document.querySelectorAll('.footer-explore-link').forEach(link => {
+            link.addEventListener('click', saveIndexScrollForExploreNavigation);
+        });
+
         // Mobile menu toggle
         function toggleMenu() {
             document.querySelector('.nav-links').classList.toggle('active');
@@ -2367,14 +2761,18 @@
                     const navHeight = document.querySelector('.nav-wrapper').offsetHeight;
                     const sectionHeight = target.offsetHeight;
                     const windowHeight = window.innerHeight;
-                    
+                    const href = this.getAttribute('href') || '';
+
                     let targetPosition;
-                    if (sectionHeight < windowHeight) {
+                    /* Keep the full packages header (title + filters) in view — avoid vertically centering short sections */
+                    if (href === '#destinations') {
+                        targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight - 12;
+                    } else if (sectionHeight < windowHeight) {
                         targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight - ((windowHeight - sectionHeight) / 3);
                     } else {
                         targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight - 20;
                     }
-                    
+
                     window.scrollTo({
                         top: Math.max(0, targetPosition),
                         behavior: 'smooth'
@@ -2389,9 +2787,29 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData);
-            
+            if (window.janaPhoneIti && window.intlTelInput && window.intlTelInput.utils) {
+                const utils = window.intlTelInput.utils;
+                const digits = String(document.getElementById('contact-phone')?.value || '').trim();
+                if (digits) {
+                    const valid = window.janaPhoneIti.isValidNumber();
+                    if (valid === false) {
+                        alert('Please enter a valid phone number for the selected country.');
+                        document.getElementById('contact-phone')?.focus();
+                        return;
+                    }
+                    if (valid === true) {
+                        const e164 = window.janaPhoneIti.getNumber(utils.numberFormat.E164);
+                        if (e164) data.phone = e164;
+                    }
+                }
+            }
+
             alert('Thank you for your message, ' + data.firstName + '! Our team will contact you within 24 hours.');
             e.target.reset();
+            if (window.janaPhoneIti) {
+                window.janaPhoneIti.setNumber('');
+                window.janaPhoneIti.setCountry('ae');
+            }
         }
 
         // Scroll animations
@@ -3135,19 +3553,140 @@
             }
         });
 
-        // Filter state
+        // Filter state (form; grid does not use these until Search)
         let travelerCount = 2;
-        let budgetMax = 2500;
         let hasKids = false;
+        /** Snapshot applied when "Search Packages" runs; grid filtering reads these only. */
+        let appliedTravelerCount = 2;
+        let appliedHasKids = false;
+        let appliedTripType = 'all';
+        let appliedCountry = 'all';
+        /** 'featured' | 'all' when browsing catalog; null after Search (tabs visually inactive). */
+        let packagesNavScope = 'featured';
+
+        function syncDefaultPackageFilters() {
+            travelerCount = 2;
+            hasKids = false;
+            appliedTravelerCount = 2;
+            appliedHasKids = false;
+            appliedTripType = 'all';
+            appliedCountry = 'all';
+            document.getElementById('travelerCount').textContent = '2';
+            document.getElementById('tripType').value = 'all';
+            document.getElementById('countryFilter').value = 'all';
+            document.getElementById('kidsNo').classList.add('active');
+            document.getElementById('kidsYes').classList.remove('active');
+        }
+
+        const PACKAGES_HEADING_FEATURED = {
+            title: 'Featured Packages',
+            subtitle: 'Handpicked packages for unforgettable getaways.'
+        };
+        const PACKAGES_HEADING_ALL = {
+            title: 'All Packages',
+            subtitle: 'Browse our full collection of curated stays across the Maldives and Indian Ocean.'
+        };
+        const PACKAGES_HEADING_FILTERED = {
+            title: 'Filtered packages',
+            subtitle: 'Showing stays that match your selected criteria.'
+        };
+        const PACKAGE_COUNTRY_OPTIONS = ['seychelles', 'maldives', 'mauritius'];
+        let selectedPackagesCountries = new Set(PACKAGE_COUNTRY_OPTIONS);
+
+        function getCardModalKey(card) {
+            if (!card) return '';
+            const handler = card.getAttribute('onclick') || '';
+            const match = handler.match(/openModal\('([^']+)'\)/);
+            return match ? match[1] : '';
+        }
+
+        function getCardCountry(card) {
+            const dataCountry = (card.dataset.country || '').toLowerCase();
+            if (dataCountry) return dataCountry;
+            const modalKey = getCardModalKey(card);
+            const destination = destinations[modalKey] || {};
+            const countryText = `${destination.title || ''} ${destination.description || ''}`.toLowerCase();
+            if (countryText.includes('seychelles')) return 'seychelles';
+            if (countryText.includes('mauritius')) return 'mauritius';
+            return 'maldives';
+        }
+
+        function setAllPackagesCountriesSelected() {
+            selectedPackagesCountries = new Set(PACKAGE_COUNTRY_OPTIONS);
+        }
+
+        function updatePackagesCountryFilterUi() {
+            const allSelected = PACKAGE_COUNTRY_OPTIONS.every(country => selectedPackagesCountries.has(country));
+            document.querySelectorAll('[data-country-chip]').forEach(chip => {
+                const country = chip.getAttribute('data-country-chip');
+                const isActive = country === 'all' ? allSelected : selectedPackagesCountries.has(country);
+                chip.classList.toggle('is-active', isActive);
+            });
+        }
+
+        function formatCountryLabel(countryCode) {
+            if (!countryCode) return 'All countries';
+            const names = {
+                maldives: 'Maldives',
+                seychelles: 'Seychelles',
+                mauritius: 'Mauritius',
+            };
+            return names[countryCode] || countryCode.charAt(0).toUpperCase() + countryCode.slice(1);
+        }
+
+        function updatePackagesCountryTag() {
+            const tagEl = document.getElementById('packagesCountryTag');
+            if (!tagEl) return;
+
+            let label = 'All countries';
+            const countryFilterEl = document.getElementById('countryFilter');
+            const selectedCountryFilter = countryFilterEl ? countryFilterEl.value : 'all';
+
+            if (packagesNavScope === 'all') {
+                const selected = PACKAGE_COUNTRY_OPTIONS.filter(country => selectedPackagesCountries.has(country));
+                if (selected.length === 1) {
+                    label = formatCountryLabel(selected[0]);
+                } else if (selected.length > 1 && selected.length < PACKAGE_COUNTRY_OPTIONS.length) {
+                    label = selected.map(formatCountryLabel).join(' · ');
+                }
+            } else if (packagesNavScope === null) {
+                label = appliedCountry === 'all' ? 'All countries' : formatCountryLabel(appliedCountry);
+            } else {
+                label = selectedCountryFilter === 'all'
+                    ? 'All countries'
+                    : formatCountryLabel(selectedCountryFilter);
+            }
+
+            tagEl.textContent = label;
+        }
+
+        function togglePackagesCountryFilter(country) {
+            if (country === 'all') {
+                setAllPackagesCountriesSelected();
+            } else if (selectedPackagesCountries.has(country)) {
+                if (selectedPackagesCountries.size > 1) {
+                    selectedPackagesCountries.delete(country);
+                }
+            } else {
+                selectedPackagesCountries.add(country);
+            }
+            updatePackagesCountryFilterUi();
+            updatePackagesCountryTag();
+            if (packagesNavScope === 'all') {
+                filterDestinations();
+            }
+        }
+
+        function applyFilteredPackagesHeading() {
+            const headingEl = document.getElementById('packagesHeadingTitle');
+            const subEl = document.getElementById('packagesHeadingSubtitle');
+            if (headingEl) headingEl.textContent = PACKAGES_HEADING_FILTERED.title;
+            if (subEl) subEl.textContent = PACKAGES_HEADING_FILTERED.subtitle;
+        }
 
         function changeTravelers(delta) {
             travelerCount = Math.max(1, Math.min(10, travelerCount + delta));
             document.getElementById('travelerCount').textContent = travelerCount;
-        }
-
-        function updateBudget() {
-            budgetMax = parseInt(document.getElementById('budgetRange').value);
-            document.getElementById('budgetValue').textContent = budgetMax.toLocaleString();
         }
 
         function setKids(value) {
@@ -3157,69 +3696,126 @@
         }
 
         function filterDestinations() {
-            const tripType = document.getElementById('tripType').value;
+            const tripType = appliedTripType;
             const cards = document.querySelectorAll('.destination-card');
+            const grid = document.getElementById('destinationsGrid');
+            const showAllCatalog = grid && grid.classList.contains('show-all');
+            const filterExtras =
+                showAllCatalog || (grid && grid.classList.contains('destinations-grid--filtering'));
+            const filterByCountry = showAllCatalog && packagesNavScope === 'all';
             let visibleCount = 0;
 
             cards.forEach(card => {
-                const price = parseInt(card.dataset.price);
+                if (card.classList.contains('extra-destination') && !filterExtras) {
+                    card.classList.remove('hidden');
+                    return;
+                }
+
                 const type = card.dataset.type;
                 const kidsAllowed = card.dataset.kids === 'true';
-                const maxTravelers = parseInt(card.dataset.travelers);
+                const maxTravelers = parseInt(card.dataset.travelers, 10);
 
                 let show = true;
 
-                if (price > budgetMax) show = false;
                 if (tripType !== 'all' && type !== tripType) show = false;
-                if (hasKids && !kidsAllowed) show = false;
-                if (travelerCount > maxTravelers) show = false;
+                if (appliedHasKids && !kidsAllowed) show = false;
+                if (appliedTravelerCount > maxTravelers) show = false;
+                if (appliedCountry !== 'all' && getCardCountry(card) !== appliedCountry) show = false;
+                if (filterByCountry && !selectedPackagesCountries.has(getCardCountry(card))) show = false;
 
                 card.classList.toggle('hidden', !show);
                 if (show) visibleCount++;
             });
 
             document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+            updatePackagesCountryTag();
+        }
+
+        function updatePackagesNavTabs() {
+            const nav = document.getElementById('packagesCatalogNav');
+            const featuredBtn = document.getElementById('tabPackagesFeatured');
+            const allBtn = document.getElementById('tabPackagesAll');
+            if (!featuredBtn || !allBtn) return;
+            const isFeatured = packagesNavScope === 'featured';
+            const isAll = packagesNavScope === 'all';
+            featuredBtn.classList.toggle('is-active', isFeatured);
+            featuredBtn.setAttribute('aria-selected', isFeatured ? 'true' : 'false');
+            allBtn.classList.toggle('is-active', isAll);
+            allBtn.setAttribute('aria-selected', isAll ? 'true' : 'false');
+            if (nav) {
+                nav.classList.toggle('packages-catalog-nav--neutral', packagesNavScope === null);
+                nav.classList.toggle('packages-catalog-nav--all-active', isAll);
+            }
+            updatePackagesCountryTag();
+        }
+
+        function applyPackagesCatalogView(showAll) {
+            const grid = document.getElementById('destinationsGrid');
+            const headingEl = document.getElementById('packagesHeadingTitle');
+            const subEl = document.getElementById('packagesHeadingSubtitle');
+            if (!grid) return;
+
+            grid.classList.remove('destinations-grid--filtering');
+
+            if (showAll) {
+                grid.classList.add('show-all');
+                if (headingEl) headingEl.textContent = PACKAGES_HEADING_ALL.title;
+                if (subEl) subEl.textContent = PACKAGES_HEADING_ALL.subtitle;
+                document.querySelectorAll('.destination-card.extra-destination').forEach(card => {
+                    card.classList.add('visible');
+                });
+            } else {
+                grid.classList.remove('show-all');
+                if (headingEl) headingEl.textContent = PACKAGES_HEADING_FEATURED.title;
+                if (subEl) subEl.textContent = PACKAGES_HEADING_FEATURED.subtitle;
+            }
+
+            filterDestinations();
+        }
+
+        function selectPackagesCatalog(mode) {
+            packagesNavScope = mode === 'all' ? 'all' : 'featured';
+            if (packagesNavScope === 'all') {
+                setAllPackagesCountriesSelected();
+                updatePackagesCountryFilterUi();
+            }
+            syncDefaultPackageFilters();
+            updatePackagesNavTabs();
+            applyPackagesCatalogView(mode === 'all');
+        }
+
+        function runPackagesFilterSearch() {
+            appliedTravelerCount = travelerCount;
+            appliedHasKids = hasKids;
+            appliedTripType = document.getElementById('tripType').value;
+            appliedCountry = document.getElementById('countryFilter').value;
+
+            packagesNavScope = null;
+            updatePackagesNavTabs();
+            applyFilteredPackagesHeading();
+            const grid = document.getElementById('destinationsGrid');
+            if (grid) grid.classList.add('destinations-grid--filtering');
+            filterDestinations();
         }
 
         function resetFilters() {
-            travelerCount = 2;
-            budgetMax = 2500;
-            hasKids = false;
-            
-            document.getElementById('travelerCount').textContent = '2';
-            document.getElementById('budgetRange').value = 2500;
-            document.getElementById('budgetValue').textContent = '2,500';
-            document.getElementById('tripType').value = 'all';
-            document.getElementById('kidsNo').classList.add('active');
-            document.getElementById('kidsYes').classList.remove('active');
-            
-            showAllDestinations();
+            packagesNavScope = 'featured';
+            updatePackagesNavTabs();
+            syncDefaultPackageFilters();
+            applyPackagesCatalogView(false);
         }
 
-        function showAllDestinations() {
-            const cards = document.querySelectorAll('.destination-card');
-            cards.forEach(card => card.classList.remove('hidden'));
-            document.getElementById('noResults').style.display = 'none';
+        function viewAllPackagesFromEmpty() {
+            packagesNavScope = 'all';
+            setAllPackagesCountriesSelected();
+            updatePackagesCountryFilterUi();
+            updatePackagesNavTabs();
+            syncDefaultPackageFilters();
+            applyPackagesCatalogView(true);
         }
 
-        function toggleAllDestinations() {
-            const grid = document.getElementById('destinationsGrid');
-            const btn = document.getElementById('togglePackagesBtn');
-            
-            if (grid.classList.contains('show-all')) {
-                grid.classList.remove('show-all');
-                if (btn) btn.textContent = 'Show All Packages';
-            } else {
-                grid.classList.add('show-all');
-                if (btn) btn.textContent = 'Show Featured Only';
-                
-                // Trigger fade-in animation for newly visible cards
-                const extraCards = document.querySelectorAll('.extra-destination');
-                extraCards.forEach(card => {
-                    card.classList.add('visible');
-                });
-            }
-        }
+        updatePackagesCountryFilterUi();
+        updatePackagesNavTabs();
 
         // Gallery images
         const galleryImages = [
@@ -3459,6 +4055,15 @@
             document.documentElement.style.overflow = 'hidden';
         }
 
+        function bookCurrentPackageViaWhatsApp() {
+            const titleEl = document.getElementById('modalTitle');
+            const hotelName = titleEl ? titleEl.textContent.trim() : '';
+            const safeHotelName = hotelName || 'this hotel';
+            const message = `Hello, I’m interested in the package for ${safeHotelName}.`;
+            const whatsappUrl = `https://wa.me/971501771927?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank', 'noopener');
+        }
+
         function updateCarouselImage() {
             document.getElementById('modalImage').src = currentImages[currentSlide];
             updateDots();
@@ -3619,13 +4224,47 @@
             }, 300);
         }
 
-        // Lightbox functions
+        // Lightbox: fullscreen view with cursor-follow magnify on the image (desktop only)
         let lightboxOpen = false;
         let lightboxScrollPosition = 0;
-        let zoomLevel = 100;
-        const zoomStep = 50;
-        const maxZoom = 300;
-        const minZoom = 100;
+        const LIGHTBOX_MAGNIFY_SCALE = 2.25;
+
+        function resetLightboxMagnify() {
+            const image = document.getElementById('lightboxImage');
+            if (!image) return;
+            image.style.transform = '';
+            image.style.transformOrigin = '';
+        }
+
+        function onLightboxImageMouseMove(e) {
+            if (!lightboxOpen || isMobile()) return;
+            const container = document.getElementById('lightboxContainer');
+            const img = document.getElementById('lightboxImage');
+            if (!container || !img || !img.complete || !img.naturalWidth) return;
+            const containerRect = container.getBoundingClientRect();
+            const x = e.clientX - containerRect.left;
+            const y = e.clientY - containerRect.top;
+            const xPct = Math.max(0, Math.min(100, (x / containerRect.width) * 100));
+            const yPct = Math.max(0, Math.min(100, (y / containerRect.height) * 100));
+            img.style.transformOrigin = `${xPct}% ${yPct}%`;
+            img.style.transform = `scale(${LIGHTBOX_MAGNIFY_SCALE})`;
+        }
+
+        function onLightboxImageMouseLeave() {
+            resetLightboxMagnify();
+        }
+
+        function initLightboxMagnifyListeners() {
+            const img = document.getElementById('lightboxImage');
+            const container = document.getElementById('lightboxContainer');
+            if (!img || !container) return;
+            container.addEventListener('mousemove', onLightboxImageMouseMove);
+            container.addEventListener('mouseleave', onLightboxImageMouseLeave);
+            img.addEventListener('click', function (e) {
+                if (lightboxOpen) e.stopPropagation();
+            });
+        }
+        initLightboxMagnifyListeners();
 
         function openLightbox() {
             // Save scroll position before applying fixed positioning
@@ -3635,20 +4274,18 @@
             } else {
                 lightboxScrollPosition = window.scrollY;
             }
-            
-            zoomLevel = 100;
-            updateZoomDisplay();
+
+            resetLightboxMagnify();
             document.getElementById('lightboxImage').src = currentImages[currentSlide];
             document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
             document.getElementById('lightboxOverlay').classList.add('active');
-            document.getElementById('lightboxContainer').classList.remove('zoomed');
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.width = '100%';
             document.body.style.top = `-${lightboxScrollPosition}px`;
             document.documentElement.style.overflow = 'hidden';
             lightboxOpen = true;
-            
+
             // Load adjacent images for swipe preview
             if (typeof updateAdjacentImages === 'function') {
                 updateAdjacentImages();
@@ -3662,8 +4299,8 @@
             if (lightboxOpen) {
                 document.getElementById('lightboxImage').src = currentImages[currentSlide];
                 document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
-                resetZoom();
-                
+                resetLightboxMagnify();
+
                 // Update adjacent images for swipe
                 if (typeof updateAdjacentImages === 'function') {
                     updateAdjacentImages();
@@ -3671,79 +4308,9 @@
             }
         }
 
-        let hasDragged = false;
-
-        function toggleZoom(event) {
-            // Only toggle zoom when clicking the actual main image.
-            // This prevents zooming when clicking the letterboxed area around the image.
-            const mainImg = document.getElementById('lightboxImage');
-            if (!event || event.target !== mainImg) return;
-
-            // Prevent overlay click handler from firing.
-            if (typeof event.stopPropagation === 'function') event.stopPropagation();
-            if (isMobile()) return;
-            if (hasDragged) {
-                hasDragged = false;
-                return;
-            }
-            if (zoomLevel === 100) {
-                zoomIn();
-            } else {
-                resetZoom();
-            }
-        }
-
-        function zoomIn() {
-            if (isMobile()) return;
-            if (zoomLevel < maxZoom) {
-                zoomLevel += zoomStep;
-                applyZoom();
-            }
-        }
-
-        function zoomOut() {
-            if (isMobile()) return;
-            if (zoomLevel > minZoom) {
-                zoomLevel -= zoomStep;
-                applyZoom();
-            }
-        }
-
-        function resetZoom() {
-            zoomLevel = 100;
-            panX = 0;
-            panY = 0;
-            applyZoom();
-        }
-
-        function applyZoom() {
-            const container = document.getElementById('lightboxContainer');
-            const image = document.getElementById('lightboxImage');
-            
-            if (zoomLevel > 100) {
-                container.classList.add('zoomed');
-            } else {
-                container.classList.remove('zoomed');
-                panX = 0;
-                panY = 0;
-            }
-            
-            updateImageTransform();
-            updateZoomDisplay();
-        }
-
-        function updateImageTransform() {
-            const image = document.getElementById('lightboxImage');
-            image.style.transform = `scale(${zoomLevel / 100}) translate(${panX}px, ${panY}px)`;
-        }
-
-        function updateZoomDisplay() {
-            document.getElementById('zoomLevel').textContent = `${zoomLevel}%`;
-        }
-
         function closeLightbox() {
             document.getElementById('lightboxOverlay').classList.remove('active');
-            resetZoom();
+            resetLightboxMagnify();
             document.body.style.overflow = '';
             document.body.style.position = '';
             document.body.style.width = '';
@@ -3764,62 +4331,6 @@
             window.scrollTo(0, modalScrollPosition);
         }
 
-        // Pan/drag variables
-        let isDragging = false;
-        let startX, startY;
-        let panX = 0, panY = 0;
-        let lastPanX = 0, lastPanY = 0;
-        const lightboxContainer = document.getElementById('lightboxContainer');
-
-        // Mouse wheel zoom (desktop only)
-        lightboxContainer.addEventListener('wheel', function(e) {
-            if (isMobile()) return;
-            e.preventDefault();
-            if (e.deltaY < 0) {
-                zoomIn();
-            } else {
-                zoomOut();
-            }
-        });
-
-        lightboxContainer.addEventListener('mousedown', function(e) {
-            if (isMobile()) return;
-            if (zoomLevel > 100) {
-                e.preventDefault();
-                isDragging = true;
-                startX = e.clientX;
-                startY = e.clientY;
-                lastPanX = panX;
-                lastPanY = panY;
-                lightboxContainer.classList.add('dragging');
-            }
-        });
-
-        document.addEventListener('mousemove', function(e) {
-            if (isMobile()) return;
-            if (!isDragging || zoomLevel <= 100) return;
-            e.preventDefault();
-            
-            const deltaX = e.clientX - startX;
-            const deltaY = e.clientY - startY;
-            
-            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-                hasDragged = true;
-            }
-            
-            panX = lastPanX + deltaX / (zoomLevel / 100);
-            panY = lastPanY + deltaY / (zoomLevel / 100);
-            
-            updateImageTransform();
-        });
-
-        document.addEventListener('mouseup', function() {
-            if (isDragging) {
-                isDragging = false;
-                lightboxContainer.classList.remove('dragging');
-            }
-        });
-
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 if (lightboxOpen) {
@@ -3828,11 +4339,8 @@
                     closeModal();
                 }
             }
-            if (e.key === 'ArrowLeft' && document.getElementById('modalOverlay').classList.contains('active')) changeSlide(-1);
-            if (e.key === 'ArrowRight' && document.getElementById('modalOverlay').classList.contains('active')) changeSlide(1);
-            if (lightboxOpen && e.key === '+') zoomIn();
-            if (lightboxOpen && e.key === '-') zoomOut();
-            if (lightboxOpen && e.key === '0') resetZoom();
+            if (e.key === 'ArrowLeft' && (lightboxOpen || document.getElementById('modalOverlay').classList.contains('active'))) changeSlide(-1);
+            if (e.key === 'ArrowRight' && (lightboxOpen || document.getElementById('modalOverlay').classList.contains('active'))) changeSlide(1);
         });
 
         // Touch swipe for mobile lightbox navigation
@@ -3922,7 +4430,8 @@
                 // Update main image to new current image BEFORE resetting positions
                 mainImage.src = currentImages[currentSlide];
                 document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
-                
+                resetLightboxMagnify();
+
                 // Instantly reset positions (no transition)
                 mainContainer.style.transition = 'none';
                 prevContainer.style.transition = 'none';
@@ -3982,6 +4491,126 @@
                 }, 300);
             }
         }
+
+        (function initJanaContactIntlPhone() {
+            const phoneInput = document.getElementById('contact-phone');
+            const intlTelUtilsCdn = 'https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/js/utils.js';
+            if (!phoneInput || typeof window.intlTelInput !== 'function') return;
+
+            const narrowPopup = () => window.matchMedia('(max-width: 600px)').matches;
+            const instance = window.intlTelInput(phoneInput, {
+                initialCountry: 'ae',
+                countryOrder: ['ae'],
+                separateDialCode: true,
+                nationalMode: true,
+                loadUtils: () => import(intlTelUtilsCdn),
+                autoPlaceholder: 'aggressive',
+                placeholderNumberType: 'MOBILE',
+                formatAsYouType: true,
+                formatOnDisplay: true,
+                strictMode: true,
+                countrySearch: false,
+                ...(narrowPopup() ? { useFullscreenPopup: false } : {}),
+            });
+            window.janaPhoneIti = instance;
+
+            function updatePhoneInputOffset() {
+                const itiWrap = phoneInput.closest('.iti');
+                const selected = itiWrap && itiWrap.querySelector('.iti__selected-country');
+                if (!itiWrap || !selected) return;
+                const measured = Math.ceil(selected.getBoundingClientRect().width);
+                const offset = measured + 26;
+                itiWrap.style.setProperty('--phone-input-offset', offset + 'px');
+            }
+
+            function pinUaeToTop() {
+                const listEl = phoneInput.closest('.iti') && phoneInput.closest('.iti').querySelector('.iti__country-list');
+                if (!listEl) return;
+                const uae = listEl.querySelector('.iti__country[data-country-code="ae"]');
+                if (!uae) return;
+                const divider = listEl.querySelector('.iti__divider');
+                if (divider) divider.remove();
+                if (listEl.firstElementChild !== uae) listEl.insertBefore(uae, listEl.firstElementChild);
+            }
+
+            function syncDropdownHighlight() {
+                if (!instance || !phoneInput) return;
+                const iso2 = instance.getSelectedCountryData() && instance.getSelectedCountryData().iso2;
+                const itiWrap = phoneInput.closest('.iti');
+                const listEl = itiWrap && itiWrap.querySelector('.iti__country-list');
+                const selectedBtn = itiWrap && itiWrap.querySelector('.iti__selected-country');
+                if (!iso2 || !listEl || !selectedBtn) return;
+                const target = listEl.querySelector('.iti__country[data-country-code="' + iso2 + '"]');
+                if (!target) return;
+                listEl.querySelectorAll('.iti__country.iti__highlight').forEach(function (li) {
+                    li.classList.remove('iti__highlight');
+                    li.setAttribute('aria-selected', 'false');
+                });
+                target.classList.add('iti__highlight');
+                target.setAttribute('aria-selected', 'true');
+                const activeId = target.getAttribute('id') || '';
+                selectedBtn.setAttribute('aria-activedescendant', activeId);
+                target.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+            }
+
+            function removeItiNativeHoverTooltips() {
+                const itiWrap = phoneInput.closest('.iti');
+                if (!itiWrap) return;
+                itiWrap.querySelectorAll('[title]').forEach(function (el) {
+                    el.removeAttribute('title');
+                });
+            }
+
+            if (instance.promise && typeof instance.promise.then === 'function') {
+                instance.promise.then(function () {
+                    updatePhoneInputOffset();
+                    pinUaeToTop();
+                    removeItiNativeHoverTooltips();
+                });
+            }
+            setTimeout(function () {
+                updatePhoneInputOffset();
+                pinUaeToTop();
+                removeItiNativeHoverTooltips();
+            }, 0);
+
+            phoneInput.addEventListener('countrychange', function () {
+                window.requestAnimationFrame(function () {
+                    updatePhoneInputOffset();
+                    pinUaeToTop();
+                    removeItiNativeHoverTooltips();
+                });
+            });
+            window.addEventListener('resize', updatePhoneInputOffset);
+
+            var selCountry = phoneInput.closest('.iti') && phoneInput.closest('.iti').querySelector('.iti__selected-country');
+            if (selCountry) {
+                selCountry.addEventListener('click', function () {
+                    setTimeout(function () {
+                        pinUaeToTop();
+                        removeItiNativeHoverTooltips();
+                    }, 0);
+                });
+            }
+
+            phoneInput.addEventListener('open:countrydropdown', function () {
+                window.requestAnimationFrame(function () {
+                    syncDropdownHighlight();
+                    removeItiNativeHoverTooltips();
+                });
+            });
+
+            var contactFormEl = phoneInput.closest('form');
+            if (contactFormEl) {
+                contactFormEl.addEventListener('reset', function () {
+                    setTimeout(function () {
+                        instance.setNumber('');
+                        instance.setCountry('ae');
+                        updatePhoneInputOffset();
+                    }, 0);
+                });
+            }
+        })();
 
     </script>
 </body>

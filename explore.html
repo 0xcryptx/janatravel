@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Destinations | JANA Travel</title>
+    <link rel="icon" href="public/JanaTravelLogo.webp" type="image/webp">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --aqua-blue: #00CED1;
+            --aqua-dark: #008B8B;
+            --aqua-light: #7FEFEF;
+            --text-dark: #1A3A3A;
+            --white: #ffffff;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-dark);
+            background: linear-gradient(180deg, #f6ffff 0%, #eff9f8 100%);
+            line-height: 1.7;
+        }
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--white);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--aqua-blue);
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--aqua-dark);
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--aqua-blue) var(--white);
+        }
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 0.8rem 5%;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0, 206, 209, 0.2);
+        }
+        .brand {
+            display: inline-flex;
+            gap: 0.6rem;
+            align-items: center;
+            text-decoration: none;
+            color: var(--aqua-dark);
+            font-weight: 700;
+            justify-self: center;
+        }
+        .brand img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.25)) drop-shadow(0 0 6px rgba(0, 0, 0, 0.2)) drop-shadow(0 0 10px rgba(0, 0, 0, 0.15));
+            transition: transform 0.3s ease;
+        }
+        .brand-text {
+            display: inline-block;
+            color: var(--aqua-dark);
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.28), 0 0 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        .brand-text span {
+            color: var(--aqua-light);
+            text-shadow: 0 0 3px rgba(0, 139, 139, 0.45), 0 0 6px rgba(0, 139, 139, 0.25);
+        }
+        .brand:hover img {
+            transform: scale(1.08);
+        }
+        .brand:hover .brand-text {
+            transform: scale(1.05);
+        }
+        .back-link {
+            text-decoration: none;
+            color: var(--aqua-dark);
+            font-weight: 600;
+            border: 1px solid rgba(0, 139, 139, 0.25);
+            border-radius: 999px;
+            padding: 0.45rem 0.9rem;
+            background: rgba(0, 206, 209, 0.08);
+            justify-self: start;
+        }
+        .topbar-spacer {
+            justify-self: end;
+            width: 64px;
+        }
+        .wrap {
+            width: 100%;
+            padding: 2.4rem clamp(1rem, 4vw, 4rem) 3.2rem;
+        }
+        .title-block h1 {
+            color: var(--aqua-dark);
+            font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+            margin-bottom: 0.35rem;
+        }
+        .title-block p {
+            color: #486767;
+            margin-bottom: 1.6rem;
+        }
+        .country-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: clamp(1rem, 2.2vw, 1.7rem);
+        }
+        .country-card {
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            min-height: 330px;
+            text-decoration: none;
+            color: var(--white);
+            box-shadow: 0 14px 34px rgba(0, 139, 139, 0.2);
+        }
+        .country-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+        .country-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.1));
+        }
+        .country-card:hover img {
+            transform: scale(1.05);
+        }
+        .country-card-content {
+            position: absolute;
+            z-index: 1;
+            left: 1rem;
+            right: 1rem;
+            bottom: 1rem;
+        }
+        .country-card-content h2 {
+            font-size: clamp(1.2rem, 2vw, 1.5rem);
+            margin-bottom: 0.25rem;
+        }
+        .country-card-content p {
+            font-size: 0.95rem;
+            opacity: 0.95;
+        }
+        @media (max-width: 980px) {
+            .country-grid {
+                grid-template-columns: 1fr;
+            }
+            .country-card {
+                min-height: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <a class="back-link" href="index.html" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Back</a>
+        <a class="brand" href="index.html" onclick="sessionStorage.removeItem('jana:indexScrollY')">
+            <img src="public/JanaTravelLogo.webp" alt="JANA Travel logo">
+            <span class="brand-text">JANA <span>Travel</span></span>
+        </a>
+        <div class="topbar-spacer" aria-hidden="true"></div>
+    </header>
+
+    <main class="wrap">
+        <div class="title-block">
+            <h1>Explore Our Destinations</h1>
+            <p>Explore country highlights, travel tips, and popular areas.</p>
+        </div>
+
+        <section class="country-grid">
+            <a class="country-card" href="maldives.html">
+                <img src="assets/images/maldives_1.jpg" alt="Maldives">
+                <div class="country-card-content">
+                    <h2>Maldives</h2>
+                    <p>Luxury overwater villas, turquoise lagoons, private island resorts, and dreamy beach escapes.</p>
+                </div>
+            </a>
+            <a class="country-card" href="seychelles.html">
+                <img src="assets/images/seychelles_1.jpg" alt="Seychelles">
+                <div class="country-card-content">
+                    <h2>Seychelles</h2>
+                    <p>Granite beaches, crystal-clear waters, lush nature, island hopping, and peaceful luxury stays.</p>
+                </div>
+            </a>
+            <a class="country-card" href="mauritius.html">
+                <img src="assets/images/mauritius_1.webp" alt="Mauritius">
+                <div class="country-card-content">
+                    <h2>Mauritius</h2>
+                    <p>Beach resorts, mountain views, waterfalls, rich culture, and relaxing oceanfront escapes.</p>
+                </div>
+            </a>
+        </section>
+    </main>
+</body>
+</html>
