@@ -3100,9 +3100,12 @@
         }
 
         function normalizeSheetHotel(row) {
+            const slug = String(getCaseInsensitiveField(row, ['slug', 'Slug']) || '').trim();
+            const name = String(getCaseInsensitiveField(row, ['name', 'Name']) || '').trim();
             return {
-                slug: getCaseInsensitiveField(row, ['slug', 'Slug']),
-                name: getCaseInsensitiveField(row, ['name', 'Name']),
+                slug,
+                name,
+                smallDescription: getCaseInsensitiveField(row, ['smallDescription', 'Small Description', 'Short Description']),
                 destination: getCaseInsensitiveField(row, ['destination', 'Destination']),
                 location: getCaseInsensitiveField(row, ['location', 'Location']),
                 rating: getCaseInsensitiveField(row, ['rating', 'Rating']),
@@ -3174,6 +3177,9 @@
             sorted.forEach((hotel, index) => {
                 const slug = hotel.slug || '';
                 if (!slug) return;
+                const cardDescription = String(
+                    hotel.smallDescription || hotel.shortDescription || hotel.description || ''
+                ).trim() || 'Discover this curated stay with JANA Travel.';
                 const experienceTags = inferExperienceTags(hotel);
                 const primaryTag = experienceTags[0] || 'luxury-beach-holidays';
                 const kidsAllowed = inferKidsAllowed(hotel);
@@ -3194,12 +3200,16 @@
                     <img src="${imgSrc}" alt="${hotel.name || 'Hotel package'}">
                     <div class="destination-info">
                         <h4>${hotel.name || 'Hotel package'}</h4>
-                        <p>${hotel.description || 'Discover this curated stay with JANA Travel.'}</p>
+                        <p>${cardDescription}</p>
                         <div class="destination-price">
                             <button class="book-btn">View Details</button>
                         </div>
                     </div>
                 `;
+                card.classList.add('visible');
+                if (typeof observer !== 'undefined' && observer && typeof observer.observe === 'function') {
+                    observer.observe(card);
+                }
                 grid.appendChild(card);
             });
         }

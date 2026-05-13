@@ -29,8 +29,9 @@ function resolveImagePath(path) {
   return path;
 }
 
-function createWhatsAppLink(message) {
-  const text = message || "Hello, I'm interested in this hotel package.";
+function createWhatsAppLink(hotelName) {
+  const normalizedName = String(hotelName || "").trim() || "this hotel package";
+  const text = `Hello, I'm interested in ${normalizedName}.`;
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 }
 
@@ -69,11 +70,21 @@ function parseFeaturedValue(value) {
 }
 
 function normalizeSheetHotel(row) {
+  const slug = String(getCaseInsensitiveField(row, ["slug", "Slug"]) || "").trim();
+  const name = String(getCaseInsensitiveField(row, ["name", "Name"]) || "").trim();
   return {
-    slug: getCaseInsensitiveField(row, ["slug", "Slug"]),
-    name: getCaseInsensitiveField(row, ["name", "Name"]),
+    slug,
+    name,
     destination: getCaseInsensitiveField(row, ["destination", "Destination"]),
     location: getCaseInsensitiveField(row, ["location", "Location"]),
+    googleMapsLink: getCaseInsensitiveField(row, [
+      "googleMapsLink",
+      "Google Maps Link",
+      "Google Map",
+      "Google Maps",
+      "Map Link",
+      "Location Link"
+    ]),
     rating: getCaseInsensitiveField(row, ["rating", "Rating"]),
     islandSize: getCaseInsensitiveField(row, ["islandSize", "Island Size"]),
     reefType: getCaseInsensitiveField(row, ["reefType", "Reef Type"]),
@@ -113,6 +124,82 @@ function updateState(type, message) {
   stateEl.textContent = message;
 }
 
+function setupHotelGallery(contentEl, images, hotelName) {
+  const mainImageEl = contentEl.querySelector("#hotelMainImage");
+  const thumbButtons = Array.from(contentEl.querySelectorAll(".thumb-btn"));
+  const maximizeBtn = contentEl.querySelector("#hotelMaximizeBtn");
+  const lightbox = contentEl.querySelector("#hotelImageLightbox");
+  const lightboxImage = contentEl.querySelector("#hotelLightboxImage");
+  const closeBtn = contentEl.querySelector("#hotelLightboxClose");
+  const prevBtn = contentEl.querySelector("#hotelLightboxPrev");
+  const nextBtn = contentEl.querySelector("#hotelLightboxNext");
+
+  if (!mainImageEl || !thumbButtons.length) return;
+
+  const galleryImages = images.length ? images : [HOTEL_PLACEHOLDER_IMAGE];
+  let currentIndex = 0;
+
+  const setActiveImage = (nextIndex) => {
+    if (!galleryImages.length) return;
+    const normalizedIndex = ((nextIndex % galleryImages.length) + galleryImages.length) % galleryImages.length;
+    currentIndex = normalizedIndex;
+    const nextSrc = resolveImagePath(galleryImages[currentIndex]) || HOTEL_PLACEHOLDER_IMAGE;
+    mainImageEl.src = nextSrc;
+    mainImageEl.alt = `${hotelName} view ${currentIndex + 1}`;
+
+    thumbButtons.forEach((btn, index) => {
+      btn.classList.toggle("is-active", index === currentIndex);
+    });
+
+    if (lightboxImage && !lightbox.hasAttribute("hidden")) {
+      lightboxImage.src = nextSrc;
+      lightboxImage.alt = `${hotelName} preview ${currentIndex + 1}`;
+    }
+  };
+
+  thumbButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.index || 0);
+      setActiveImage(Number.isFinite(idx) ? idx : 0);
+    });
+  });
+
+  const openLightbox = () => {
+    if (!lightbox || !lightboxImage) return;
+    lightbox.removeAttribute("hidden");
+    lightboxImage.src = resolveImagePath(galleryImages[currentIndex]) || HOTEL_PLACEHOLDER_IMAGE;
+    lightboxImage.alt = `${hotelName} preview ${currentIndex + 1}`;
+    document.body.classList.add("lightbox-open");
+  };
+
+  const closeLightbox = () => {
+    if (!lightbox) return;
+    lightbox.setAttribute("hidden", "");
+    document.body.classList.remove("lightbox-open");
+  };
+
+  if (maximizeBtn) maximizeBtn.addEventListener("click", openLightbox);
+  mainImageEl.addEventListener("click", openLightbox);
+  if (closeBtn) closeBtn.addEventListener("click", closeLightbox);
+  if (prevBtn) prevBtn.addEventListener("click", () => setActiveImage(currentIndex - 1));
+  if (nextBtn) nextBtn.addEventListener("click", () => setActiveImage(currentIndex + 1));
+
+  if (lightbox) {
+    lightbox.addEventListener("click", (event) => {
+      if (event.target === lightbox) closeLightbox();
+    });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (!lightbox || lightbox.hasAttribute("hidden")) return;
+    if (event.key === "Escape") closeLightbox();
+    if (event.key === "ArrowLeft") setActiveImage(currentIndex - 1);
+    if (event.key === "ArrowRight") setActiveImage(currentIndex + 1);
+  });
+
+  setActiveImage(0);
+}
+
 function renderHotel(hotel) {
   const titleEl = document.getElementById("hotelTitle");
   const contentEl = document.getElementById("hotelContent");
@@ -126,9 +213,12 @@ function renderHotel(hotel) {
   const rawGalleryImages = Array.isArray(hotel.galleryImages) ? hotel.galleryImages : [];
   const galleryImages = rawGalleryImages.length ? rawGalleryImages : [mainImage];
   const ratingLabel = formatRating(hotel.rating);
+  const mapUrl = String(hotel.googleMapsLink || "").trim();
+  const hasMapUrl = /^https?:\/\//i.test(mapUrl);
+  const locationValue = String(hotel.location || "").trim() || "Not specified yet";
   const details = [
     ["Destination", hotel.destination],
-    ["Location", hotel.location],
+    ["Location", locationValue],
     ["Rating", ratingLabel],
     ["Island Size", hotel.islandSize],
     ["Reef Type", hotel.reefType],
@@ -141,25 +231,35 @@ function renderHotel(hotel) {
   ];
 
   contentEl.innerHTML = `
-    <p class="lead">${escapeHtml(hotel.description || "Discover this curated stay with JANA Travel.")}</p>
     <div class="meta">
       ${hotel.destination ? `<span class="pill">${escapeHtml(hotel.destination)}</span>` : ""}
-      ${hotel.location ? `<span class="pill">${escapeHtml(hotel.location)}</span>` : ""}
-      ${ratingLabel ? `<span class="pill">Rating: ${escapeHtml(ratingLabel)}</span>` : ""}
-      ${hotel.transferType ? `<span class="pill">${escapeHtml(hotel.transferType)}</span>` : ""}
-      ${hotel.mealPlan ? `<span class="pill">${escapeHtml(hotel.mealPlan)}</span>` : ""}
+      ${ratingLabel ? `<span class="pill">${escapeHtml(ratingLabel)}</span>` : ""}
     </div>
-    <div class="hero">
-      <img src="${escapeHtml(mainImage)}" alt="${escapeHtml(hotelName)} main view">
-    </div>
-    <div class="grid">
+    <div class="media-gallery">
+      <div class="hero hero--interactive">
+        <img id="hotelMainImage" src="${escapeHtml(mainImage)}" alt="${escapeHtml(hotelName)} view 1">
+        <button type="button" class="maximize-btn" id="hotelMaximizeBtn">Maximize</button>
+      </div>
+      <div class="thumb-strip" id="hotelThumbStrip" role="list" aria-label="Hotel image previews">
       ${galleryImages
         .map(
           (img, index) =>
-            `<img src="${escapeHtml(resolveImagePath(img))}" alt="${escapeHtml(hotelName)} view ${index + 1}">`
+            `
+            <button type="button" class="thumb-btn${index === 0 ? " is-active" : ""}" data-index="${index}" role="listitem" aria-label="Show image ${index + 1}">
+              <img src="${escapeHtml(resolveImagePath(img))}" alt="${escapeHtml(hotelName)} thumbnail ${index + 1}">
+            </button>
+            `
         )
         .join("")}
+      </div>
     </div>
+    <div class="image-lightbox" id="hotelImageLightbox" hidden>
+      <button type="button" class="lightbox-close" id="hotelLightboxClose" aria-label="Close image viewer">&times;</button>
+      <button type="button" class="lightbox-nav lightbox-nav--prev" id="hotelLightboxPrev" aria-label="Previous image">&#10094;</button>
+      <img id="hotelLightboxImage" src="${escapeHtml(mainImage)}" alt="${escapeHtml(hotelName)} preview">
+      <button type="button" class="lightbox-nav lightbox-nav--next" id="hotelLightboxNext" aria-label="Next image">&#10095;</button>
+    </div>
+    <p class="lead">${escapeHtml(hotel.description || "Discover this curated stay with JANA Travel.")}</p>
     <h2>Hotel Details</h2>
     <div class="details-grid">
       ${details
@@ -167,30 +267,37 @@ function renderHotel(hotel) {
           ([label, value]) => `
             <div class="detail-card">
               <span class="label">${escapeHtml(label)}</span>
-              <span class="value">${escapeHtml(value || "Not specified yet")}</span>
+              ${
+                label === "Location" && hasMapUrl
+                  ? `<a class="value value-link" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value || "Not specified yet")}</a>`
+                  : `<span class="value">${escapeHtml(value || "Not specified yet")}</span>`
+              }
             </div>
           `
         )
         .join("")}
     </div>
     <div class="cta">
-      <a href="${createWhatsAppLink(hotel.whatsappMessage)}" target="_blank" rel="noopener noreferrer">Book via WhatsApp</a>
+      <a href="${createWhatsAppLink(hotel.name)}" target="_blank" rel="noopener noreferrer">Inquire</a>
     </div>
   `;
+
+  setupHotelGallery(contentEl, galleryImages, hotelName);
 }
 
 async function initHotelsRoutePage() {
   updateState("loading", "Loading hotel package...");
   try {
     const params = new URLSearchParams(window.location.search);
-    const slug = params.get("id");
+    const slug = String(params.get("id") || "").trim();
     if (!slug) {
       updateState("error", "Missing hotel id in URL.");
       return;
     }
 
     const hotels = await loadHotelsData();
-    const hotel = hotels.find((item) => item.slug === slug);
+    const normalizedSlug = slug.toLowerCase();
+    const hotel = hotels.find((item) => String(item.slug || "").trim().toLowerCase() === normalizedSlug);
     if (!hotel) {
       updateState("empty", "Hotel package not found.");
       return;
