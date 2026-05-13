@@ -2248,19 +2248,13 @@
                 <h3>Find Your Perfect Trip</h3>
                 <div class="filter-grid">
                     <div class="filter-group">
-                        <label>Number of Travelers</label>
-                        <div class="traveler-selector">
-                            <button class="traveler-btn" onclick="changeTravelers(-1)">−</button>
-                            <span id="travelerCount">2</span>
-                            <button class="traveler-btn" onclick="changeTravelers(1)">+</button>
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label>Traveling with Kids?</label>
-                        <div class="toggle-buttons">
-                            <button class="toggle-btn active" id="kidsNo" onclick="setKids(false)">No</button>
-                            <button class="toggle-btn" id="kidsYes" onclick="setKids(true)">Yes</button>
-                        </div>
+                        <label>Destination</label>
+                        <select id="countryFilter">
+                            <option value="all">All Destinations</option>
+                            <option value="maldives">Maldives</option>
+                            <option value="seychelles">Seychelles</option>
+                            <option value="mauritius">Mauritius</option>
+                        </select>
                     </div>
                     <div class="filter-group">
                         <label>Experience</label>
@@ -2273,15 +2267,6 @@
                             <option value="wellness-retreats">Wellness Retreats</option>
                             <option value="luxury-beach-holidays">Luxury Beach Holidays</option>
                             <option value="adventure-water-sports">Adventure & Water Sports</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Country</label>
-                        <select id="countryFilter">
-                            <option value="all">All Countries</option>
-                            <option value="maldives">Maldives</option>
-                            <option value="seychelles">Seychelles</option>
-                            <option value="mauritius">Mauritius</option>
                         </select>
                     </div>
                 </div>
@@ -2297,7 +2282,7 @@
                 <button type="button" class="packages-catalog-nav__btn is-active" role="tab" id="tabPackagesFeatured" aria-selected="true" onclick="selectPackagesCatalog('featured')">Featured</button>
                 <button type="button" class="packages-catalog-nav__btn" role="tab" id="tabPackagesAll" aria-selected="false" onclick="selectPackagesCatalog('all')">All packages</button>
             </div>
-            <div class="packages-catalog-nav__countries" id="packagesCatalogCountries" aria-label="Filter all packages by country">
+            <div class="packages-catalog-nav__countries" id="packagesCatalogCountries" aria-label="Filter all packages by destination">
                 <button type="button" class="packages-country-chip is-active" data-country-chip="all" onclick="togglePackagesCountryFilter('all')">All</button>
                 <button type="button" class="packages-country-chip is-active" data-country-chip="seychelles" onclick="togglePackagesCountryFilter('seychelles')">Seychelles</button>
                 <button type="button" class="packages-country-chip is-active" data-country-chip="maldives" onclick="togglePackagesCountryFilter('maldives')">Maldives</button>
@@ -2308,7 +2293,7 @@
         <div class="featured-packages-heading">
             <h3 id="packagesHeadingTitle">Featured Packages</h3>
             <p id="packagesHeadingSubtitle">Handpicked packages for unforgettable getaways.</p>
-            <span class="packages-country-tag" id="packagesCountryTag">All countries</span>
+            <span class="packages-country-tag" id="packagesCountryTag">All destinations</span>
         </div>
 
         <div class="destinations-grid" id="destinationsGrid">
@@ -3287,28 +3272,17 @@
         });
 
         // Filter state (form; grid does not use these until Search)
-        let travelerCount = 2;
-        let hasKids = false;
         /** Snapshot applied when "Search Packages" runs; grid filtering reads these only. */
-        let appliedTravelerCount = 2;
-        let appliedHasKids = false;
         let appliedTripType = 'all';
         let appliedCountry = 'all';
         /** 'featured' | 'all' when browsing catalog; null after Search (tabs visually inactive). */
         let packagesNavScope = 'featured';
 
         function syncDefaultPackageFilters() {
-            travelerCount = 2;
-            hasKids = false;
-            appliedTravelerCount = 2;
-            appliedHasKids = false;
             appliedTripType = 'all';
             appliedCountry = 'all';
-            document.getElementById('travelerCount').textContent = '2';
             document.getElementById('tripType').value = 'all';
             document.getElementById('countryFilter').value = 'all';
-            document.getElementById('kidsNo').classList.add('active');
-            document.getElementById('kidsYes').classList.remove('active');
         }
 
         const PACKAGES_HEADING_FEATURED = {
@@ -3358,7 +3332,7 @@
         }
 
         function formatCountryLabel(countryCode) {
-            if (!countryCode) return 'All countries';
+            if (!countryCode) return 'All destinations';
             const names = {
                 maldives: 'Maldives',
                 seychelles: 'Seychelles',
@@ -3371,7 +3345,7 @@
             const tagEl = document.getElementById('packagesCountryTag');
             if (!tagEl) return;
 
-            let label = 'All countries';
+            let label = 'All destinations';
             const countryFilterEl = document.getElementById('countryFilter');
             const selectedCountryFilter = countryFilterEl ? countryFilterEl.value : 'all';
 
@@ -3383,10 +3357,10 @@
                     label = selected.map(formatCountryLabel).join(' · ');
                 }
             } else if (packagesNavScope === null) {
-                label = appliedCountry === 'all' ? 'All countries' : formatCountryLabel(appliedCountry);
+                label = appliedCountry === 'all' ? 'All destinations' : formatCountryLabel(appliedCountry);
             } else {
                 label = selectedCountryFilter === 'all'
-                    ? 'All countries'
+                    ? 'All destinations'
                     : formatCountryLabel(selectedCountryFilter);
             }
 
@@ -3417,17 +3391,6 @@
             if (subEl) subEl.textContent = PACKAGES_HEADING_FILTERED.subtitle;
         }
 
-        function changeTravelers(delta) {
-            travelerCount = Math.max(1, Math.min(10, travelerCount + delta));
-            document.getElementById('travelerCount').textContent = travelerCount;
-        }
-
-        function setKids(value) {
-            hasKids = value;
-            document.getElementById('kidsNo').classList.toggle('active', !value);
-            document.getElementById('kidsYes').classList.toggle('active', value);
-        }
-
         function filterDestinations() {
             const tripType = appliedTripType;
             const cards = document.querySelectorAll('.destination-card');
@@ -3445,14 +3408,10 @@
                 }
 
                 const typeTags = (card.dataset.type || '').split('|').filter(Boolean);
-                const kidsAllowed = card.dataset.kids === 'true';
-                const maxTravelers = parseInt(card.dataset.travelers, 10);
 
                 let show = true;
 
                 if (tripType !== 'all' && !typeTags.includes(tripType)) show = false;
-                if (appliedHasKids && !kidsAllowed) show = false;
-                if (appliedTravelerCount > maxTravelers) show = false;
                 if (appliedCountry !== 'all' && getCardCountry(card) !== appliedCountry) show = false;
                 if (filterByCountry && !selectedPackagesCountries.has(getCardCountry(card))) show = false;
 
@@ -3518,8 +3477,6 @@
         }
 
         function runPackagesFilterSearch() {
-            appliedTravelerCount = travelerCount;
-            appliedHasKids = hasKids;
             appliedTripType = document.getElementById('tripType').value;
             appliedCountry = document.getElementById('countryFilter').value;
 

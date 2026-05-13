@@ -25,6 +25,14 @@
     .lead { margin:1rem 0 1.2rem; white-space:normal; overflow-wrap:anywhere; word-break:break-word; }
     .meta { display:flex; flex-wrap:wrap; gap:.7rem; margin-bottom:1.3rem; }
     .pill { border:1px solid rgba(0,139,139,.25); border-radius:999px; padding:.35rem .8rem; background:#fff; font-weight:500; font-size:.92rem; }
+    .pill-link { color:inherit; text-decoration:none; }
+    .pill-link:hover {
+      border-color:rgba(0,206,209,.65);
+      background:rgba(0,206,209,.1);
+      color:var(--aqua-dark);
+      box-shadow:0 6px 14px rgba(0,206,209,.25);
+      transform:translateY(-1px);
+    }
     .hero { border-radius:16px; overflow:hidden; box-shadow:0 14px 34px rgba(0,139,139,.2); margin-bottom:1.4rem; }
     .hero img { width:100%; height:min(52vw,480px); object-fit:cover; display:block; }
     .media-gallery { margin:1.2rem 0 1.4rem; }

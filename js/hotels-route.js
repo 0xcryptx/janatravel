@@ -42,6 +42,15 @@ function formatRating(value) {
   return raw;
 }
 
+function getDestinationPageUrl(destination) {
+  const normalized = String(destination || "").toLowerCase().trim();
+  if (!normalized) return "";
+  if (normalized.includes("maldives")) return "../maldives/";
+  if (normalized.includes("seychelles")) return "../seychelles/";
+  if (normalized.includes("mauritius")) return "../mauritius/";
+  return "";
+}
+
 function getCaseInsensitiveField(row, keys) {
   const keyMap = Object.keys(row || {}).reduce((acc, key) => {
     acc[key.toLowerCase().trim()] = key;
@@ -213,11 +222,13 @@ function renderHotel(hotel) {
   const rawGalleryImages = Array.isArray(hotel.galleryImages) ? hotel.galleryImages : [];
   const galleryImages = rawGalleryImages.length ? rawGalleryImages : [mainImage];
   const ratingLabel = formatRating(hotel.rating);
+  const destinationValue = String(hotel.destination || "").trim();
+  const destinationPageUrl = getDestinationPageUrl(destinationValue);
   const mapUrl = String(hotel.googleMapsLink || "").trim();
   const hasMapUrl = /^https?:\/\//i.test(mapUrl);
   const locationValue = String(hotel.location || "").trim() || "Not specified yet";
   const details = [
-    ["Destination", hotel.destination],
+    ["Destination", destinationValue],
     ["Location", locationValue],
     ["Rating", ratingLabel],
     ["Island Size", hotel.islandSize],
@@ -232,7 +243,13 @@ function renderHotel(hotel) {
 
   contentEl.innerHTML = `
     <div class="meta">
-      ${hotel.destination ? `<span class="pill">${escapeHtml(hotel.destination)}</span>` : ""}
+      ${
+        destinationValue && destinationPageUrl
+          ? `<a class="pill pill-link" href="${destinationPageUrl}">${escapeHtml(destinationValue)}</a>`
+          : destinationValue
+            ? `<span class="pill">${escapeHtml(destinationValue)}</span>`
+            : ""
+      }
       ${ratingLabel ? `<span class="pill">${escapeHtml(ratingLabel)}</span>` : ""}
     </div>
     <div class="media-gallery">
@@ -268,9 +285,16 @@ function renderHotel(hotel) {
             <div class="detail-card">
               <span class="label">${escapeHtml(label)}</span>
               ${
+                label === "Destination" && destinationPageUrl && value
+                  ? `<a class="value value-link" href="${destinationPageUrl}">${escapeHtml(value)}</a>`
+                  : ""
+              }
+              ${
                 label === "Location" && hasMapUrl
                   ? `<a class="value value-link" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value || "Not specified yet")}</a>`
-                  : `<span class="value">${escapeHtml(value || "Not specified yet")}</span>`
+                  : label === "Destination" && destinationPageUrl && value
+                    ? ""
+                    : `<span class="value">${escapeHtml(value || "Not specified yet")}</span>`
               }
             </div>
           `
