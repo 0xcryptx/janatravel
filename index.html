@@ -1703,22 +1703,29 @@
         }
 
         .social-link {
-            width: 45px;
-            height: 45px;
-            background: var(--aqua-blue);
+            width: 60px;
+            height: 60px;
+            background: transparent;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--white);
             text-decoration: none;
-            font-size: 1.2rem;
             transition: all 0.3s ease;
+            border: none;
+            overflow: hidden;
         }
 
         .social-link:hover {
-            background: var(--aqua-dark);
             transform: translateY(-3px);
+        }
+
+        .social-link img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
         }
 
         .contact-map {
@@ -2044,6 +2051,37 @@
             color: var(--aqua-blue);
         }
 
+        .footer-social-links {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        .footer-social-link {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .footer-social-link:hover {
+            transform: translateY(-2px);
+        }
+
+        .footer-social-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+
         .footer-bottom {
             text-align: center;
             padding-top: 1.5rem;
@@ -2225,13 +2263,16 @@
                         </div>
                     </div>
                     <div class="filter-group">
-                        <label>Trip Type</label>
+                        <label>Experience</label>
                         <select id="tripType">
-                            <option value="all">All Types</option>
-                            <option value="romantic">Romantic</option>
-                            <option value="adventure">Adventure</option>
-                            <option value="family">Family</option>
-                            <option value="luxury">Luxury</option>
+                            <option value="all">All Experiences</option>
+                            <option value="all-inclusive-holidays">All-inclusive Holidays</option>
+                            <option value="family-holidays">Family Holidays</option>
+                            <option value="honeymoon-couples">Honeymoon & Couples</option>
+                            <option value="private-island-escapes">Private Island Escapes</option>
+                            <option value="wellness-retreats">Wellness Retreats</option>
+                            <option value="luxury-beach-holidays">Luxury Beach Holidays</option>
+                            <option value="adventure-water-sports">Adventure & Water Sports</option>
                         </select>
                     </div>
                     <div class="filter-group">
@@ -2271,167 +2312,7 @@
         </div>
 
         <div class="destinations-grid" id="destinationsGrid">
-            <!-- Featured: 3 hand-picked (more packages under All packages) -->
-            <div class="destination-card fade-in" data-price="2399" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('ari')">
-                <img src="assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/1.jpg" alt="Waldorf Astoria Maldives Ithaafushi">
-                <div class="destination-info">
-                    <h4>Waldorf Astoria Maldives Ithaafushi</h4>
-                    <p>Sophisticated island living with attentive service, spa-led relaxation, and panoramic ocean views.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in" data-price="2499" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('male')">
-                <img src="assets/Niyama%20Private%20Islands%20Maldives/1.jpg" alt="Niyama Private Islands Maldives">
-                <div class="destination-info">
-                    <h4>Niyama Private Islands Maldives</h4>
-                    <p>Iconic private-island luxury with secluded villas, vibrant marine life, and unforgettable sunsets.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in" data-price="2299" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('honeymoon')">
-                <img src="assets/InterContinental%20Maldives%20Maamunagau%20Resort/2.jpg" alt="InterContinental Maldives Maamunagau Resort">
-                <div class="destination-info">
-                    <h4>InterContinental Maldives Maamunagau Resort</h4>
-                    <p>Modern Maldivian hospitality—perfect for romance, families, and smooth resort-to-resort experiences.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="1999" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('baa')">
-                <img src="assets/Kandima%20Maldives/1.jpg" alt="Kandima Maldives">
-                <div class="destination-info">
-                    <h4>Kandima Maldives</h4>
-                    <p>Lively lagoon resort with spacious accommodation, playful island energy, and family-friendly comfort.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2199" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('family')">
-                <img src="assets/Jumeirah%20Olhahali%20Island/1.jpg" alt="Jumeirah Olhahali Island">
-                <div class="destination-info">
-                    <h4>Jumeirah Olhahali Island</h4>
-                    <p>A secluded retreat with elegant beach villas, curated dining, and calm lagoons for meaningful getaways.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="1399" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('diving')">
-                <img src="assets/Radisson%20Blu%20Resort%20Maldives/2.jpg" alt="Radisson Blu Resort Maldives">
-                <div class="destination-info">
-                    <h4>Radisson Blu Resort Maldives</h4>
-                    <p>Relaxed premium comfort with warm hospitality, great access to the reef, and easy island adventures.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2680" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('lhaviyani')">
-                <img src="https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=800&q=80" alt="Naladhu Private Island Maldives Resort">
-                <div class="destination-info">
-                    <h4>Naladhu Private Island Maldives Resort</h4>
-                    <p>Ultra-private barefoot luxury for couples and discerning travelers seeking complete serenity.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2099" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('raa')">
-                <img src="https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=800&q=80" alt="Mövenpick Resort Kuredhivaru Maldives">
-                <div class="destination-info">
-                    <h4>Mövenpick Resort Kuredhivaru Maldives</h4>
-                    <p>Relaxed premium comfort with vibrant island moments—ideal for family-friendly escapes.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2450" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('wellness')">
-                <img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80" alt="Kuda Villingili Resort Maldives">
-                <div class="destination-info">
-                    <h4>Kuda Villingili Resort Maldives</h4>
-                    <p>A warm, welcoming resort where relaxed days meet stylish villas and memorable activities.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="899" data-type="adventure" data-kids="true" data-travelers="4" onclick="openModal('budget')">
-                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80" alt="Guesthouse island stay">
-                <div class="destination-info">
-                    <h4>Radisson Blu Resort Maldives</h4>
-                    <p>Convenient luxury with spacious comfort, welcoming service, and easy access to island adventures.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2199" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('photography')">
-                <img src="https://images.unsplash.com/photo-1551918120-9739cb430c6d?w=800&q=80" alt="Anantara Veli Maldives Resort">
-                <div class="destination-info">
-                    <h4>Anantara Veli Maldives Resort</h4>
-                    <p>A serene, intimate hideaway with overwater beauty and elegant, low-key luxury.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2299" data-type="adventure" data-kids="false" data-travelers="2" onclick="openModal('surfing')">
-                <img src="https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=800&q=80" alt="Anantara Dhigu Maldives Resort">
-                <div class="destination-info">
-                    <h4>Anantara Dhigu Maldives Resort</h4>
-                    <p>Contemporary romance with private-pool options, reef-ready adventures, and refined service.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="1899" data-type="family" data-kids="true" data-travelers="4" onclick="openModal('siyamworld')">
-                <img src="https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=800&q=80" alt="Siyam World Maldives">
-                <div class="destination-info">
-                    <h4>Siyam World Maldives</h4>
-                    <p>A design-forward family destination with immersive activities and an energetic island vibe.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2399" data-type="romantic" data-kids="false" data-travelers="2" onclick="openModal('grandpark')">
-                <img src="https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80" alt="Grand Park Kodhipparu">
-                <div class="destination-info">
-                    <h4>Grand Park Kodhipparu</h4>
-                    <p>Modern comfort with standout sunsets, elegant villas, and beautifully planned excursions.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2499" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('somaldives')">
-                <img src="https://images.unsplash.com/photo-1540202404-a2f29016b523?w=800&q=80" alt="SO/ Maldives">
-                <div class="destination-info">
-                    <h4>SO/ Maldives</h4>
-                    <p>Chic modern island living with wellness-forward vibes and unforgettable ocean views.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
-            <div class="destination-card fade-in extra-destination" data-price="2499" data-type="luxury" data-kids="false" data-travelers="2" onclick="openModal('kihavah')">
-                <img src="https://images.unsplash.com/photo-1578922746465-3a80a228f223?w=800&q=80" alt="Anantara Kihavah">
-                <div class="destination-info">
-                    <h4>Anantara Kihavah</h4>
-                    <p>A tranquil, premium villa retreat with refined service, peaceful waters, and lasting island memories.</p>
-                    <div class="destination-price">
-                        <button class="book-btn">View Details</button>
-                    </div>
-                </div>
-            </div>
+            <!-- Dynamic hotel cards are injected from form/sheet data. -->
         </div>
         <div class="no-results" id="noResults" style="display: none;">
             <p>No packages match your criteria. Try adjusting your filters or <a href="#" onclick="viewAllPackagesFromEmpty(); return false;">view all packages</a>.</p>
@@ -2635,10 +2516,15 @@
                     </div>
                 </div>
                 <div class="social-links">
-                    <a href="#" class="social-link">f</a>
-                    <a href="#" class="social-link">in</a>
-                    <a href="#" class="social-link">ig</a>
-                    <a href="#" class="social-link">tw</a>
+                    <a href="https://www.facebook.com/profile.php?id=100063245288326" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
+                        <img src="assets/images/facebook_logo.png" alt="Facebook">
+                    </a>
+                    <a href="https://www.instagram.com/jana_travel_me?utm_source=ig_web_button_share_sheet&amp;igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
+                        <img src="assets/images/instagram_logo.png" alt="Instagram">
+                    </a>
+                    <a href="https://wa.me/971501771927" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="WhatsApp">
+                        <img src="assets/images/whatsapp_logo.png" alt="WhatsApp">
+                    </a>
                 </div>
             </div>
             <form class="contact-form fade-in" onsubmit="handleSubmit(event)">
@@ -2708,6 +2594,17 @@
                 <p><a href="tel:+97144558750">+971 4 455 8750</a></p>
                 <p><a href="mailto:book@jana.travel.com">book@jana.travel.com</a></p>
                 <p><a href="https://maps.app.goo.gl/NTWDDfnBYraZsZgDA" target="_blank" rel="noopener noreferrer">Office 1208, Donna Tower, Dubai Silicon Oasis, Dubai, UAE</a></p>
+                <div class="footer-social-links">
+                    <a href="https://www.facebook.com/profile.php?id=100063245288326" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="Facebook">
+                        <img src="assets/images/facebook_logo.png" alt="Facebook">
+                    </a>
+                    <a href="https://www.instagram.com/jana_travel_me?utm_source=ig_web_button_share_sheet&amp;igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="Instagram">
+                        <img src="assets/images/instagram_logo.png" alt="Instagram">
+                    </a>
+                    <a href="https://wa.me/971501771927" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="WhatsApp">
+                        <img src="assets/images/whatsapp_logo.png" alt="WhatsApp">
+                    </a>
+                </div>
             </div>
         </div>
         <div class="footer-bottom">
@@ -2716,6 +2613,9 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/js/intlTelInput.min.js"></script>
+    <script>
+        window.JANA_HOTELS_SHEET_URL = "https://opensheet.elk.sh/1v3F_YYEJl1mhoN9Hs2F6ee8SzXjsbJdGvXqczB9LKL4/Form%20Responses%201";
+    </script>
     <script>
         const INDEX_SCROLL_KEY = 'jana:indexScrollY';
 
@@ -3156,387 +3056,210 @@
             }
         };
 
-        // Destination overrides: swap tiles + modal content to your resort list.
-        // Images are sourced from Unsplash by query so each destination has a rich carousel.
-        const destinationOverrides = {
-            male: {
-                title: 'Niyama Private Islands Maldives',
-                images: [
-                    'assets/Niyama%20Private%20Islands%20Maldives/1.jpg',
-                    'assets/Niyama%20Private%20Islands%20Maldives/2.jpg',
-                    'assets/Niyama%20Private%20Islands%20Maldives/3.jpg',
-                    'assets/Niyama%20Private%20Islands%20Maldives/4.jpg'
-                ],
-                description: 'Iconic private-island luxury with secluded villas, vibrant marine life, and unforgettable sunsets.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Private Island Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            baa: {
-                title: 'Kandima Maldives',
-                images: [
-                    'assets/Kandima%20Maldives/1.jpg',
-                    'assets/Kandima%20Maldives/2.avif',
-                    'assets/Kandima%20Maldives/3.jpg',
-                    'assets/Kandima%20Maldives/4.png'
-                ],
-                description: 'Lively lagoon resort with spacious accommodation, playful island energy, and family-friendly comfort.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Lagoon View Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            ari: {
-                title: 'Waldorf Astoria Maldives Ithaafushi',
-                images: [
-                    'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/1.jpg',
-                    'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/2.jpg',
-                    'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/3.avif',
-                    'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/4.jpeg'
-                ],
-                description: 'Sophisticated island living with attentive service, spa-led relaxation, and panoramic ocean views.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Overwater Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            family: {
-                title: 'Jumeirah Olhahali Island',
-                images: [
-                    'assets/Jumeirah%20Olhahali%20Island/1.jpg',
-                    'assets/Jumeirah%20Olhahali%20Island/2.jpg',
-                    'assets/Jumeirah%20Olhahali%20Island/3.jpg',
-                    'assets/Jumeirah%20Olhahali%20Island/4.avif'
-                ],
-                description: 'A secluded retreat with elegant beach villas, curated dining, and calm lagoons for meaningful getaways.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Private Beach Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            honeymoon: {
-                title: 'InterContinental Maldives Maamunagau Resort',
-                images: [
-                    'assets/InterContinental%20Maldives%20Maamunagau%20Resort/2.jpg',
-                    'assets/InterContinental%20Maldives%20Maamunagau%20Resort/1.avif',
-                    'assets/InterContinental%20Maldives%20Maamunagau%20Resort/3.webp',
-                    'assets/InterContinental%20Maldives%20Maamunagau%20Resort/4.webp'
-                ],
-                description: 'Modern Maldivian hospitality—perfect for romance, families, and smooth resort-to-resort experiences.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Luxury Overwater Suite',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            diving: {
-                title: 'Radisson Blu Resort Maldives',
-                images: [
-                    'assets/Radisson%20Blu%20Resort%20Maldives/2.jpg',
-                    'assets/Radisson%20Blu%20Resort%20Maldives/1.webp',
-                    'assets/Radisson%20Blu%20Resort%20Maldives/3.webp',
-                    'assets/Radisson%20Blu%20Resort%20Maldives/4.jpg'
-                ],
-                description: 'Relaxed premium comfort with warm hospitality, great access to the reef, and easy island adventures.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Oceanview Room',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            lhaviyani: {
-                title: 'Naladhu Private Island Maldives Resort',
-                images: [
-                    'https://source.unsplash.com/1200x800/?naladhu,maldives,private,island',
-                    'https://source.unsplash.com/1200x800/?naladhu,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?naladhu,maldives,villa',
-                    'https://source.unsplash.com/1200x800/?naladhu,maldives,sunset'
-                ],
-                description: 'Ultra-private barefoot luxury for couples and discerning travelers seeking complete serenity.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Private Island Suite',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            raa: {
-                title: 'Mövenpick Resort Kuredhivaru Maldives',
-                images: [
-                    'https://source.unsplash.com/1200x800/?movenpick,kuredhivaru,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?kuredhivaru,maldives,overwater',
-                    'https://source.unsplash.com/1200x800/?movenpick,maldives,lagoon',
-                    'https://source.unsplash.com/1200x800/?movenpick,maldives,sunset'
-                ],
-                description: 'Relaxed premium comfort with vibrant island moments—ideal for family-friendly escapes.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Family Beach Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            wellness: {
-                title: 'Kuda Villingili Resort Maldives',
-                images: [
-                    'https://source.unsplash.com/1200x800/?kuda,villingili,maldives',
-                    'https://source.unsplash.com/1200x800/?villingili,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?kuda,maldives,villa',
-                    'https://source.unsplash.com/1200x800/?kuda,maldives,lagoon'
-                ],
-                description: 'A warm, welcoming resort where relaxed days meet stylish villas and memorable activities.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Beachfront Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            budget: {
-                title: 'Radisson Blu Resort Maldives',
-                images: [
-                    'https://source.unsplash.com/1200x800/?radisson,blu,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?radisson,maldives,lagoon',
-                    'https://source.unsplash.com/1200x800/?radisson,blu,maldives,water',
-                    'https://source.unsplash.com/1200x800/?radisson,blu,maldives,sunset'
-                ],
-                description: 'Convenient luxury with spacious comfort, welcoming service, and easy access to island adventures.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Oceanview Room',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            photography: {
-                title: 'Anantara Veli Maldives Resort',
-                images: [
-                    'https://source.unsplash.com/1200x800/?anantara,veli,maldives,overwater',
-                    'https://source.unsplash.com/1200x800/?veli,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?anantara,maldives,villa',
-                    'https://source.unsplash.com/1200x800/?anantara,maldives,sunset'
-                ],
-                description: 'A serene, intimate hideaway with overwater beauty and elegant, low-key luxury.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Overwater Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            surfing: {
-                title: 'Anantara Dhigu Maldives Resort',
-                images: [
-                    'https://source.unsplash.com/1200x800/?anantara,dhigu,maldives,overwater',
-                    'https://source.unsplash.com/1200x800/?dhigu,maldives,private,pool',
-                    'https://source.unsplash.com/1200x800/?anantara,dhigu,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?anantara,dhigu,maldives,sunset'
-                ],
-                description: 'Contemporary romance with private-pool options, reef-ready adventures, and refined service.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Private Pool Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-
-            // Newly added grid tiles
-            siyamworld: {
-                title: 'Siyam World Maldives',
-                images: [
-                    'https://source.unsplash.com/1200x800/?siyam,world,maldives',
-                    'https://source.unsplash.com/1200x800/?siyam,world,maldives,fun',
-                    'https://source.unsplash.com/1200x800/?siyam,world,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?siyam,world,maldives,sunset'
-                ],
-                description: 'A design-forward family destination with immersive activities and an energetic island vibe.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Family Suite',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            grandpark: {
-                title: 'Grand Park Kodhipparu',
-                images: [
-                    'https://source.unsplash.com/1200x800/?grand,park,kodhipparu,maldives',
-                    'https://source.unsplash.com/1200x800/?kodhipparu,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?grand,park,maldives,villa',
-                    'https://source.unsplash.com/1200x800/?kodhipparu,maldives,sunset'
-                ],
-                description: 'Modern comfort with standout sunsets, elegant villas, and beautifully planned excursions.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Beach Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            somaldives: {
-                title: 'SO/ Maldives',
-                images: [
-                    'https://source.unsplash.com/1200x800/?so,maldives,overwater',
-                    'https://source.unsplash.com/1200x800/?so,maldives,spa',
-                    'https://source.unsplash.com/1200x800/?so,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?so,maldives,sunset'
-                ],
-                description: 'Chic modern island living with wellness-forward vibes and unforgettable ocean views.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Oceanfront Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            },
-            kihavah: {
-                title: 'Anantara Kihavah',
-                images: [
-                    'https://source.unsplash.com/1200x800/?anantara,kihavah,maldives',
-                    'https://source.unsplash.com/1200x800/?kihavah,maldives,overwater',
-                    'https://source.unsplash.com/1200x800/?anantara,kihavah,maldives,beach',
-                    'https://source.unsplash.com/1200x800/?anantara,kihavah,maldives,sunset'
-                ],
-                description: 'A tranquil, premium villa retreat with refined service, peaceful waters, and lasting island memories.',
-                duration: '6 Days / 5 Nights',
-                accommodation: 'Water Villa',
-                transport: 'Seaplane Transfer',
-                features: [
-                    'Curated resort recommendations',
-                    'Seamless transfers arranged',
-                    'Handpicked experiences',
-                    'Dedicated support throughout',
-                    'Unforgettable dining moments',
-                    'Premium island hospitality',
-                    'Comfort-focused itinerary planning',
-                    'Luxury stays prioritized'
-                ]
-            }
+        // Hotel package details are loaded from data/hotels.json (not hardcoded in HTML).
+        const destinationOverrides = {};
+        const HOTEL_SLUG_TO_DESTINATION_KEY = {
+            'niyama-private-islands-maldives': 'male',
+            'kandima-maldives': 'baa',
+            'waldorf-astoria-maldives-ithaafushi': 'ari',
+            'jumeirah-olhahali-island': 'family',
+            'intercontinental-maldives-maamunagau-resort': 'honeymoon',
+            'radisson-blu-resort-maldives': 'diving'
         };
 
-        Object.keys(destinationOverrides).forEach(key => {
-            destinations[key] = {
-                ...(destinations[key] || {}),
-                ...destinationOverrides[key]
+        function syncDestinationOverridesIntoDestinations() {
+            Object.keys(destinationOverrides).forEach(key => {
+                destinations[key] = {
+                    ...(destinations[key] || {}),
+                    ...destinationOverrides[key]
+                };
+            });
+        }
+
+        function getCaseInsensitiveField(row, keys) {
+            const keyMap = Object.keys(row || {}).reduce((acc, key) => {
+                acc[key.toLowerCase().trim()] = key;
+                return acc;
+            }, {});
+            for (const key of keys) {
+                const normalized = key.toLowerCase().trim();
+                if (keyMap[normalized]) return row[keyMap[normalized]];
+            }
+            return '';
+        }
+
+        function normalizeGalleryImages(rawValue) {
+            if (Array.isArray(rawValue)) return rawValue.filter(Boolean);
+            if (typeof rawValue !== 'string') return [];
+            return rawValue.split(/\||\n/).map(item => item.trim()).filter(Boolean);
+        }
+
+        function parseFeaturedValue(value) {
+            const normalized = String(value || '').toLowerCase().trim();
+            return normalized === 'true' || normalized === 'yes' || normalized === '1';
+        }
+
+        function normalizeSheetHotel(row) {
+            return {
+                slug: getCaseInsensitiveField(row, ['slug', 'Slug']),
+                name: getCaseInsensitiveField(row, ['name', 'Name']),
+                destination: getCaseInsensitiveField(row, ['destination', 'Destination']),
+                location: getCaseInsensitiveField(row, ['location', 'Location']),
+                rating: getCaseInsensitiveField(row, ['rating', 'Rating']),
+                islandSize: getCaseInsensitiveField(row, ['islandSize', 'Island Size']),
+                reefType: getCaseInsensitiveField(row, ['reefType', 'Reef Type']),
+                experience: getCaseInsensitiveField(row, ['experience', 'Experience']),
+                mealPlan: getCaseInsensitiveField(row, ['mealPlan', 'Meal Plan']),
+                rooms: getCaseInsensitiveField(row, ['rooms', 'Rooms']),
+                restaurants: getCaseInsensitiveField(row, ['restaurants', 'Restaurants']),
+                bars: getCaseInsensitiveField(row, ['bars', 'Bars']),
+                transferType: getCaseInsensitiveField(row, ['transferType', 'Transfer Type']),
+                description: getCaseInsensitiveField(row, ['description', 'Description']),
+                imageUrl: getCaseInsensitiveField(row, ['imageUrl', 'Image URL']),
+                galleryImages: normalizeGalleryImages(getCaseInsensitiveField(row, ['galleryImages', 'Gallery Images'])),
+                whatsappMessage: getCaseInsensitiveField(row, ['whatsappMessage', 'WhatsApp Message']),
+                featured: parseFeaturedValue(getCaseInsensitiveField(row, ['featured', 'Featured']))
             };
-        });
+        }
+
+        function inferExperienceTags(hotel) {
+            const source = String(hotel.experience || '').toLowerCase();
+            const byComma = source.split(',').map(v => v.trim()).filter(Boolean);
+            const text = `${source} ${String(hotel.description || '').toLowerCase()}`;
+            const tags = new Set();
+
+            const addTagFromText = (value) => {
+                if (value.includes('all-inclusive') || value.includes('all inclusive')) tags.add('all-inclusive-holidays');
+                if (value.includes('family')) tags.add('family-holidays');
+                if (value.includes('honeymoon') || value.includes('couple') || value.includes('romantic')) tags.add('honeymoon-couples');
+                if (value.includes('private island')) tags.add('private-island-escapes');
+                if (value.includes('wellness') || value.includes('spa') || value.includes('yoga')) tags.add('wellness-retreats');
+                if (value.includes('luxury beach') || value.includes('luxury')) tags.add('luxury-beach-holidays');
+                if (value.includes('adventure') || value.includes('water sport') || value.includes('surf') || value.includes('diving') || value.includes('snorkeling') || value.includes('snorkel')) {
+                    tags.add('adventure-water-sports');
+                }
+            };
+
+            byComma.forEach(addTagFromText);
+            addTagFromText(text);
+
+            if (!tags.size) tags.add('luxury-beach-holidays');
+            return Array.from(tags);
+        }
+
+        function inferKidsAllowed(hotel) {
+            const text = `${hotel.experience || ''} ${hotel.description || ''}`.toLowerCase();
+            return text.includes('family') || text.includes('kids') || text.includes('children');
+        }
+
+        function inferMaxTravelers(hotel, experienceTags) {
+            if (typeof hotel.maxTravelers === 'number' && hotel.maxTravelers > 0) return hotel.maxTravelers;
+            return Array.isArray(experienceTags) && experienceTags.includes('family-holidays') ? 4 : 2;
+        }
+
+        const HOTEL_PLACEHOLDER_IMAGE = 'assets/images/add_image.webp';
+
+        function renderHotelCardsFromData(hotels) {
+            const grid = document.getElementById('destinationsGrid');
+            if (!grid) return;
+
+            grid.innerHTML = '';
+            const sorted = [...hotels].sort((a, b) => {
+                const af = a.featured ? 1 : 0;
+                const bf = b.featured ? 1 : 0;
+                if (af !== bf) return bf - af;
+                return (a.name || '').localeCompare(b.name || '');
+            });
+
+            sorted.forEach((hotel, index) => {
+                const slug = hotel.slug || '';
+                if (!slug) return;
+                const experienceTags = inferExperienceTags(hotel);
+                const primaryTag = experienceTags[0] || 'luxury-beach-holidays';
+                const kidsAllowed = inferKidsAllowed(hotel);
+                const maxTravelers = inferMaxTravelers(hotel, experienceTags);
+                const imgSrc = hotel.imageUrl || HOTEL_PLACEHOLDER_IMAGE;
+                const isFeatured = Boolean(hotel.featured);
+
+                const card = document.createElement('div');
+                card.className = `destination-card fade-in${isFeatured ? '' : ' extra-destination'}`;
+                card.dataset.hotelSlug = slug;
+                card.dataset.price = String(hotel.price || (primaryTag === 'luxury-beach-holidays' ? 2399 : primaryTag === 'family-holidays' ? 1999 : 1799));
+                card.dataset.type = experienceTags.join('|');
+                card.dataset.kids = String(kidsAllowed);
+                card.dataset.travelers = String(maxTravelers);
+                card.dataset.country = String(hotel.destination || '').toLowerCase();
+                card.setAttribute('onclick', `window.location.href='hotels/?id=${encodeURIComponent(slug)}'`);
+                card.innerHTML = `
+                    <img src="${imgSrc}" alt="${hotel.name || 'Hotel package'}">
+                    <div class="destination-info">
+                        <h4>${hotel.name || 'Hotel package'}</h4>
+                        <p>${hotel.description || 'Discover this curated stay with JANA Travel.'}</p>
+                        <div class="destination-price">
+                            <button class="book-btn">View Details</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function applyHotelJsonDataToIndex() {
+            try {
+                const sourceUrl = (window.JANA_HOTELS_SHEET_URL || '').trim() || 'data/hotels.json';
+                const response = await fetch(sourceUrl, { cache: 'no-store' });
+                if (!response.ok) return;
+                const rawHotels = await response.json();
+                if (!Array.isArray(rawHotels)) return;
+                const hotels = rawHotels.map(row => {
+                    if (row && (row.slug || row.name || row.description)) return row;
+                    return normalizeSheetHotel(row || {});
+                });
+                const validHotels = hotels.filter(h => h && h.slug && String(h.name || '').trim());
+                const noResultsEl = document.getElementById('noResults');
+                if (!validHotels.length) {
+                    const grid = document.getElementById('destinationsGrid');
+                    if (grid) grid.innerHTML = '';
+                    if (noResultsEl) {
+                        noResultsEl.style.display = 'block';
+                        const p = noResultsEl.querySelector('p');
+                        if (p) p.textContent = 'No hotel packages available yet. Add one from your form to display it here.';
+                    }
+                    return;
+                }
+                renderHotelCardsFromData(validHotels);
+                if (noResultsEl) noResultsEl.style.display = 'none';
+
+                validHotels.forEach(hotel => {
+                    const key = HOTEL_SLUG_TO_DESTINATION_KEY[hotel.slug];
+                    if (!key) return;
+                    const gallery = Array.isArray(hotel.galleryImages) ? hotel.galleryImages.filter(Boolean) : [];
+                    const features = [hotel.mealPlan, hotel.reefType, hotel.islandSize, hotel.experience].filter(Boolean);
+                    destinationOverrides[key] = {
+                        title: hotel.name || '',
+                        description: hotel.description || '',
+                        images: gallery.length ? gallery : [hotel.imageUrl || HOTEL_PLACEHOLDER_IMAGE],
+                        duration: hotel.experience || '',
+                        accommodation: hotel.rooms || '',
+                        transport: hotel.transferType || '',
+                        features
+                    };
+                });
+
+                syncDestinationOverridesIntoDestinations();
+                if (typeof applyPackagesCatalogView === 'function') {
+                    applyPackagesCatalogView(false);
+                }
+                if (typeof filterDestinations === 'function') {
+                    filterDestinations();
+                }
+            } catch (error) {
+                console.error('Failed to load hotel JSON data for index:', error);
+            }
+        }
+
+        syncDestinationOverridesIntoDestinations();
+        applyHotelJsonDataToIndex();
 
         // Ensure modal carousel images always load (avoid unreliable source.unsplash.com redirects).
         const destinationFallbackImages = [
@@ -3711,13 +3434,13 @@
                     return;
                 }
 
-                const type = card.dataset.type;
+                const typeTags = (card.dataset.type || '').split('|').filter(Boolean);
                 const kidsAllowed = card.dataset.kids === 'true';
                 const maxTravelers = parseInt(card.dataset.travelers, 10);
 
                 let show = true;
 
-                if (tripType !== 'all' && type !== tripType) show = false;
+                if (tripType !== 'all' && !typeTags.includes(tripType)) show = false;
                 if (appliedHasKids && !kidsAllowed) show = false;
                 if (appliedTravelerCount > maxTravelers) show = false;
                 if (appliedCountry !== 'all' && getCardCountry(card) !== appliedCountry) show = false;
@@ -3819,35 +3542,30 @@
 
         // Gallery images
         const galleryImages = [
-            'assets/Niyama%20Private%20Islands%20Maldives/1.jpg',
-            'assets/Niyama%20Private%20Islands%20Maldives/2.jpg',
-            'assets/Niyama%20Private%20Islands%20Maldives/3.jpg',
-            'assets/Niyama%20Private%20Islands%20Maldives/4.jpg',
-
-            'assets/Kandima%20Maldives/1.jpg',
-            'assets/Kandima%20Maldives/2.avif',
-            'assets/Kandima%20Maldives/3.jpg',
-            'assets/Kandima%20Maldives/4.png',
-
-            'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/1.jpg',
-            'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/2.jpg',
-            'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/3.avif',
-            'assets/Waldorf%20Astoria%20Maldives%20Ithaafushi/4.jpeg',
-
-            'assets/Jumeirah%20Olhahali%20Island/1.jpg',
-            'assets/Jumeirah%20Olhahali%20Island/2.jpg',
-            'assets/Jumeirah%20Olhahali%20Island/3.jpg',
-            'assets/Jumeirah%20Olhahali%20Island/4.avif',
-
-            'assets/InterContinental%20Maldives%20Maamunagau%20Resort/1.avif',
-            'assets/InterContinental%20Maldives%20Maamunagau%20Resort/2.jpg',
-            'assets/InterContinental%20Maldives%20Maamunagau%20Resort/3.webp',
-            'assets/InterContinental%20Maldives%20Maamunagau%20Resort/4.webp',
-
-            'assets/Radisson%20Blu%20Resort%20Maldives/1.webp',
-            'assets/Radisson%20Blu%20Resort%20Maldives/2.jpg',
-            'assets/Radisson%20Blu%20Resort%20Maldives/3.webp',
-            'assets/Radisson%20Blu%20Resort%20Maldives/4.jpg'
+            'assets/hotel_images/niyama-private-islands-maldives/1.jpg',
+            'assets/hotel_images/niyama-private-islands-maldives/2.jpg',
+            'assets/hotel_images/niyama-private-islands-maldives/3.jpg',
+            'assets/hotel_images/niyama-private-islands-maldives/4.jpg',
+            'assets/hotel_images/kandima-maldives/1.jpg',
+            'assets/hotel_images/kandima-maldives/2.avif',
+            'assets/hotel_images/kandima-maldives/3.jpg',
+            'assets/hotel_images/kandima-maldives/4.png',
+            'assets/hotel_images/waldorf-astoria-maldives-ithaafushi/1.jpg',
+            'assets/hotel_images/waldorf-astoria-maldives-ithaafushi/2.jpg',
+            'assets/hotel_images/waldorf-astoria-maldives-ithaafushi/3.avif',
+            'assets/hotel_images/waldorf-astoria-maldives-ithaafushi/4.jpeg',
+            'assets/hotel_images/jumeirah-olhahali-island/1.jpg',
+            'assets/hotel_images/jumeirah-olhahali-island/2.jpg',
+            'assets/hotel_images/jumeirah-olhahali-island/3.jpg',
+            'assets/hotel_images/jumeirah-olhahali-island/4.avif',
+            'assets/hotel_images/intercontinental-maldives-maamunagau-resort/1.avif',
+            'assets/hotel_images/intercontinental-maldives-maamunagau-resort/2.jpg',
+            'assets/hotel_images/intercontinental-maldives-maamunagau-resort/3.webp',
+            'assets/hotel_images/intercontinental-maldives-maamunagau-resort/4.webp',
+            'assets/hotel_images/radisson-blu-resort-maldives/1.webp',
+            'assets/hotel_images/radisson-blu-resort-maldives/2.jpg',
+            'assets/hotel_images/radisson-blu-resort-maldives/3.webp',
+            'assets/hotel_images/radisson-blu-resort-maldives/4.jpg'
         ];
 
         function openGalleryImage(index) {
