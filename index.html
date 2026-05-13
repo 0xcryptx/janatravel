@@ -3084,12 +3084,72 @@
             return normalized === 'true' || normalized === 'yes' || normalized === '1';
         }
 
+        const HOTEL_IMAGE_BASE_PATHS = ['hotel_images', 'assets/hotel_images'];
+        const MAIN_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+
+        function isHotelActive(value) {
+            if (value === false) return false;
+            const normalized = String(value ?? '').toLowerCase().trim();
+            if (!normalized) return true;
+            return normalized !== 'false' && normalized !== 'no' && normalized !== '0';
+        }
+
+        async function doesImageExist(url) {
+            try {
+                const headResponse = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+                if (headResponse.ok) return true;
+                if (headResponse.status !== 405) return false;
+            } catch (error) {
+                // Ignore and try GET fallback.
+            }
+            try {
+                const getResponse = await fetch(url, { cache: 'no-store' });
+                return getResponse.ok;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function collectMainImages(baseFolderPath) {
+            const images = [];
+            for (let index = 1; index <= 4; index += 1) {
+                let foundForIndex = '';
+                for (const ext of MAIN_IMAGE_EXTENSIONS) {
+                    const candidate = `${baseFolderPath}/${index}.${ext}`;
+                    if (await doesImageExist(candidate)) {
+                        foundForIndex = candidate;
+                        break;
+                    }
+                }
+                if (foundForIndex) images.push(foundForIndex);
+            }
+            return images;
+        }
+
+        async function resolveHotelImageSet(slug) {
+            const normalizedSlug = String(slug || '').trim();
+            if (!normalizedSlug) return null;
+            for (const basePath of HOTEL_IMAGE_BASE_PATHS) {
+                const folderPath = `${basePath}/${normalizedSlug}`;
+                const numberedImages = await collectMainImages(folderPath);
+                if (numberedImages.length) {
+                    return { basePath, images: numberedImages };
+                }
+                const fallbackImage = `${folderPath}/add_image.webp`;
+                if (await doesImageExist(fallbackImage)) {
+                    return { basePath, images: [fallbackImage] };
+                }
+            }
+            return null;
+        }
+
         function normalizeSheetHotel(row) {
             const slug = String(getCaseInsensitiveField(row, ['slug', 'Slug']) || '').trim();
             const name = String(getCaseInsensitiveField(row, ['name', 'Name']) || '').trim();
             return {
                 slug,
                 name,
+                active: getCaseInsensitiveField(row, ['active', 'Active']),
                 smallDescription: getCaseInsensitiveField(row, ['smallDescription', 'Small Description', 'Short Description']),
                 destination: getCaseInsensitiveField(row, ['destination', 'Destination']),
                 location: getCaseInsensitiveField(row, ['location', 'Location']),
@@ -3210,7 +3270,22 @@
                     if (row && (row.slug || row.name || row.description)) return row;
                     return normalizeSheetHotel(row || {});
                 });
-                const validHotels = hotels.filter(h => h && h.slug && String(h.name || '').trim());
+                const preparedHotels = await Promise.all(hotels.map(async (hotel) => {
+                    if (!hotel) return null;
+                    const slug = String(hotel.slug || '').trim();
+                    if (!slug || !String(hotel.name || '').trim() || !isHotelActive(hotel.active)) return null;
+                    const imageSet = await resolveHotelImageSet(slug);
+                    if (!imageSet) return null;
+                    return {
+                        ...hotel,
+                        imageBasePath: imageSet.basePath,
+                        imageUrl: String(hotel.imageUrl || '').trim() || imageSet.images[0],
+                        galleryImages: Array.isArray(hotel.galleryImages) && hotel.galleryImages.length
+                            ? hotel.galleryImages
+                            : imageSet.images
+                    };
+                }));
+                const validHotels = preparedHotels.filter(Boolean);
                 const noResultsEl = document.getElementById('noResults');
                 if (!validHotels.length) {
                     const grid = document.getElementById('destinationsGrid');
