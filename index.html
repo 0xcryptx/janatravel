@@ -3086,6 +3086,7 @@ image.png<!DOCTYPE html>
 
         const HOTEL_IMAGE_BASE_PATHS = ['hotel_images', 'assets/hotel_images'];
         const MAIN_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+        const IMAGE_EXISTS_CACHE = new Map();
 
         function isHotelActive(value) {
             if (value === false) return false;
@@ -3095,6 +3096,8 @@ image.png<!DOCTYPE html>
         }
 
         async function doesImageExist(url) {
+            if (IMAGE_EXISTS_CACHE.has(url)) return IMAGE_EXISTS_CACHE.get(url);
+            const pendingCheck = (async () => {
             try {
                 const headResponse = await fetch(url, { method: 'HEAD', cache: 'no-store' });
                 if (headResponse.ok) return true;
@@ -3108,21 +3111,27 @@ image.png<!DOCTYPE html>
             } catch (error) {
                 return false;
             }
+            })();
+            IMAGE_EXISTS_CACHE.set(url, pendingCheck);
+            return pendingCheck;
+        }
+
+        async function findFirstExistingImage(baseFolderPath, baseName) {
+            const candidates = MAIN_IMAGE_EXTENSIONS.map(ext => `${baseFolderPath}/${baseName}.${ext}`);
+            const checks = await Promise.all(candidates.map(url => doesImageExist(url)));
+            const matchedIndex = checks.findIndex(Boolean);
+            return matchedIndex >= 0 ? candidates[matchedIndex] : '';
         }
 
         async function collectMainImages(baseFolderPath) {
             const images = [];
-            for (let index = 1; index <= 4; index += 1) {
-                let foundForIndex = '';
-                for (const ext of MAIN_IMAGE_EXTENSIONS) {
-                    const candidate = `${baseFolderPath}/${index}.${ext}`;
-                    if (await doesImageExist(candidate)) {
-                        foundForIndex = candidate;
-                        break;
-                    }
-                }
-                if (foundForIndex) images.push(foundForIndex);
+            const firstImage = await findFirstExistingImage(baseFolderPath, '1');
+            if (firstImage) {
+                images.push(firstImage);
+                return images;
             }
+            const fallbackImage = await findFirstExistingImage(baseFolderPath, 'add_image');
+            if (fallbackImage) images.push(fallbackImage);
             return images;
         }
 
@@ -3282,7 +3291,7 @@ image.png<!DOCTYPE html>
                         imageUrl: String(hotel.imageUrl || '').trim() || imageSet.images[0],
                         galleryImages: Array.isArray(hotel.galleryImages) && hotel.galleryImages.length
                             ? hotel.galleryImages
-                            : imageSet.images
+                            : [imageSet.images[0]]
                     };
                 }));
                 const validHotels = preparedHotels.filter(Boolean);
