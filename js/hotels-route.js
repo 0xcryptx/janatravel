@@ -146,15 +146,26 @@ function clearHotelViewState(slug) {
 }
 
 async function doesImageExist(url) {
+  const withTimeout = async (requestUrl, options = {}, timeoutMs = 2500) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(requestUrl, { ...options, signal: controller.signal });
+      return response;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
   try {
-    const headResponse = await fetch(url, { method: "HEAD", cache: "no-store" });
+    const headResponse = await withTimeout(url, { method: "HEAD", cache: "no-store" });
     if (headResponse.ok) return true;
     if (headResponse.status !== 405) return false;
   } catch (error) {
     // Ignore and attempt GET fallback.
   }
   try {
-    const getResponse = await fetch(url, { cache: "no-store" });
+    const getResponse = await withTimeout(url, { cache: "no-store" });
     return getResponse.ok;
   } catch (error) {
     return false;
@@ -298,6 +309,31 @@ async function loadHotelsData() {
 
   const preparedHotels = await Promise.all(hotels.map((hotel) => prepareHotelMedia(hotel)));
   return preparedHotels.filter(Boolean);
+}
+
+async function loadHotelBySlug(slug) {
+  const normalizedSlug = String(slug || "").trim().toLowerCase();
+  if (!normalizedSlug) return null;
+
+  const runtimeUrl = (window.JANA_HOTELS_SHEET_URL || "").trim();
+  const sourceUrl = runtimeUrl || GOOGLE_SHEETS_HOTELS_URL;
+
+  let hotels = [];
+  if (sourceUrl) {
+    const raw = await loadJsonData(sourceUrl);
+    if (Array.isArray(raw)) {
+      hotels = raw.map(normalizeSheetHotel);
+    }
+  } else {
+    const local = await loadJsonData(LOCAL_JSON_URL);
+    hotels = Array.isArray(local) ? local : [];
+  }
+
+  const matchedHotel = hotels.find(
+    (item) => String(item?.slug || "").trim().toLowerCase() === normalizedSlug
+  );
+  if (!matchedHotel || !isHotelActive(matchedHotel.active)) return null;
+  return prepareHotelMedia(matchedHotel);
 }
 
 function updateState(type, message) {
@@ -727,8 +763,7 @@ async function initHotelsRoutePage() {
       return;
     }
 
-    const hotels = await loadHotelsData();
-    const hotel = hotels.find((item) => String(item.slug || "").trim().toLowerCase() === slug);
+    const hotel = await loadHotelBySlug(slug);
     if (!hotel) {
       updateState("empty", "Hotel package not found.");
       return;
