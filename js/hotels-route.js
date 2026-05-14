@@ -246,6 +246,26 @@ async function collectNumberedImages(folderPath) {
   return imageUrls;
 }
 
+async function collectMainGalleryImages(basePath, slug, firstImage) {
+  const folderPath = `${basePath}/${slug}`;
+  const hasNumberedPattern = /\/1\.[a-z0-9]+(?:$|\?)/i.test(firstImage);
+  if (!hasNumberedPattern) return [firstImage];
+
+  const indexedImages = new Map([[1, firstImage]]);
+  const resolved = await Promise.all(
+    IMAGE_INDEXES.filter((index) => index !== 1).map(async (index) => ({
+      index,
+      image: await findFirstExistingImage(folderPath, String(index))
+    }))
+  );
+
+  for (const item of resolved) {
+    if (item.image) indexedImages.set(item.index, item.image);
+  }
+
+  return IMAGE_INDEXES.map((index) => indexedImages.get(index)).filter(Boolean);
+}
+
 function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, labels) {
   return labels.map((label, index) => ({
     label,
@@ -315,12 +335,8 @@ async function prepareHotelMedia(hotel) {
   if (!imageBaseResult) return null;
   const imageBasePath = imageBaseResult.basePath;
   const firstImage = imageBaseResult.firstImage;
-  const firstImageExtMatch = String(firstImage).match(/\.([a-z0-9]+)(?:$|\?)/i);
-  const firstImageExt = firstImageExtMatch ? firstImageExtMatch[1].toLowerCase() : "";
-  const hasNumberedPattern = /\/1\.[a-z0-9]+(?:$|\?)/i.test(firstImage);
-  const mainImages = hasNumberedPattern && firstImageExt
-    ? IMAGE_INDEXES.map((index) => `${imageBasePath}/${slug}/${index}.${firstImageExt}`)
-    : [firstImage];
+  const mainImages = await collectMainGalleryImages(imageBasePath, slug, firstImage);
+  if (!mainImages.length) return null;
 
   const roomTypeItemsText = parseDashSeparatedItems(hotel.roomTypes);
   const facilityItemsText = parseDashSeparatedItems(hotel.facilities);
