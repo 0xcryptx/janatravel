@@ -6,6 +6,8 @@ const HOTEL_IMAGE_BASE_PATHS = ["../hotel_images", "../assets/hotel_images"];
 const IMAGE_INDEXES = [1, 2, 3, 4];
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif"];
 const HOTEL_VIEW_STATE_PREFIX = "jana:hotelViewState:";
+const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
+const HOTEL_DATA_CACHE_TTL_MS = 5 * 60 * 1000;
 
 function loadJsonData(url) {
   return fetch(url, { cache: "no-store" }).then((res) => {
@@ -145,8 +147,43 @@ function clearHotelViewState(slug) {
   }
 }
 
+function getHotelDataCacheKey(slug) {
+  return `${HOTEL_DATA_CACHE_PREFIX}${String(slug || "").trim().toLowerCase()}`;
+}
+
+function loadCachedHotelData(slug) {
+  const key = getHotelDataCacheKey(slug);
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const expiresAt = Number(parsed.expiresAt || 0);
+    if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return parsed.data || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveCachedHotelData(slug, hotelData) {
+  const key = getHotelDataCacheKey(slug);
+  try {
+    const payload = {
+      expiresAt: Date.now() + HOTEL_DATA_CACHE_TTL_MS,
+      data: hotelData
+    };
+    sessionStorage.setItem(key, JSON.stringify(payload));
+  } catch (error) {
+    // Ignore storage issues.
+  }
+}
+
 async function doesImageExist(url) {
-  const withTimeout = async (requestUrl, options = {}, timeoutMs = 2500) => {
+  const withTimeout = async (requestUrl, options = {}, timeoutMs = 900) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -174,23 +211,26 @@ async function doesImageExist(url) {
 
 async function resolveHotelImageBasePath(slug) {
   const normalizedSlug = String(slug || "").trim();
-  if (!normalizedSlug) return "";
+  if (!normalizedSlug) return null;
   for (const basePath of HOTEL_IMAGE_BASE_PATHS) {
     const folderPath = `${basePath}/${normalizedSlug}`;
-    const folderImages = await collectNumberedImages(folderPath);
-    if (folderImages.length) {
-      return basePath;
+    const firstImage = await findFirstExistingImage(folderPath, "1");
+    if (firstImage) {
+      return { basePath, firstImage };
+    }
+    const fallbackImage = await findFirstExistingImage(folderPath, "add_image");
+    if (fallbackImage) {
+      return { basePath, firstImage: fallbackImage };
     }
   }
-  return "";
+  return null;
 }
 
 async function findFirstExistingImage(folderPath, baseName) {
-  for (const ext of IMAGE_EXTENSIONS) {
-    const candidate = `${folderPath}/${baseName}.${ext}`;
-    if (await doesImageExist(candidate)) return candidate;
-  }
-  return "";
+  const candidates = IMAGE_EXTENSIONS.map((ext) => `${folderPath}/${baseName}.${ext}`);
+  const checks = await Promise.all(candidates.map((candidate) => doesImageExist(candidate)));
+  const matchedIndex = checks.findIndex(Boolean);
+  return matchedIndex >= 0 ? candidates[matchedIndex] : "";
 }
 
 async function collectNumberedImages(folderPath) {
@@ -271,11 +311,16 @@ async function prepareHotelMedia(hotel) {
   const slug = String(hotel.slug || "").trim();
   if (!slug || !String(hotel.name || "").trim() || !isHotelActive(hotel.active)) return null;
 
-  const imageBasePath = await resolveHotelImageBasePath(slug);
-  if (!imageBasePath) return null;
-
-  const mainImages = await collectNumberedImages(`${imageBasePath}/${slug}`);
-  if (!mainImages.length) return null;
+  const imageBaseResult = await resolveHotelImageBasePath(slug);
+  if (!imageBaseResult) return null;
+  const imageBasePath = imageBaseResult.basePath;
+  const firstImage = imageBaseResult.firstImage;
+  const firstImageExtMatch = String(firstImage).match(/\.([a-z0-9]+)(?:$|\?)/i);
+  const firstImageExt = firstImageExtMatch ? firstImageExtMatch[1].toLowerCase() : "";
+  const hasNumberedPattern = /\/1\.[a-z0-9]+(?:$|\?)/i.test(firstImage);
+  const mainImages = hasNumberedPattern && firstImageExt
+    ? IMAGE_INDEXES.map((index) => `${imageBasePath}/${slug}/${index}.${firstImageExt}`)
+    : [firstImage];
 
   const roomTypeItemsText = parseDashSeparatedItems(hotel.roomTypes);
   const facilityItemsText = parseDashSeparatedItems(hotel.facilities);
@@ -327,6 +372,8 @@ async function loadHotelsData() {
 async function loadHotelBySlug(slug) {
   const normalizedSlug = String(slug || "").trim().toLowerCase();
   if (!normalizedSlug) return null;
+  const cachedHotel = loadCachedHotelData(normalizedSlug);
+  if (cachedHotel) return cachedHotel;
 
   const runtimeUrl = (window.JANA_HOTELS_SHEET_URL || "").trim();
   const sourceUrl = runtimeUrl || GOOGLE_SHEETS_HOTELS_URL;
@@ -346,7 +393,11 @@ async function loadHotelBySlug(slug) {
     (item) => String(item?.slug || "").trim().toLowerCase() === normalizedSlug
   );
   if (!matchedHotel || !isHotelActive(matchedHotel.active)) return null;
-  return prepareHotelMedia(matchedHotel);
+  const preparedHotel = await prepareHotelMedia(matchedHotel);
+  if (preparedHotel) {
+    saveCachedHotelData(normalizedSlug, preparedHotel);
+  }
+  return preparedHotel;
 }
 
 function updateState(type, message) {
