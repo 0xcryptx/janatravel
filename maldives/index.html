@@ -75,6 +75,10 @@
             padding: 0.45rem 0.9rem;
             background: rgba(0, 206, 209, 0.08);
             justify-self: start;
+            margin-left: -1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
         }
         .topbar-spacer { justify-self: end; width: 64px; }
         .wrap { width: 100%; padding: 2.2rem clamp(1rem, 4vw, 4rem) 3rem; }
@@ -150,7 +154,7 @@
 </head>
 <body>
     <header class="topbar">
-        <a class="back-link" href="/explore/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Back</a>
+        <a class="back-link" href="/explore/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">&#8592; Back</a>
         <a class="brand" href="/" onclick="sessionStorage.removeItem('jana:indexScrollY')">
             <img src="/public/JanaTravelLogo.webp" alt="JANA Travel logo">
             <span class="brand-text">JANA <span>Travel</span></span>

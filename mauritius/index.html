@@ -22,7 +22,7 @@
         .brand-text span { color:var(--aqua-light); text-shadow:0 0 3px rgba(0,139,139,0.45), 0 0 6px rgba(0,139,139,0.25); }
         .brand:hover img { transform: scale(1.08); }
         .brand:hover .brand-text { transform: scale(1.05); }
-        .back-link { text-decoration: none; color: var(--aqua-dark); font-weight: 600; border: 1px solid rgba(0, 139, 139, 0.25); border-radius: 999px; padding: 0.45rem 0.9rem; background: rgba(0, 206, 209, 0.08); justify-self: start; }
+        .back-link { text-decoration: none; color: var(--aqua-dark); font-weight: 600; border: 1px solid rgba(0, 139, 139, 0.25); border-radius: 999px; padding: 0.45rem 0.9rem; background: rgba(0, 206, 209, 0.08); justify-self: start; margin-left: -1rem; display: inline-flex; align-items: center; gap: 0.35rem; }
         .topbar-spacer { justify-self: end; width: 64px; }
         .wrap { width:100%; padding:2.2rem clamp(1rem, 4vw, 4rem) 3rem; }
         .flow-row { display:grid; grid-template-columns:1.05fr 0.95fr; gap:clamp(1rem, 2.5vw, 2.2rem); align-items:center; margin-bottom:2rem; }
@@ -60,7 +60,7 @@
 </head>
 <body>
     <header class="topbar">
-        <a class="back-link" href="/explore/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Back</a>
+        <a class="back-link" href="/explore/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">&#8592; Back</a>
         <a class="brand" href="/" onclick="sessionStorage.removeItem('jana:indexScrollY')">
             <img src="/public/JanaTravelLogo.webp" alt="JANA Travel logo">
             <span class="brand-text">JANA <span>Travel</span></span>

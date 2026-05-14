@@ -5,6 +5,7 @@ const GOOGLE_SHEETS_HOTELS_URL = "";
 const HOTEL_IMAGE_BASE_PATHS = ["../hotel_images", "../assets/hotel_images"];
 const IMAGE_INDEXES = [1, 2, 3, 4];
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif"];
+const HOTEL_VIEW_STATE_PREFIX = "jana:hotelViewState:";
 
 function loadJsonData(url) {
   return fetch(url, { cache: "no-store" }).then((res) => {
@@ -38,6 +39,25 @@ function formatRating(value) {
   if (!raw) return "";
   if (/^\d+(\.\d+)?$/.test(raw)) return `${raw} star`;
   return raw;
+}
+
+function parseStarRating(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return 0;
+  const numericMatch = raw.match(/^\d+(\.\d+)?/);
+  if (!numericMatch) return 0;
+  const parsed = Number(numericMatch[0]);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.min(5, Math.round(parsed)));
+}
+
+function buildStarRatingMarkup(starCount) {
+  if (!starCount) return "";
+  const stars = Array.from({ length: 5 }, (_, index) => {
+    const isFilled = index < starCount;
+    return `<span class="hotel-rating-star${isFilled ? " is-filled" : ""}" aria-hidden="true">&#9733;</span>`;
+  }).join("");
+  return `<div class="hotel-rating-stars" aria-label="Rated ${starCount} out of 5 stars">${stars}</div>`;
 }
 
 function getDestinationPageUrl(destination) {
@@ -87,6 +107,42 @@ function parseDashSeparatedItems(value) {
     .split("-")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getHotelStateStorageKey(slug) {
+  return `${HOTEL_VIEW_STATE_PREFIX}${String(slug || "").trim().toLowerCase()}`;
+}
+
+function loadHotelViewState(slug) {
+  const key = getHotelStateStorageKey(slug);
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveHotelViewState(slug, nextState) {
+  const key = getHotelStateStorageKey(slug);
+  try {
+    const current = loadHotelViewState(slug);
+    const merged = { ...current, ...nextState };
+    sessionStorage.setItem(key, JSON.stringify(merged));
+  } catch (error) {
+    // Ignore storage issues.
+  }
+}
+
+function clearHotelViewState(slug) {
+  const key = getHotelStateStorageKey(slug);
+  try {
+    sessionStorage.removeItem(key);
+  } catch (error) {
+    // Ignore storage issues.
+  }
 }
 
 async function doesImageExist(url) {
@@ -265,6 +321,10 @@ function setupImageLightbox(contentEl) {
 
   let currentImages = [];
   let currentIndex = 0;
+  let touchStartX = 0;
+  let touchCurrentX = 0;
+  let isTouchSwiping = false;
+  const swipeThreshold = 55;
 
   const setLightboxImage = (nextIndex) => {
     if (!currentImages.length) return;
@@ -277,6 +337,9 @@ function setupImageLightbox(contentEl) {
   const closeLightbox = () => {
     lightbox.setAttribute("hidden", "");
     document.body.classList.remove("lightbox-open");
+    if (document.activeElement && typeof document.activeElement.blur === "function") {
+      document.activeElement.blur();
+    }
   };
 
   const openLightbox = (images, startIndex = 0) => {
@@ -302,10 +365,35 @@ function setupImageLightbox(contentEl) {
     if (event.key === "ArrowRight") setLightboxImage(currentIndex + 1);
   });
 
+  // Touch-swipe support for fullscreen image navigation on phones.
+  lightbox.addEventListener("touchstart", (event) => {
+    if (lightbox.hasAttribute("hidden")) return;
+    touchStartX = event.touches[0].clientX;
+    touchCurrentX = touchStartX;
+    isTouchSwiping = true;
+  }, { passive: true });
+
+  lightbox.addEventListener("touchmove", (event) => {
+    if (!isTouchSwiping || lightbox.hasAttribute("hidden")) return;
+    touchCurrentX = event.touches[0].clientX;
+  }, { passive: true });
+
+  lightbox.addEventListener("touchend", () => {
+    if (!isTouchSwiping || lightbox.hasAttribute("hidden")) return;
+    const diff = touchCurrentX - touchStartX;
+    isTouchSwiping = false;
+    if (Math.abs(diff) < swipeThreshold) return;
+    if (diff > 0) {
+      setLightboxImage(currentIndex - 1);
+    } else {
+      setLightboxImage(currentIndex + 1);
+    }
+  });
+
   return { open: openLightbox };
 }
 
-function setupHotelGallery(contentEl, images, hotelName, lightboxApi) {
+function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = {}) {
   const mainImageEl = contentEl.querySelector("#hotelMainImage");
   const thumbButtons = Array.from(contentEl.querySelectorAll(".thumb-btn"));
   const maximizeBtn = contentEl.querySelector("#hotelMaximizeBtn");
@@ -317,6 +405,12 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi) {
 
   const galleryImages = images.length ? images : [HOTEL_PLACEHOLDER_IMAGE];
   let currentIndex = 0;
+  let touchStartX = 0;
+  let touchCurrentX = 0;
+  let isTouchSwiping = false;
+  const swipeThreshold = 55;
+  const initialIndex = Number(options.initialIndex || 0);
+  const onGalleryIndexChange = typeof options.onGalleryIndexChange === "function" ? options.onGalleryIndexChange : null;
 
   const setActiveImage = (nextIndex) => {
     if (!galleryImages.length) return;
@@ -329,12 +423,14 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi) {
     thumbButtons.forEach((btn, index) => {
       btn.classList.toggle("is-active", index === currentIndex);
     });
+    if (onGalleryIndexChange) onGalleryIndexChange(currentIndex);
   };
 
   thumbButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = Number(btn.dataset.index || 0);
       setActiveImage(Number.isFinite(idx) ? idx : 0);
+      btn.blur();
     });
   });
 
@@ -351,7 +447,31 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi) {
     if (event.key === "ArrowRight") setActiveImage(currentIndex + 1);
   });
 
-  setActiveImage(0);
+  // Touch-swipe support for the main hotel hero image on phones.
+  mainImageEl.addEventListener("touchstart", (event) => {
+    touchStartX = event.touches[0].clientX;
+    touchCurrentX = touchStartX;
+    isTouchSwiping = true;
+  }, { passive: true });
+
+  mainImageEl.addEventListener("touchmove", (event) => {
+    if (!isTouchSwiping) return;
+    touchCurrentX = event.touches[0].clientX;
+  }, { passive: true });
+
+  mainImageEl.addEventListener("touchend", () => {
+    if (!isTouchSwiping) return;
+    const diff = touchCurrentX - touchStartX;
+    isTouchSwiping = false;
+    if (Math.abs(diff) < swipeThreshold) return;
+    if (diff > 0) {
+      setActiveImage(currentIndex - 1);
+    } else {
+      setActiveImage(currentIndex + 1);
+    }
+  });
+
+  setActiveImage(Number.isFinite(initialIndex) ? initialIndex : 0);
 }
 
 function renderSectionItemsHtml(items, sectionKey) {
@@ -361,7 +481,7 @@ function renderSectionItemsHtml(items, sectionKey) {
   return items
     .map((item, itemIndex) => `
       <article class="section-item">
-        <h4 class="section-item__title">${itemIndex + 1}. ${escapeHtml(item.label)}</h4>
+        <h4 class="section-item__title">${escapeHtml(item.label)}</h4>
         ${
           item.images.length
             ? `<div class="section-item__thumbs">
@@ -387,7 +507,10 @@ function renderSectionItemsHtml(items, sectionKey) {
     .join("");
 }
 
-function setupHotelInfoTabs(contentEl, sectionData, lightboxApi) {
+function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
+  const initialTab = String(options.initialTab || "rooms");
+  const onTabChange = typeof options.onTabChange === "function" ? options.onTabChange : null;
+
   const tabs = Array.from(contentEl.querySelectorAll(".info-tab"));
   const panelTitle = contentEl.querySelector("#hotelInfoPanelTitle");
   const panelBody = contentEl.querySelector("#hotelInfoPanelBody");
@@ -402,6 +525,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi) {
         const section = sectionData[sectionKey];
         if (!section || !section.items[itemIndex]) return;
         lightboxApi.open(section.items[itemIndex].images, imageIndex);
+        btn.blur();
       });
     });
   };
@@ -417,6 +541,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi) {
     panelTitle.textContent = section.title;
     panelBody.innerHTML = renderSectionItemsHtml(section.items, key);
     bindSectionThumbs();
+    if (onTabChange) onTabChange(key);
   };
 
   tabs.forEach((tab) => {
@@ -425,11 +550,49 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi) {
     });
   });
 
-  setActiveTab("rooms");
+  setActiveTab(sectionData[initialTab] ? initialTab : "rooms");
 }
 
-function renderHotel(hotel) {
+function animateNumericDetailValues(contentEl) {
+  const valueNodes = contentEl.querySelectorAll(".detail-card .value, .detail-card .value-link");
+  valueNodes.forEach((node, index) => {
+    const originalText = String(node.textContent || "").trim();
+    const match = originalText.match(/^(\d+(?:\.\d+)?)(.*)$/);
+    if (!match) return;
+
+    const targetValue = Number(match[1]);
+    if (!Number.isFinite(targetValue)) return;
+    const suffix = match[2] || "";
+    const hasDecimals = match[1].includes(".");
+    const durationMs = 1700;
+    const startDelayMs = 220 + (index * 110);
+
+    const update = (startAt, now) => {
+      const progress = Math.min(1, (now - startAt) / durationMs);
+      // Ease-out cubic for a smoother finish.
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = targetValue * eased;
+      const displayNumber = hasDecimals ? current.toFixed(1) : String(Math.floor(current));
+      node.textContent = `${displayNumber}${suffix}`;
+      if (progress < 1) {
+        requestAnimationFrame((nextNow) => update(startAt, nextNow));
+      } else {
+        node.textContent = `${match[1]}${suffix}`;
+        node.classList.remove("counting-up");
+      }
+    };
+
+    node.classList.add("counting-up");
+    setTimeout(() => {
+      const startAt = performance.now();
+      requestAnimationFrame((now) => update(startAt, now));
+    }, startDelayMs);
+  });
+}
+
+function renderHotel(hotel, persistedState = {}) {
   const titleEl = document.getElementById("hotelTitle");
+  const headerMetaEl = document.getElementById("hotelHeaderMeta");
   const contentEl = document.getElementById("hotelContent");
   if (!contentEl) return;
 
@@ -440,6 +603,7 @@ function renderHotel(hotel) {
   const galleryImages = Array.isArray(hotel.mainImages) && hotel.mainImages.length ? hotel.mainImages : [HOTEL_PLACEHOLDER_IMAGE];
   const mainImage = galleryImages[0] || HOTEL_PLACEHOLDER_IMAGE;
   const ratingLabel = formatRating(hotel.rating);
+  const starCount = parseStarRating(hotel.rating);
   const destinationValue = String(hotel.destination || "").trim();
   const destinationPageUrl = getDestinationPageUrl(destinationValue);
   const mapUrl = String(hotel.googleMapsLink || "").trim();
@@ -448,17 +612,16 @@ function renderHotel(hotel) {
   const restaurantsCount = String(hotel.restaurants || "").trim() || "Not specified yet";
 
   const details = [
-    ["Destination", destinationValue],
     ["Location", locationValue],
     ["Rating", ratingLabel],
     ["Island Size", hotel.islandSize],
     ["Reef Type", hotel.reefType],
-    ["Experience", hotel.experience],
-    ["Meal Plan", hotel.mealPlan],
     ["Rooms", hotel.rooms],
+    ["Meal Plan", hotel.mealPlan],
     ["Restaurants", restaurantsCount],
     ["Bars", hotel.bars],
-    ["Transfer Type", hotel.transferType]
+    ["Transfer Type", hotel.transferType],
+    ["Experience", hotel.experience]
   ];
 
   const infoSections = {
@@ -468,24 +631,26 @@ function renderHotel(hotel) {
     wellness: { title: "Wellness", items: hotel.wellnessItems || [] }
   };
 
+  if (headerMetaEl) {
+    const destinationMarkup = destinationValue
+      ? destinationPageUrl
+        ? `<a class="hotel-subtitle-link" href="${destinationPageUrl}">${escapeHtml(destinationValue)}</a>`
+        : `<span class="hotel-subtitle-text">${escapeHtml(destinationValue)}</span>`
+      : "";
+    headerMetaEl.innerHTML = `
+      ${destinationMarkup}
+      ${buildStarRatingMarkup(starCount)}
+    `;
+  }
+
   contentEl.innerHTML = `
-    <div class="meta">
-      ${
-        destinationValue && destinationPageUrl
-          ? `<a class="pill pill-link" href="${destinationPageUrl}">${escapeHtml(destinationValue)}</a>`
-          : destinationValue
-            ? `<span class="pill">${escapeHtml(destinationValue)}</span>`
-            : ""
-      }
-      ${ratingLabel ? `<span class="pill">${escapeHtml(ratingLabel)}</span>` : ""}
-    </div>
     <div class="media-gallery">
       <div class="hero hero--interactive">
         <button type="button" class="hero-nav hero-nav--prev" id="hotelGalleryPrev" aria-label="Previous image">&#10094;</button>
         <img id="hotelMainImage" src="${escapeHtml(mainImage)}" alt="${escapeHtml(hotelName)} view 1">
         <button type="button" class="hero-nav hero-nav--next" id="hotelGalleryNext" aria-label="Next image">&#10095;</button>
         <span class="hero-counter" id="hotelGalleryCounter">1 / ${galleryImages.length}</span>
-        <button type="button" class="maximize-btn" id="hotelMaximizeBtn">Maximize</button>
+        <button type="button" class="maximize-btn" id="hotelMaximizeBtn">Click to expand</button>
       </div>
       <div class="thumb-strip" id="hotelThumbStrip" role="list" aria-label="Hotel image previews">
       ${galleryImages
@@ -504,12 +669,11 @@ function renderHotel(hotel) {
       <img id="hotelLightboxImage" src="${escapeHtml(mainImage)}" alt="${escapeHtml(hotelName)} preview">
       <button type="button" class="lightbox-nav lightbox-nav--next" id="hotelLightboxNext" aria-label="Next image">&#10095;</button>
     </div>
-    <p class="lead">${escapeHtml(hotel.description || "Discover this curated stay with JANA Travel.")}</p>
     <h2>Hotel Details</h2>
     <div class="details-grid">
       ${details
         .map(([label, value]) => `
-          <div class="detail-card">
+          <div class="detail-card${label === "Experience" ? " detail-card--wide" : ""}">
             <span class="label">${escapeHtml(label)}</span>
             ${
               label === "Destination" && destinationPageUrl && value
@@ -522,6 +686,7 @@ function renderHotel(hotel) {
         `)
         .join("")}
     </div>
+    <p class="lead">${escapeHtml(hotel.description || "Discover this curated stay with JANA Travel.")}</p>
     <section class="info-sections">
       <h2>Explore Hotel Sections</h2>
       <div class="info-tabs" role="tablist" aria-label="Hotel information sections">
@@ -541,8 +706,15 @@ function renderHotel(hotel) {
   `;
 
   const lightboxApi = setupImageLightbox(contentEl);
-  setupHotelGallery(contentEl, galleryImages, hotelName, lightboxApi);
-  setupHotelInfoTabs(contentEl, infoSections, lightboxApi);
+  setupHotelGallery(contentEl, galleryImages, hotelName, lightboxApi, {
+    initialIndex: Number(persistedState.galleryIndex || 0),
+    onGalleryIndexChange: (index) => saveHotelViewState(hotel.slug, { galleryIndex: index })
+  });
+  setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
+    initialTab: String(persistedState.activeTab || "rooms"),
+    onTabChange: (tabKey) => saveHotelViewState(hotel.slug, { activeTab: tabKey })
+  });
+  animateNumericDetailValues(contentEl);
 }
 
 async function initHotelsRoutePage() {
@@ -562,7 +734,53 @@ async function initHotelsRoutePage() {
       return;
     }
 
-    renderHotel(hotel);
+    const persistedState = loadHotelViewState(slug);
+    renderHotel(hotel, persistedState);
+
+    const restoreScrollY = Number(persistedState.scrollY);
+    if (Number.isFinite(restoreScrollY) && restoreScrollY >= 0) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => window.scrollTo(0, restoreScrollY));
+      });
+    }
+
+    let scrollSaveTimer = null;
+    let shouldPersistViewState = true;
+    const persistScroll = () => {
+      if (!shouldPersistViewState) return;
+      if (scrollSaveTimer) return;
+      scrollSaveTimer = window.setTimeout(() => {
+        scrollSaveTimer = null;
+        saveHotelViewState(slug, { scrollY: window.scrollY || 0 });
+      }, 120);
+    };
+    const clearStateOnBackNavigation = () => {
+      shouldPersistViewState = false;
+      clearHotelViewState(slug);
+    };
+
+    const backLink = document.querySelector(".back-link");
+    if (backLink) {
+      backLink.addEventListener("click", clearStateOnBackNavigation);
+    }
+
+    window.addEventListener("scroll", persistScroll, { passive: true });
+    window.addEventListener("popstate", clearStateOnBackNavigation);
+    window.addEventListener("beforeunload", () => {
+      if (shouldPersistViewState) {
+        saveHotelViewState(slug, { scrollY: window.scrollY || 0 });
+      } else {
+        clearHotelViewState(slug);
+      }
+    });
+    window.addEventListener("pagehide", () => {
+      if (shouldPersistViewState) {
+        saveHotelViewState(slug, { scrollY: window.scrollY || 0 });
+      } else {
+        clearHotelViewState(slug);
+      }
+    });
+
     updateState("success", "");
   } catch (error) {
     console.error(error);
