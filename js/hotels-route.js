@@ -206,13 +206,26 @@ async function collectNumberedImages(folderPath) {
   return imageUrls;
 }
 
-async function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, labels) {
-  const results = await Promise.all(labels.map(async (label, index) => {
-    const folderPath = `${basePath}/${slug}/${sectionFolder}/${itemPrefix}${index + 1}`;
-    const images = await collectNumberedImages(folderPath);
-    return { label, images };
+function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, labels) {
+  return labels.map((label, index) => ({
+    label,
+    folderPath: `${basePath}/${slug}/${sectionFolder}/${itemPrefix}${index + 1}`,
+    images: [],
+    loaded: false
   }));
-  return results;
+}
+
+async function hydrateSectionItems(section) {
+  if (!section || !Array.isArray(section.items) || section.itemsLoaded) return;
+  const hydratedItems = await Promise.all(
+    section.items.map(async (item) => {
+      if (item.loaded) return item;
+      const images = await collectNumberedImages(item.folderPath);
+      return { ...item, images, loaded: true };
+    })
+  );
+  section.items = hydratedItems;
+  section.itemsLoaded = true;
 }
 
 function normalizeSheetHotel(row) {
@@ -269,10 +282,10 @@ async function prepareHotelMedia(hotel) {
   const wellnessItemsText = parseDashSeparatedItems(hotel.wellness);
   const restaurantItemsText = parseDashSeparatedItems(hotel.restaurantNames);
 
-  const roomTypeItems = await buildIndexedSectionItems(imageBasePath, slug, "rooms", "room", roomTypeItemsText);
-  const facilityItems = await buildIndexedSectionItems(imageBasePath, slug, "facilities", "fac", facilityItemsText);
-  const wellnessItems = await buildIndexedSectionItems(imageBasePath, slug, "wellness", "well", wellnessItemsText);
-  const restaurantItems = await buildIndexedSectionItems(imageBasePath, slug, "restaurants", "res", restaurantItemsText);
+  const roomTypeItems = buildIndexedSectionItems(imageBasePath, slug, "rooms", "room", roomTypeItemsText);
+  const facilityItems = buildIndexedSectionItems(imageBasePath, slug, "facilities", "fac", facilityItemsText);
+  const wellnessItems = buildIndexedSectionItems(imageBasePath, slug, "wellness", "well", wellnessItemsText);
+  const restaurantItems = buildIndexedSectionItems(imageBasePath, slug, "restaurants", "res", restaurantItemsText);
 
   return {
     ...hotel,
@@ -566,7 +579,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
     });
   };
 
-  const setActiveTab = (key) => {
+  const setActiveTab = async (key) => {
     const section = sectionData[key];
     if (!section) return;
     tabs.forEach((tab) => {
@@ -575,6 +588,10 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       tab.setAttribute("aria-selected", isActive ? "true" : "false");
     });
     panelTitle.textContent = section.title;
+    if (!section.itemsLoaded && section.items.some((item) => item.folderPath)) {
+      panelBody.innerHTML = `<p class="info-empty">Loading ${escapeHtml(section.title.toLowerCase())}...</p>`;
+      await hydrateSectionItems(section);
+    }
     panelBody.innerHTML = renderSectionItemsHtml(section.items, key);
     bindSectionThumbs();
     if (onTabChange) onTabChange(key);
@@ -661,10 +678,10 @@ function renderHotel(hotel, persistedState = {}) {
   ];
 
   const infoSections = {
-    rooms: { title: "Room Types", items: hotel.roomTypeItems || [] },
-    restaurants: { title: "Restaurants", items: hotel.restaurantItems || [] },
-    facilities: { title: "Facilities", items: hotel.facilityItems || [] },
-    wellness: { title: "Wellness", items: hotel.wellnessItems || [] }
+    rooms: { title: "Room Types", items: hotel.roomTypeItems || [], itemsLoaded: false },
+    restaurants: { title: "Restaurants", items: hotel.restaurantItems || [], itemsLoaded: false },
+    facilities: { title: "Facilities", items: hotel.facilityItems || [], itemsLoaded: false },
+    wellness: { title: "Wellness", items: hotel.wellnessItems || [], itemsLoaded: false }
   };
 
   if (headerMetaEl) {
