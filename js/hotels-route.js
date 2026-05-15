@@ -1,5 +1,5 @@
 const LOCAL_JSON_URL = "../data/hotels.json";
-const WHATSAPP_NUMBER = "9607409199";
+const WHATSAPP_NUMBER = "971501771927";
 const HOTEL_PLACEHOLDER_IMAGE = "../assets/images/add_image.webp";
 const GOOGLE_SHEETS_HOTELS_URL = "";
 const HOTEL_IMAGE_BASE_PATHS = ["../hotel_images", "../assets/hotel_images"];
@@ -7,7 +7,10 @@ const IMAGE_INDEXES = [1, 2, 3, 4];
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif"];
 const HOTEL_VIEW_STATE_PREFIX = "jana:hotelViewState:";
 const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
-const HOTEL_DATA_CACHE_TTL_MS = 5 * 60 * 1000;
+const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
+const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
+const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
+let hotelDataCacheCleanupTimerId = null;
 
 function loadJsonData(url) {
   return fetch(url, { cache: "no-store" }).then((res) => {
@@ -151,7 +154,42 @@ function getHotelDataCacheKey(slug) {
   return `${HOTEL_DATA_CACHE_PREFIX}${String(slug || "").trim().toLowerCase()}`;
 }
 
-function loadCachedHotelData(slug) {
+function clearExpiredHotelDataCache() {
+  const now = Date.now();
+  try {
+    for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = sessionStorage.key(index);
+      if (!key || !key.startsWith(HOTEL_DATA_CACHE_PREFIX)) continue;
+      const raw = sessionStorage.getItem(key);
+      if (!raw) {
+        sessionStorage.removeItem(key);
+        continue;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        const expiresAt = Number(parsed?.expiresAt || 0);
+        if (!Number.isFinite(expiresAt) || now > expiresAt) {
+          sessionStorage.removeItem(key);
+        }
+      } catch (error) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch (error) {
+    // Ignore storage access issues.
+  }
+}
+
+function startHotelDataCacheAutoCleanup() {
+  clearExpiredHotelDataCache();
+  if (hotelDataCacheCleanupTimerId !== null) return;
+  hotelDataCacheCleanupTimerId = window.setInterval(
+    clearExpiredHotelDataCache,
+    HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS
+  );
+}
+
+function loadCachedHotelData(slug, signature) {
   const key = getHotelDataCacheKey(slug);
   try {
     const raw = sessionStorage.getItem(key);
@@ -163,17 +201,21 @@ function loadCachedHotelData(slug) {
       sessionStorage.removeItem(key);
       return null;
     }
+    if (signature && parsed.signature !== signature) {
+      return null;
+    }
     return parsed.data || null;
   } catch (error) {
     return null;
   }
 }
 
-function saveCachedHotelData(slug, hotelData) {
+function saveCachedHotelData(slug, signature, hotelData) {
   const key = getHotelDataCacheKey(slug);
   try {
     const payload = {
       expiresAt: Date.now() + HOTEL_DATA_CACHE_TTL_MS,
+      signature,
       data: hotelData
     };
     sessionStorage.setItem(key, JSON.stringify(payload));
@@ -388,8 +430,6 @@ async function loadHotelsData() {
 async function loadHotelBySlug(slug) {
   const normalizedSlug = String(slug || "").trim().toLowerCase();
   if (!normalizedSlug) return null;
-  const cachedHotel = loadCachedHotelData(normalizedSlug);
-  if (cachedHotel) return cachedHotel;
 
   const runtimeUrl = (window.JANA_HOTELS_SHEET_URL || "").trim();
   const sourceUrl = runtimeUrl || GOOGLE_SHEETS_HOTELS_URL;
@@ -409,9 +449,12 @@ async function loadHotelBySlug(slug) {
     (item) => String(item?.slug || "").trim().toLowerCase() === normalizedSlug
   );
   if (!matchedHotel || !isHotelActive(matchedHotel.active)) return null;
+  const hotelSignature = JSON.stringify(matchedHotel);
+  const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
+  if (cachedHotel) return cachedHotel;
   const preparedHotel = await prepareHotelMedia(matchedHotel);
   if (preparedHotel) {
-    saveCachedHotelData(normalizedSlug, preparedHotel);
+    saveCachedHotelData(normalizedSlug, hotelSignature, preparedHotel);
   }
   return preparedHotel;
 }
@@ -838,6 +881,7 @@ function renderHotel(hotel, persistedState = {}) {
 }
 
 async function initHotelsRoutePage() {
+  startHotelDataCacheAutoCleanup();
   updateState("loading", "Loading hotel package...");
   try {
     const params = new URLSearchParams(window.location.search);

@@ -1,5 +1,5 @@
 const DATA_URL = "../data/hotels.json";
-const WHATSAPP_NUMBER = "9607409199";
+const WHATSAPP_NUMBER = "971501771927";
 
 function loadJsonData(url) {
   return fetch(url, { cache: "no-store" }).then((res) => {
