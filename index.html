@@ -1693,7 +1693,17 @@ image.png<!DOCTYPE html>
             text-decoration: none;
         }
 
+        .contact-item-content p a[href^="mailto:"] {
+            color: inherit;
+            text-decoration: none;
+        }
+
         .contact-item-content p a[href^="tel:"]:hover {
+            color: var(--aqua-blue);
+            text-decoration: underline;
+        }
+
+        .contact-item-content p a[href^="mailto:"]:hover {
             color: var(--aqua-blue);
             text-decoration: underline;
         }
@@ -1760,6 +1770,7 @@ image.png<!DOCTYPE html>
 
         .form-group {
             margin-bottom: 1.5rem;
+            position: relative;
         }
 
         .form-group label {
@@ -1767,6 +1778,7 @@ image.png<!DOCTYPE html>
             margin-bottom: 0.5rem;
             color: var(--text-dark);
             font-weight: 500;
+            pointer-events: none;
         }
 
         .form-group input,
@@ -1789,9 +1801,75 @@ image.png<!DOCTYPE html>
             box-shadow: 0 0 0 4px rgba(0, 206, 209, 0.1);
         }
 
+        .form-group input.is-error,
+        .form-group textarea.is-error,
+        .form-group select.is-error {
+            border-color: #e53935 !important;
+            box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.16) !important;
+        }
+
+        .field-error {
+            display: none;
+            align-items: center;
+            position: absolute;
+            right: 12px;
+            z-index: 12;
+            pointer-events: none;
+        }
+
+        .field-error.is-visible {
+            display: inline-flex;
+        }
+
+        .field-error__icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #e53935;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: help;
+            position: relative;
+            user-select: none;
+            pointer-events: auto;
+        }
+
+        .field-error__tooltip {
+            position: absolute;
+            right: calc(100% + 8px);
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffffff;
+            color: #a31f1c;
+            border: 1px solid rgba(229, 57, 53, 0.4);
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            padding: 0.4rem 0.55rem;
+            font-size: 0.78rem;
+            line-height: 1.3;
+            white-space: normal;
+            width: max-content;
+            max-width: min(280px, calc(100vw - 48px));
+            word-break: break-word;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+            z-index: 30;
+        }
+
+        .field-error__icon:hover .field-error__tooltip,
+        .field-error__icon:focus-visible .field-error__tooltip {
+            opacity: 1;
+        }
+
         .form-group textarea {
-            resize: vertical;
+            resize: none;
             min-height: 120px;
+            overflow-y: hidden;
         }
 
         /* intl-tel-input (country + dial code) — JANA theme */
@@ -2492,7 +2570,7 @@ image.png<!DOCTYPE html>
                     <div class="contact-icon">✉️</div>
                     <div class="contact-item-content">
                         <h4>Email</h4>
-                        <p>book@jana.travel.com</p>
+                        <p><a href="mailto:book@jana.travel.com">book@jana.travel.com</a></p>
                     </div>
                 </div>
                 <div class="contact-item">
@@ -2514,7 +2592,7 @@ image.png<!DOCTYPE html>
                     </a>
                 </div>
             </div>
-            <form class="contact-form fade-in" onsubmit="handleSubmit(event)">
+            <form class="contact-form fade-in" onsubmit="handleSubmit(event)" novalidate>
                 <h3>Send Us a Message</h3>
                 <div class="form-row">
                     <div class="form-group">
@@ -2528,22 +2606,17 @@ image.png<!DOCTYPE html>
                 </div>
                 <div class="form-group">
                     <label for="email">Email Address *</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" placeholder="name@email.com" required>
                 </div>
                 <div class="form-group form-group-phone">
                     <label for="contact-phone">Phone Number</label>
                     <input type="tel" id="contact-phone" name="phone" autocomplete="tel-national" inputmode="tel">
                 </div>
                 <div class="form-group">
-                    <label for="interest">I'm Interested In</label>
-                    <select id="interest" name="interest">
-                        <option value="">Select an option</option>
-                        <option value="honeymoon">Honeymoon Package</option>
-                        <option value="family">Family Vacation</option>
-                        <option value="diving">Diving Adventure</option>
-                        <option value="luxury">Luxury Resort Stay</option>
-                        <option value="custom">Custom Itinerary</option>
-                        <option value="other">Other</option>
+                    <label for="interest">I'm Interested In *</label>
+                    <select id="interest" name="interest" required>
+                        <option value="">Select a hotel</option>
+                        <option value="any-hotel">Any hotel</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -2669,35 +2742,180 @@ image.png<!DOCTYPE html>
             });
         });
 
+        function ensureFieldErrorEl(field) {
+            if (!field) return null;
+            const formGroup = field.closest('.form-group');
+            if (!formGroup) return null;
+            let errorEl = formGroup.querySelector('.field-error');
+            if (errorEl) return errorEl;
+
+            errorEl = document.createElement('div');
+            errorEl.className = 'field-error';
+            errorEl.innerHTML = `
+                <span class="field-error__icon" tabindex="0" aria-label="Field error">
+                    !
+                    <span class="field-error__tooltip"></span>
+                </span>
+            `;
+            formGroup.appendChild(errorEl);
+            return errorEl;
+        }
+
+        function showFieldError(field, message) {
+            if (!field) return;
+            field.classList.add('is-error');
+            const errorEl = ensureFieldErrorEl(field);
+            if (!errorEl) return;
+            errorEl.style.top = `${field.offsetTop + (field.offsetHeight / 2)}px`;
+            errorEl.style.transform = 'translateY(-50%)';
+            const tooltip = errorEl.querySelector('.field-error__tooltip');
+            if (tooltip) tooltip.textContent = message || 'Please check this field.';
+            errorEl.classList.add('is-visible');
+        }
+
+        function clearFieldError(field) {
+            if (!field) return;
+            field.classList.remove('is-error');
+            const errorEl = field.closest('.form-group')?.querySelector('.field-error');
+            if (errorEl) errorEl.classList.remove('is-visible');
+        }
+
+        function validateContactField(field) {
+            if (!field) return true;
+            const tag = String(field.tagName || '').toLowerCase();
+            const type = String(field.getAttribute('type') || '').toLowerCase();
+            const isRequired = field.hasAttribute('required');
+            const value = String(field.value || '').trim();
+
+            if (tag !== 'select') field.value = value;
+            clearFieldError(field);
+
+            if (isRequired && !value) {
+                showFieldError(field, 'This field is required.');
+                return false;
+            }
+
+            if (type === 'email' && value) {
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailPattern.test(value)) {
+                    showFieldError(field, 'Enter a valid email address (example: name@email.com).');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function validatePhoneField() {
+            const phoneEl = document.getElementById('contact-phone');
+            if (!phoneEl) return true;
+            const digits = String(phoneEl.value || '').replace(/\D/g, '');
+
+            if (!digits) {
+                clearFieldError(phoneEl);
+                return true;
+            }
+
+            const placeholderDigits = String(phoneEl.getAttribute('placeholder') || '').replace(/\D/g, '');
+            if (placeholderDigits && digits.length !== placeholderDigits.length) {
+                showFieldError(
+                    phoneEl,
+                    `Phone number must match this country's format (${placeholderDigits.length} digits).`
+                );
+                return false;
+            }
+
+            if (window.janaPhoneIti && window.intlTelInput && window.intlTelInput.utils) {
+                const valid = window.janaPhoneIti.isValidNumber();
+                if (valid === false) {
+                    showFieldError(phoneEl, 'Enter a valid phone number for the selected country.');
+                    return false;
+                }
+                clearFieldError(phoneEl);
+            }
+
+            return true;
+        }
+
         // Form submission handler
         function handleSubmit(e) {
             e.preventDefault();
-            const formData = new FormData(e.target);
+            const formEl = e.target;
+            const fields = Array.from(formEl.querySelectorAll('input, textarea, select'));
+            let firstInvalid = null;
+
+            fields.forEach((field) => {
+                const isValid = validateContactField(field);
+                if (!isValid && !firstInvalid) firstInvalid = field;
+            });
+
+            const phoneEl = document.getElementById('contact-phone');
+            const phoneIsValid = validatePhoneField();
+            if (!phoneIsValid && !firstInvalid && phoneEl) {
+                firstInvalid = phoneEl;
+            }
+
+            if (firstInvalid) {
+                firstInvalid.focus();
+                return;
+            }
+
+            const formData = new FormData(formEl);
             const data = Object.fromEntries(formData);
-            if (window.janaPhoneIti && window.intlTelInput && window.intlTelInput.utils) {
-                const utils = window.intlTelInput.utils;
-                const digits = String(document.getElementById('contact-phone')?.value || '').trim();
+            if (window.janaPhoneIti && window.intlTelInput && window.intlTelInput.utils && phoneEl) {
+                const digits = String(phoneEl.value || '').trim();
                 if (digits) {
-                    const valid = window.janaPhoneIti.isValidNumber();
-                    if (valid === false) {
-                        alert('Please enter a valid phone number for the selected country.');
-                        document.getElementById('contact-phone')?.focus();
-                        return;
-                    }
-                    if (valid === true) {
-                        const e164 = window.janaPhoneIti.getNumber(utils.numberFormat.E164);
-                        if (e164) data.phone = e164;
-                    }
+                    const utils = window.intlTelInput.utils;
+                    const e164 = window.janaPhoneIti.getNumber(utils.numberFormat.E164);
+                    if (e164) data.phone = e164;
                 }
             }
 
             alert('Thank you for your message, ' + data.firstName + '! Our team will contact you within 24 hours.');
-            e.target.reset();
+            formEl.reset();
+            fields.forEach(clearFieldError);
             if (window.janaPhoneIti) {
                 window.janaPhoneIti.setNumber('');
                 window.janaPhoneIti.setCountry('ae');
             }
         }
+
+        const contactFormEl = document.querySelector('.contact-form');
+        const emailFieldEl = document.getElementById('email');
+        const phoneFieldEl = document.getElementById('contact-phone');
+
+        contactFormEl?.addEventListener('input', function (event) {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) return;
+            if (target.classList.contains('is-error')) {
+                clearFieldError(target);
+            }
+        });
+
+        emailFieldEl?.addEventListener('blur', function () {
+            const value = String(this.value || '').trim();
+            this.value = value;
+            if (!value) {
+                clearFieldError(this);
+                return;
+            }
+            validateContactField(this);
+        });
+
+        phoneFieldEl?.addEventListener('blur', function () {
+            validatePhoneField();
+        });
+
+        phoneFieldEl?.addEventListener('input', function () {
+            const value = String(this.value || '').trim();
+            if (!value) {
+                clearFieldError(this);
+                return;
+            }
+            if (this.classList.contains('is-error')) {
+                validatePhoneField();
+            }
+        });
 
         // Scroll animations
         const observerOptions = {
@@ -3183,26 +3401,28 @@ image.png<!DOCTYPE html>
 
         function inferExperienceTags(hotel) {
             const source = String(hotel.experience || '').toLowerCase();
-            const byComma = source.split(',').map(v => v.trim()).filter(Boolean);
-            const text = `${source} ${String(hotel.description || '').toLowerCase()}`;
-            const tags = new Set();
+            if (!source.trim()) return [];
 
-            const addTagFromText = (value) => {
-                if (value.includes('all-inclusive') || value.includes('all inclusive')) tags.add('all-inclusive-holidays');
-                if (value.includes('family')) tags.add('family-holidays');
-                if (value.includes('honeymoon') || value.includes('couple') || value.includes('romantic')) tags.add('honeymoon-couples');
-                if (value.includes('private island')) tags.add('private-island-escapes');
-                if (value.includes('wellness') || value.includes('spa') || value.includes('yoga')) tags.add('wellness-retreats');
-                if (value.includes('luxury beach') || value.includes('luxury')) tags.add('luxury-beach-holidays');
-                if (value.includes('adventure') || value.includes('water sport') || value.includes('surf') || value.includes('diving') || value.includes('snorkeling') || value.includes('snorkel')) {
-                    tags.add('adventure-water-sports');
-                }
+            const tags = new Set();
+            const tokens = source
+                .split(/[,;|\n]+/)
+                .map(v => v.trim())
+                .filter(Boolean);
+
+            const addTagFromToken = (value) => {
+                const compact = value.replace(/[^a-z0-9]+/g, ' ').trim();
+                if (!compact) return;
+                if (compact.includes('all inclusive') || compact.includes('all-inclusive')) tags.add('all-inclusive-holidays');
+                else if (compact.includes('family')) tags.add('family-holidays');
+                else if (compact.includes('honeymoon') || compact.includes('couple')) tags.add('honeymoon-couples');
+                else if (compact.includes('private island')) tags.add('private-island-escapes');
+                else if (compact.includes('wellness')) tags.add('wellness-retreats');
+                else if (compact.includes('luxury beach') || compact === 'luxury') tags.add('luxury-beach-holidays');
+                else if (compact.includes('adventure') || compact.includes('water sport')) tags.add('adventure-water-sports');
             };
 
-            byComma.forEach(addTagFromText);
-            addTagFromText(text);
-
-            if (!tags.size) tags.add('luxury-beach-holidays');
+            tokens.forEach(addTagFromToken);
+            if (!tags.size) addTagFromToken(source);
             return Array.from(tags);
         }
 
@@ -3270,6 +3490,41 @@ image.png<!DOCTYPE html>
             });
         }
 
+        function updateContactInterestOptions(hotels) {
+            const interestSelect = document.getElementById('interest');
+            if (!interestSelect) return;
+
+            const dynamicHotels = Array.from(
+                new Map(
+                    (Array.isArray(hotels) ? hotels : [])
+                        .filter(hotel => hotel && isHotelActive(hotel.active) && String(hotel.name || '').trim())
+                        .map(hotel => {
+                            const name = String(hotel.name || '').trim();
+                            const slug = String(hotel.slug || '').trim();
+                            return [slug || name.toLowerCase(), { slug, name }];
+                        })
+                ).values()
+            ).sort((a, b) => a.name.localeCompare(b.name));
+
+            interestSelect.innerHTML = '';
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = 'Select a hotel';
+            interestSelect.appendChild(placeholderOption);
+
+            const anyHotelOption = document.createElement('option');
+            anyHotelOption.value = 'any-hotel';
+            anyHotelOption.textContent = 'Any hotel';
+            interestSelect.appendChild(anyHotelOption);
+
+            dynamicHotels.forEach(hotel => {
+                const option = document.createElement('option');
+                option.value = hotel.slug || hotel.name;
+                option.textContent = hotel.name;
+                interestSelect.appendChild(option);
+            });
+        }
+
         async function applyHotelJsonDataToIndex() {
             try {
                 const sourceUrl = (window.JANA_HOTELS_SHEET_URL || '').trim() || 'data/hotels.json';
@@ -3301,6 +3556,7 @@ image.png<!DOCTYPE html>
                 if (!validHotels.length) {
                     const grid = document.getElementById('destinationsGrid');
                     if (grid) grid.innerHTML = '';
+                    updateContactInterestOptions([]);
                     if (noResultsEl) {
                         noResultsEl.style.display = 'block';
                         const p = noResultsEl.querySelector('p');
@@ -3308,6 +3564,7 @@ image.png<!DOCTYPE html>
                     }
                     return;
                 }
+                updateContactInterestOptions(validHotels);
                 renderHotelCardsFromData(validHotels);
                 if (noResultsEl) noResultsEl.style.display = 'none';
 
@@ -4379,6 +4636,26 @@ image.png<!DOCTYPE html>
                         instance.setCountry('ae');
                         updatePhoneInputOffset();
                     }, 0);
+                });
+            }
+        })();
+
+        (function initAutoExpandMessageField() {
+            const messageField = document.getElementById('message');
+            if (!messageField) return;
+
+            const autoResize = () => {
+                messageField.style.height = 'auto';
+                messageField.style.height = `${messageField.scrollHeight}px`;
+            };
+
+            messageField.addEventListener('input', autoResize);
+            autoResize();
+
+            const formEl = messageField.closest('form');
+            if (formEl) {
+                formEl.addEventListener('reset', () => {
+                    setTimeout(autoResize, 0);
                 });
             }
         })();
