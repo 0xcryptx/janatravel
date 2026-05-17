@@ -14,6 +14,22 @@ function resolveImagePath(path) {
   return path;
 }
 
+/** Must match DESTINATION_LAND_AREA_SQ_KM_DISPLAY in js/hotels-route.js — not sourced from sheets/forms. */
+const DESTINATION_LAND_AREA_SQ_KM_DISPLAY = Object.freeze({
+  maldives: "298 sq km",
+  seychelles: "457 sq km",
+  mauritius: "2,040 sq km"
+});
+
+function getDestinationIslandAreaDisplay(destination) {
+  const normalized = String(destination || "").toLowerCase().trim();
+  if (!normalized) return "";
+  if (normalized.includes("maldives")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.maldives;
+  if (normalized.includes("seychelles")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.seychelles;
+  if (normalized.includes("mauritius")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.mauritius;
+  return "";
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -61,7 +77,7 @@ function renderHotelPage(hotel) {
     ["Destination", hotel.destination],
     ["Location", hotel.location],
     ["Rating", hotel.rating],
-    ["Island Size", hotel.islandSize],
+    ["Island Size", getDestinationIslandAreaDisplay(hotel.destination) || "Not specified yet"],
     ["Reef Type", hotel.reefType],
     ["Experience", hotel.experience],
     ["Meal Plan", hotel.mealPlan],
@@ -126,7 +142,9 @@ async function initHotelPackagePage() {
 
     const hotels = await loadJsonData(DATA_URL);
     const normalizedHotels = Array.isArray(hotels) ? hotels : [];
-    const hotel = normalizedHotels.find((item) => item.slug === slug);
+    const hotel = normalizedHotels.find(
+      (item) => String(item?.slug || "").trim().toLowerCase() === String(slug || "").trim().toLowerCase()
+    );
 
     if (!hotel) {
       updateState("empty", "Hotel package not found in data file.");

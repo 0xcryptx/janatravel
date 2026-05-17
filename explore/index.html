@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- JANA_DEV_SITE_PASSWORD_GATE START — delete this block + ../js/site-access-gate.js when live -->
+    <script>
+        (function () {
+            if (/(?:^|;\s*)jana_site_access=1(?:;|$)/.test(document.cookie)) return;
+            try { if (sessionStorage.getItem('jana:siteAccessUnlocked') === '1') return; } catch (e) {}
+            document.documentElement.classList.add('site-gate-pending');
+        })();
+    </script>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE END (head) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Explore Destinations | JANA Travel</title>
     <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
@@ -212,5 +221,8 @@
             </a>
         </section>
     </main>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE START -->
+    <script src="../js/site-access-gate.js"></script>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE END -->
 </body>
 </html>

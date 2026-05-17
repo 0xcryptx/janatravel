@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- JANA_DEV_SITE_PASSWORD_GATE START — delete this block + ../js/site-access-gate.js when live -->
+  <script>
+    (function () {
+      if (/(?:^|;\s*)jana_site_access=1(?:;|$)/.test(document.cookie)) return;
+      try { if (sessionStorage.getItem('jana:siteAccessUnlocked') === '1') return; } catch (e) {}
+      document.documentElement.classList.add('site-gate-pending');
+    })();
+  </script>
+  <!-- JANA_DEV_SITE_PASSWORD_GATE END (head) -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hotel Package | JANA Travel</title>
   <link rel="icon" href="../public/JanaTravelLogo.webp" type="image/webp">
@@ -336,7 +345,23 @@
       padding:.65rem 0;
       border-bottom:1px dashed rgba(0,139,139,.2);
     }
+    .section-room-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+      gap:.8rem;
+      align-items:start;
+    }
+    .section-item--room {
+      padding:.9rem;
+      margin-bottom:0;
+      border:1px solid rgba(0,139,139,.18);
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(240,253,253,.92));
+      box-shadow:0 8px 18px rgba(0,139,139,.08);
+      height:100%;
+    }
     .section-item:last-child { border-bottom:none; padding-bottom:0; }
+    .section-item--room:last-child { padding-bottom:.9rem; }
     .section-item__title {
       margin:0;
       color:#144747;
@@ -346,6 +371,109 @@
       white-space:normal;
       overflow-wrap:anywhere;
       word-break:break-word;
+    }
+    .section-item__desc {
+      margin:.75rem 0 0;
+      color:#3f6464;
+      font-size:.9rem;
+      line-height:1.5;
+    }
+    .section-item__actions {
+      margin-top:.85rem;
+      text-align:center;
+    }
+    .room-image-viewer {
+      position:relative;
+      margin-top:.65rem;
+      border:1px solid rgba(0,139,139,.2);
+      border-radius:12px;
+      overflow:hidden;
+      background:#fff;
+      box-shadow:0 6px 12px rgba(0,139,139,.1);
+    }
+    .room-image-main {
+      width:100%;
+      height:210px;
+      object-fit:cover;
+      display:block;
+      cursor:pointer;
+    }
+    .room-image-nav {
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:34px;
+      height:34px;
+      border:none;
+      border-radius:999px;
+      background:rgba(0,139,139,.78);
+      color:#fff;
+      font-size:1.02rem;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:2;
+      opacity:0;
+      pointer-events:none;
+      transition:background .2s ease, transform .2s ease, opacity .2s ease;
+    }
+    .room-image-viewer:hover .room-image-nav,
+    .room-image-viewer:focus-within .room-image-nav {
+      opacity:1;
+      pointer-events:auto;
+    }
+    .room-image-nav:hover {
+      background:var(--aqua-blue);
+      transform:translateY(-50%) scale(1.05);
+    }
+    .room-image-nav--prev { left:.55rem; }
+    .room-image-nav--next { right:.55rem; }
+    .room-image-counter {
+      position:absolute;
+      left:50%;
+      bottom:.5rem;
+      transform:translateX(-50%);
+      background:rgba(0,0,0,.58);
+      color:#fff;
+      font-size:.76rem;
+      font-weight:600;
+      padding:.2rem .48rem;
+      border-radius:999px;
+      line-height:1.2;
+      opacity:0;
+      transition:opacity .2s ease;
+    }
+    .room-image-viewer:hover .room-image-counter,
+    .room-image-viewer:focus-within .room-image-counter {
+      opacity:1;
+    }
+    @media (hover:none) {
+      .room-image-nav {
+        opacity:1;
+        pointer-events:auto;
+      }
+      .room-image-counter {
+        opacity:1;
+      }
+    }
+    .section-inquire-link {
+      display:inline-block;
+      text-decoration:none;
+      background:rgba(0, 174, 183, 0.14);
+      color:#0b6f75;
+      border:1px solid rgba(0, 174, 183, 0.26);
+      padding:.55rem 1.15rem;
+      border-radius:999px;
+      font-weight:700;
+      font-size:.9rem;
+      transition:background .2s ease, transform .2s ease, box-shadow .2s ease;
+      box-shadow:0 6px 12px rgba(0, 174, 183, 0.1);
+    }
+    .section-inquire-link:hover {
+      background:rgba(0, 174, 183, 0.22);
+      transform:translateY(-1px);
+      box-shadow:0 10px 16px rgba(0, 174, 183, 0.16);
     }
     .section-item__thumbs {
       margin-top:.55rem;
@@ -376,8 +504,9 @@
       object-fit:cover;
       display:block;
     }
-    .cta { margin-top:1.5rem; text-align:center; }
-    .cta a { display:inline-block; text-decoration:none; background:var(--aqua-dark); color:#fff; padding:.95rem 1.8rem; border-radius:999px; font-weight:700; font-size:1.03rem; }
+    .cta { margin-top:2.6rem; text-align:center; }
+    .cta a { display:inline-block; text-decoration:none; background:var(--aqua-dark); color:#fff; padding:.95rem 1.8rem; border-radius:999px; font-weight:700; font-size:1.03rem; transition:background .2s ease, transform .2s ease, box-shadow .2s ease; box-shadow:0 8px 16px rgba(0,139,139,.18); }
+    .cta a:hover { background:var(--aqua-blue); transform:translateY(-1px); box-shadow:0 12px 20px rgba(0,139,139,.24); }
     .page-state { margin:0 auto 1rem; max-width:720px; padding:.8rem 1rem; border-radius:12px; font-size:.95rem; text-align:center; }
     .page-state.loading { background:rgba(0,206,209,.12); color:var(--aqua-dark); border:1px solid rgba(0,206,209,.3); }
     .page-state.success { display:none; }
@@ -402,6 +531,9 @@
         padding:.36rem .62rem;
         white-space:nowrap;
         flex:0 0 auto;
+      }
+      .section-room-grid {
+        grid-template-columns:1fr;
       }
       .detail-card--wide { grid-column:1 / -1; max-width:none; }
       .thumb-btn { flex-basis:92px; }
@@ -433,6 +565,9 @@
   <script>
     window.JANA_HOTELS_SHEET_URL = "https://opensheet.elk.sh/1v3F_YYEJl1mhoN9Hs2F6ee8SzXjsbJdGvXqczB9LKL4/Form%20Responses%201";
   </script>
+  <!-- JANA_DEV_SITE_PASSWORD_GATE START -->
+  <script src="../js/site-access-gate.js"></script>
+  <!-- JANA_DEV_SITE_PASSWORD_GATE END -->
   <script type="module" src="../js/hotels-route.js"></script>
 </body>
 </html>

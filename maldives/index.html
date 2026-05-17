@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- JANA_DEV_SITE_PASSWORD_GATE START — delete this block + ../js/site-access-gate.js when live -->
+    <script>
+        (function () {
+            if (/(?:^|;\s*)jana_site_access=1(?:;|$)/.test(document.cookie)) return;
+            try { if (sessionStorage.getItem('jana:siteAccessUnlocked') === '1') return; } catch (e) {}
+            document.documentElement.classList.add('site-gate-pending');
+        })();
+    </script>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE END (head) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maldives | JANA Travel</title>
     <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
@@ -142,6 +151,75 @@
         .area-right { grid-column: 3; }
         .area-item h3 { color: var(--aqua-dark); font-size: 1.08rem; margin-bottom: 0.45rem; }
         .area-item p { margin: 0; }
+        .weather-guide {
+            margin-top: 0.9rem;
+        }
+        .weather-guide h3 {
+            color: var(--aqua-dark);
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem;
+            letter-spacing: 0.01em;
+        }
+        .weather-guide-card {
+            background: linear-gradient(180deg, rgba(224, 247, 250, 0.72), rgba(240, 253, 255, 0.86));
+            border: 1px solid rgba(0, 139, 139, 0.18);
+            border-radius: 12px;
+            padding: 0.45rem 0.55rem;
+            box-shadow: 0 6px 16px rgba(0, 139, 139, 0.08);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .weather-table {
+            width: max-content;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 620px;
+            font-size: 0.78rem;
+            color: #2e4f54;
+        }
+        .weather-table th,
+        .weather-table td {
+            padding: 0.32rem 0.48rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 139, 139, 0.1);
+            white-space: nowrap;
+        }
+        .weather-table thead th {
+            font-weight: 700;
+            color: #2a6d73;
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .weather-table .label-col {
+            text-align: left;
+            font-weight: 700;
+            color: #1f6168;
+            position: sticky;
+            left: 0;
+            background: rgba(230, 249, 252, 0.94);
+            backdrop-filter: blur(1px);
+        }
+        .weather-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .culture-island-size {
+            display: inline-block;
+            margin: 2.25rem 0 0;
+            padding: 0.28rem 0.72rem;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--aqua-dark);
+            letter-spacing: 0.02em;
+            background: linear-gradient(135deg, rgba(224, 247, 250, 0.7), rgba(255, 255, 255, 0.88));
+            border: 1px solid rgba(0, 139, 139, 0.22);
+            border-radius: 999px;
+            box-shadow: 0 4px 12px rgba(0, 139, 139, 0.08);
+            line-height: 1.35;
+        }
+        .culture-island-size strong {
+            color: #186b73;
+            font-weight: 700;
+        }
         @media (max-width: 880px) {
             .flow-row, .flow-row.reverse { grid-template-columns: 1fr; }
             .flow-row.reverse .flow-copy, .flow-row.reverse .flow-media { order: initial; }
@@ -177,6 +255,62 @@
             <div class="flow-copy">
                 <h2>Best Time to Visit</h2>
                 <p>The Maldives is beautiful all year round, but the most popular months are usually December to April, when the weather is sunnier and the sea is calmer. From May to November, prices may be lower, with a higher chance of rain and tropical showers.</p>
+                <div class="weather-guide" aria-label="Monthly Weather Guide">
+                    <h3>Monthly Weather Guide</h3>
+                    <div class="weather-guide-card">
+                        <table class="weather-table">
+                            <thead>
+                                <tr>
+                                    <th class="label-col">Month</th>
+                                    <th>Jan</th>
+                                    <th>Feb</th>
+                                    <th>Mar</th>
+                                    <th>Apr</th>
+                                    <th>May</th>
+                                    <th>Jun</th>
+                                    <th>Jul</th>
+                                    <th>Aug</th>
+                                    <th>Sep</th>
+                                    <th>Oct</th>
+                                    <th>Nov</th>
+                                    <th>Dec</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="label-col">Avg. Temp</td>
+                                    <td>28&deg;C</td>
+                                    <td>29&deg;C</td>
+                                    <td>29&deg;C</td>
+                                    <td>30&deg;C</td>
+                                    <td>29&deg;C</td>
+                                    <td>28&deg;C</td>
+                                    <td>28&deg;C</td>
+                                    <td>28&deg;C</td>
+                                    <td>28&deg;C</td>
+                                    <td>28&deg;C</td>
+                                    <td>28&deg;C</td>
+                                    <td>28&deg;C</td>
+                                </tr>
+                                <tr>
+                                    <td class="label-col">Rain Chance</td>
+                                    <td>20%</td>
+                                    <td>15%</td>
+                                    <td>20%</td>
+                                    <td>30%</td>
+                                    <td>55%</td>
+                                    <td>60%</td>
+                                    <td>55%</td>
+                                    <td>60%</td>
+                                    <td>65%</td>
+                                    <td>60%</td>
+                                    <td>45%</td>
+                                    <td>30%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             <div class="flow-media">
                 <img src="/assets/images/maldives_2.avif" alt="Maldives lagoon">
@@ -187,6 +321,7 @@
             <div class="flow-copy">
                 <h2>Culture &amp; Island Life</h2>
                 <p>Maldives is more than just beaches. Visitors can enjoy local island culture, fresh seafood, traditional music, water sports, and peaceful resort life. From the capital Malé to private island resorts in Ari Atoll, Baa Atoll, and North Malé Atoll, every area offers a different kind of experience.</p>
+                <p class="culture-island-size" role="note">Island size · <strong>298 sq km</strong></p>
             </div>
             <div class="flow-media">
                 <img src="/assets/images/maldives_3.jpg" alt="Maldives island beach">
@@ -242,5 +377,8 @@
             </div>
         </section>
     </main>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE START -->
+    <script src="../js/site-access-gate.js"></script>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE END -->
 </body>
 </html>

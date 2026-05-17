@@ -39,6 +39,13 @@ function createWhatsAppLink(hotelName) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 }
 
+function createRoomWhatsAppLink(hotelName, roomName) {
+  const normalizedHotel = String(hotelName || "").trim() || "this hotel package";
+  const normalizedRoom = String(roomName || "").trim() || "this";
+  const text = `Hello, I'm interested in ${normalizedHotel}, ${normalizedRoom}.`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
 function formatRating(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -71,6 +78,22 @@ function getDestinationPageUrl(destination) {
   if (normalized.includes("maldives")) return "../maldives/";
   if (normalized.includes("seychelles")) return "../seychelles/";
   if (normalized.includes("mauritius")) return "../mauritius/";
+  return "";
+}
+
+/** Destination total land area (display). Single source — change here to update hotel pages everywhere. Not read from sheets/forms. */
+const DESTINATION_LAND_AREA_SQ_KM_DISPLAY = Object.freeze({
+  maldives: "298 sq km",
+  seychelles: "457 sq km",
+  mauritius: "2,040 sq km"
+});
+
+function getDestinationIslandAreaDisplay(destination) {
+  const normalized = String(destination || "").toLowerCase().trim();
+  if (!normalized) return "";
+  if (normalized.includes("maldives")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.maldives;
+  if (normalized.includes("seychelles")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.seychelles;
+  if (normalized.includes("mauritius")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.mauritius;
   return "";
 }
 
@@ -107,11 +130,42 @@ function isHotelActive(value) {
   return normalized !== "false" && normalized !== "no" && normalized !== "0";
 }
 
-function parseDashSeparatedItems(value) {
+function slugifyHotelName(value) {
   return String(value || "")
-    .split("-")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function parseDashSeparatedItems(value) {
+  const text = String(value || "");
+  const parts = text.includes(" - ")
+    ? text.split(/\s+-\s+/)
+    : text.split("- ");
+  return parts
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function parseNamedItemsWithDescription(value) {
+  return parseDashSeparatedItems(value).map((entry) => {
+    const separatorIndex = entry.indexOf(":");
+    if (separatorIndex < 0) {
+      return {
+        label: entry,
+        description: ""
+      };
+    }
+    const label = entry.slice(0, separatorIndex).trim();
+    const description = entry.slice(separatorIndex + 1).trim();
+    return {
+      label: label || entry,
+      description
+    };
+  });
 }
 
 function getHotelStateStorageKey(slug) {
@@ -308,9 +362,10 @@ async function collectMainGalleryImages(basePath, slug, firstImage) {
   return IMAGE_INDEXES.map((index) => indexedImages.get(index)).filter(Boolean);
 }
 
-function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, labels) {
-  return labels.map((label, index) => ({
-    label,
+function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, entries) {
+  return entries.map((entry, index) => ({
+    label: entry.label,
+    description: entry.description || "",
     folderPath: `${basePath}/${slug}/${sectionFolder}/${itemPrefix}${index + 1}`,
     images: [],
     loaded: false
@@ -331,14 +386,20 @@ async function hydrateSectionItems(section) {
 }
 
 function normalizeSheetHotel(row) {
-  const slug = String(getCaseInsensitiveField(row, ["slug", "Slug"]) || "").trim();
   const name = String(getCaseInsensitiveField(row, ["name", "Name"]) || "").trim();
+  const rawSlug = String(getCaseInsensitiveField(row, ["slug", "Slug"]) || "").trim();
+  const slug = slugifyHotelName(rawSlug || name);
   return {
     slug,
     name,
     active: getCaseInsensitiveField(row, ["active", "Active"]),
     destination: getCaseInsensitiveField(row, ["destination", "Destination"]),
     location: getCaseInsensitiveField(row, ["location", "Location"]),
+    distanceFromAirport: getCaseInsensitiveField(row, [
+      "distanceFromAirport",
+      "Distance from Airport",
+      "Distance From Airport"
+    ]),
     googleMapsLink: getCaseInsensitiveField(row, [
       "googleMapsLink",
       "Google Maps Link",
@@ -348,15 +409,39 @@ function normalizeSheetHotel(row) {
       "Location Link"
     ]),
     rating: getCaseInsensitiveField(row, ["rating", "Rating"]),
-    islandSize: getCaseInsensitiveField(row, ["islandSize", "Island Size"]),
     reefType: getCaseInsensitiveField(row, ["reefType", "Reef Type"]),
     experience: getCaseInsensitiveField(row, ["experience", "Experience"]),
     mealPlan: getCaseInsensitiveField(row, ["mealPlan", "Meal Plan"]),
-    rooms: getCaseInsensitiveField(row, ["rooms", "Rooms"]),
+    rooms: getCaseInsensitiveField(row, [
+      "rooms",
+      "Rooms",
+      "No. of Rooms",
+      "No Of Rooms",
+      "No.of Rooms",
+      "Number of Rooms",
+      "# of Rooms",
+      "# of rooms"
+    ]),
     roomTypes: getCaseInsensitiveField(row, ["roomTypes", "Room Types"]),
-    restaurants: getCaseInsensitiveField(row, ["restaurants", "Restaurants"]),
+    restaurants: getCaseInsensitiveField(row, [
+      "restaurants",
+      "Restaurants",
+      "No. of Restaurants",
+      "No Of Restaurants",
+      "No.of Restaurants",
+      "Number of Restaurants",
+      "# of Restaurants"
+    ]),
     restaurantNames: getCaseInsensitiveField(row, ["restaurantNames", "Restaurant Names"]),
-    bars: getCaseInsensitiveField(row, ["bars", "Bars"]),
+    bars: getCaseInsensitiveField(row, [
+      "bars",
+      "Bars",
+      "No. of Bars",
+      "No Of Bars",
+      "No.of Bars",
+      "Number of Bars",
+      "# of Bars"
+    ]),
     transferType: getCaseInsensitiveField(row, ["transferType", "Transfer Type"]),
     facilities: getCaseInsensitiveField(row, ["facilities", "Facilities"]),
     wellness: getCaseInsensitiveField(row, ["wellness", "Wellness"]),
@@ -380,10 +465,10 @@ async function prepareHotelMedia(hotel) {
   const mainImages = await collectMainGalleryImages(imageBasePath, slug, firstImage);
   if (!mainImages.length) return null;
 
-  const roomTypeItemsText = parseDashSeparatedItems(hotel.roomTypes);
-  const facilityItemsText = parseDashSeparatedItems(hotel.facilities);
-  const wellnessItemsText = parseDashSeparatedItems(hotel.wellness);
-  const restaurantItemsText = parseDashSeparatedItems(hotel.restaurantNames);
+  const roomTypeItemsText = parseNamedItemsWithDescription(hotel.roomTypes);
+  const facilityItemsText = parseNamedItemsWithDescription(hotel.facilities);
+  const wellnessItemsText = parseNamedItemsWithDescription(hotel.wellness);
+  const restaurantItemsText = parseNamedItemsWithDescription(hotel.restaurantNames);
 
   const roomTypeItems = buildIndexedSectionItems(imageBasePath, slug, "rooms", "room", roomTypeItemsText);
   const facilityItems = buildIndexedSectionItems(imageBasePath, slug, "facilities", "fac", facilityItemsText);
@@ -633,47 +718,69 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = 
   setActiveImage(Number.isFinite(initialIndex) ? initialIndex : 0);
 }
 
-function renderSectionItemsHtml(items, sectionKey) {
+function renderSectionItemsHtml(items, sectionKey, options = {}) {
+  const hotelName = String(options.hotelName || "").trim();
   if (!items.length) {
     return `<p class="info-empty">Not specified yet.</p>`;
   }
-  return items
+  const renderedItems = items
     .map((item, itemIndex) => `
-      <article class="section-item">
+      <article class="section-item${sectionKey === "rooms" ? " section-item--room" : ""}">
         <h4 class="section-item__title">${escapeHtml(item.label)}</h4>
         ${
           item.images.length
-            ? `<div class="section-item__thumbs">
-                ${item.images
-                  .map((imageUrl, imageIndex) => `
-                    <button
-                      type="button"
-                      class="section-thumb-btn"
-                      data-section-key="${sectionKey}"
-                      data-item-index="${itemIndex}"
-                      data-image-index="${imageIndex}"
-                      aria-label="Open image ${imageIndex + 1}"
-                    >
-                      <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}">
-                    </button>
-                  `)
-                  .join("")}
+            ? sectionKey === "rooms"
+              ? `<div class="room-image-viewer" data-room-item-index="${itemIndex}">
+                  <button type="button" class="room-image-nav room-image-nav--prev" data-room-nav="prev" aria-label="Previous room image">&#10094;</button>
+                  <img class="room-image-main" src="${escapeHtml(item.images[0])}" alt="${escapeHtml(item.label)} image 1">
+                  <button type="button" class="room-image-nav room-image-nav--next" data-room-nav="next" aria-label="Next room image">&#10095;</button>
+                  <span class="room-image-counter">1 / ${item.images.length}</span>
+                </div>`
+              : `<div class="section-item__thumbs">
+                  ${item.images
+                    .map((imageUrl, imageIndex) => `
+                      <button
+                        type="button"
+                        class="section-thumb-btn"
+                        data-section-key="${sectionKey}"
+                        data-item-index="${itemIndex}"
+                        data-image-index="${imageIndex}"
+                        aria-label="Open image ${imageIndex + 1}"
+                      >
+                        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}">
+                      </button>
+                    `)
+                    .join("")}
+                </div>`
+            : ""
+        }
+        ${item.description ? `<p class="section-item__desc">${escapeHtml(item.description)}</p>` : ""}
+        ${
+          sectionKey === "rooms"
+            ? `<div class="section-item__actions">
+                <a class="section-inquire-link" href="${escapeHtml(createRoomWhatsAppLink(hotelName, item.label))}" target="_blank" rel="noopener noreferrer">Check Availability</a>
               </div>`
             : ""
         }
       </article>
     `)
     .join("");
+
+  if (sectionKey === "rooms") {
+    return `<div class="section-room-grid">${renderedItems}</div>`;
+  }
+  return renderedItems;
 }
 
 function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
   const initialTab = String(options.initialTab || "rooms");
   const onTabChange = typeof options.onTabChange === "function" ? options.onTabChange : null;
+  const hotelName = String(options.hotelName || "").trim();
 
   const tabs = Array.from(contentEl.querySelectorAll(".info-tab"));
   const panelTitle = contentEl.querySelector("#hotelInfoPanelTitle");
   const panelBody = contentEl.querySelector("#hotelInfoPanelBody");
-  if (!tabs.length || !panelTitle || !panelBody) return;
+  if (!tabs.length || !panelTitle || !panelBody) return Promise.resolve();
 
   const bindSectionThumbs = () => {
     panelBody.querySelectorAll(".section-thumb-btn").forEach((btn) => {
@@ -686,6 +793,41 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         lightboxApi.open(section.items[itemIndex].images, imageIndex);
         btn.blur();
       });
+    });
+  };
+
+  const bindRoomImageViewers = () => {
+    panelBody.querySelectorAll(".room-image-viewer").forEach((viewer) => {
+      const itemIndex = Number(viewer.dataset.roomItemIndex || 0);
+      const roomSection = sectionData.rooms;
+      const roomItem = roomSection && Array.isArray(roomSection.items) ? roomSection.items[itemIndex] : null;
+      const images = roomItem && Array.isArray(roomItem.images) ? roomItem.images.filter(Boolean) : [];
+      const mainImageEl = viewer.querySelector(".room-image-main");
+      const counterEl = viewer.querySelector(".room-image-counter");
+      const prevBtn = viewer.querySelector('[data-room-nav="prev"]');
+      const nextBtn = viewer.querySelector('[data-room-nav="next"]');
+      if (!mainImageEl || !counterEl || !prevBtn || !nextBtn || !images.length) return;
+
+      let currentIndex = 0;
+      const setActiveImage = (nextIndex) => {
+        const normalizedIndex = ((nextIndex % images.length) + images.length) % images.length;
+        currentIndex = normalizedIndex;
+        mainImageEl.src = resolveImagePath(images[currentIndex]);
+        mainImageEl.alt = `${roomItem?.label || "Room"} image ${currentIndex + 1}`;
+        counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
+      };
+
+      prevBtn.addEventListener("click", () => setActiveImage(currentIndex - 1));
+      nextBtn.addEventListener("click", () => setActiveImage(currentIndex + 1));
+      mainImageEl.addEventListener("click", () => {
+        lightboxApi.open(images, currentIndex);
+      });
+
+      setActiveImage(0);
+      if (images.length <= 1) {
+        prevBtn.style.display = "none";
+        nextBtn.style.display = "none";
+      }
     });
   };
 
@@ -702,8 +844,9 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       panelBody.innerHTML = `<p class="info-empty">Loading ${escapeHtml(section.title.toLowerCase())}...</p>`;
       await hydrateSectionItems(section);
     }
-    panelBody.innerHTML = renderSectionItemsHtml(section.items, key);
+    panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName });
     bindSectionThumbs();
+    bindRoomImageViewers();
     if (onTabChange) onTabChange(key);
   };
 
@@ -713,7 +856,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
     });
   });
 
-  setActiveTab(sectionData[initialTab] ? initialTab : "rooms");
+  return setActiveTab(sectionData[initialTab] ? initialTab : "rooms");
 }
 
 function animateNumericDetailValues(contentEl) {
@@ -753,7 +896,7 @@ function animateNumericDetailValues(contentEl) {
   });
 }
 
-function renderHotel(hotel, persistedState = {}) {
+async function renderHotel(hotel, persistedState = {}) {
   const titleEl = document.getElementById("hotelTitle");
   const headerMetaEl = document.getElementById("hotelHeaderMeta");
   const contentEl = document.getElementById("hotelContent");
@@ -772,17 +915,23 @@ function renderHotel(hotel, persistedState = {}) {
   const mapUrl = String(hotel.googleMapsLink || "").trim();
   const hasMapUrl = /^https?:\/\//i.test(mapUrl);
   const locationValue = String(hotel.location || "").trim() || "Not specified yet";
+  const distanceFromAirportValue = String(hotel.distanceFromAirport || "").trim() || "Not specified yet";
   const restaurantsCount = String(hotel.restaurants || "").trim() || "Not specified yet";
+
+  const roomsCount = String(hotel.rooms || "").trim() || "Not specified yet";
+  const barsCount = String(hotel.bars || "").trim() || "Not specified yet";
+  const islandSizeDisplay = getDestinationIslandAreaDisplay(destinationValue) || "Not specified yet";
 
   const details = [
     ["Location", locationValue],
+    ["Distance from Airport", distanceFromAirportValue],
     ["Rating", ratingLabel],
-    ["Island Size", hotel.islandSize],
+    ["Island Size", islandSizeDisplay],
     ["Reef Type", hotel.reefType],
-    ["Rooms", hotel.rooms],
+    ["No. of Rooms", roomsCount],
     ["Meal Plan", hotel.mealPlan],
-    ["Restaurants", restaurantsCount],
-    ["Bars", hotel.bars],
+    ["No. of Restaurants", restaurantsCount],
+    ["No. of Bars", barsCount],
     ["Transfer Type", hotel.transferType],
     ["Experience", hotel.experience]
   ];
@@ -864,7 +1013,7 @@ function renderHotel(hotel, persistedState = {}) {
       </div>
     </section>
     <div class="cta">
-      <a href="${createWhatsAppLink(hotel.name)}" target="_blank" rel="noopener noreferrer">Inquire</a>
+      <a href="${createWhatsAppLink(hotel.name)}" target="_blank" rel="noopener noreferrer">Plan Your Stay</a>
     </div>
   `;
 
@@ -873,8 +1022,9 @@ function renderHotel(hotel, persistedState = {}) {
     initialIndex: Number(persistedState.galleryIndex || 0),
     onGalleryIndexChange: (index) => saveHotelViewState(hotel.slug, { galleryIndex: index })
   });
-  setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
+  await setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
     initialTab: String(persistedState.activeTab || "rooms"),
+    hotelName,
     onTabChange: (tabKey) => saveHotelViewState(hotel.slug, { activeTab: tabKey })
   });
   animateNumericDetailValues(contentEl);
@@ -898,7 +1048,7 @@ async function initHotelsRoutePage() {
     }
 
     const persistedState = loadHotelViewState(slug);
-    renderHotel(hotel, persistedState);
+    await renderHotel(hotel, persistedState);
 
     const restoreScrollY = Number(persistedState.scrollY);
     if (Number.isFinite(restoreScrollY) && restoreScrollY >= 0) {

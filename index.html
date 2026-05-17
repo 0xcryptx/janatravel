@@ -1,7 +1,16 @@
-image.png<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- JANA_DEV_SITE_PASSWORD_GATE START — delete this block + js/site-access-gate.js when live -->
+    <script>
+        (function () {
+            if (/(?:^|;\s*)jana_site_access=1(?:;|$)/.test(document.cookie)) return;
+            try { if (sessionStorage.getItem('jana:siteAccessUnlocked') === '1') return; } catch (e) {}
+            document.documentElement.classList.add('site-gate-pending');
+        })();
+    </script>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE END (head) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>JANA Travel - Your Gateway to Paradise</title>
     
@@ -2672,10 +2681,13 @@ image.png<!DOCTYPE html>
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/js/intlTelInput.min.js"></script>
     <script>
         window.JANA_HOTELS_SHEET_URL = "https://opensheet.elk.sh/1v3F_YYEJl1mhoN9Hs2F6ee8SzXjsbJdGvXqczB9LKL4/Form%20Responses%201";
     </script>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE START -->
+    <script src="js/site-access-gate.js"></script>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE END -->
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/js/intlTelInput.min.js"></script>
     <script>
         const INDEX_SCROLL_KEY = 'jana:indexScrollY';
 
@@ -2826,8 +2838,8 @@ image.png<!DOCTYPE html>
             }
 
             if (window.janaPhoneIti && window.intlTelInput && window.intlTelInput.utils) {
-                const valid = window.janaPhoneIti.isValidNumber();
-                if (valid === false) {
+                    const valid = window.janaPhoneIti.isValidNumber();
+                    if (valid === false) {
                     showFieldError(phoneEl, 'Enter a valid phone number for the selected country.');
                     return false;
                 }
@@ -2857,8 +2869,8 @@ image.png<!DOCTYPE html>
 
             if (firstInvalid) {
                 firstInvalid.focus();
-                return;
-            }
+                        return;
+                    }
 
             const formData = new FormData(formEl);
             const data = Object.fromEntries(formData);
@@ -2866,8 +2878,8 @@ image.png<!DOCTYPE html>
                 const digits = String(phoneEl.value || '').trim();
                 if (digits) {
                     const utils = window.intlTelInput.utils;
-                    const e164 = window.janaPhoneIti.getNumber(utils.numberFormat.E164);
-                    if (e164) data.phone = e164;
+                        const e164 = window.janaPhoneIti.getNumber(utils.numberFormat.E164);
+                        if (e164) data.phone = e164;
                 }
             }
 
@@ -3273,12 +3285,12 @@ image.png<!DOCTYPE html>
         };
 
         function syncDestinationOverridesIntoDestinations() {
-            Object.keys(destinationOverrides).forEach(key => {
-                destinations[key] = {
-                    ...(destinations[key] || {}),
-                    ...destinationOverrides[key]
-                };
-            });
+        Object.keys(destinationOverrides).forEach(key => {
+            destinations[key] = {
+                ...(destinations[key] || {}),
+                ...destinationOverrides[key]
+            };
+        });
         }
 
         function getCaseInsensitiveField(row, keys) {
@@ -3302,6 +3314,32 @@ image.png<!DOCTYPE html>
         function parseFeaturedValue(value) {
             const normalized = String(value || '').toLowerCase().trim();
             return normalized === 'true' || normalized === 'yes' || normalized === '1';
+        }
+
+        function slugifyHotelName(value) {
+            return String(value || '')
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+
+        /** Must match DESTINATION_LAND_AREA_SQ_KM_DISPLAY in js/hotels-route.js — not from forms. */
+        const DESTINATION_LAND_AREA_SQ_KM_DISPLAY = Object.freeze({
+            maldives: '298 sq km',
+            seychelles: '457 sq km',
+            mauritius: '2,040 sq km'
+        });
+
+        function getDestinationIslandAreaDisplay(destination) {
+            const normalized = String(destination || '').toLowerCase().trim();
+            if (!normalized) return '';
+            if (normalized.includes('maldives')) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.maldives;
+            if (normalized.includes('seychelles')) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.seychelles;
+            if (normalized.includes('mauritius')) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.mauritius;
+            return '';
         }
 
         const HOTEL_IMAGE_BASE_PATHS = ['hotel_images', 'assets/hotel_images'];
@@ -3373,8 +3411,9 @@ image.png<!DOCTYPE html>
         }
 
         function normalizeSheetHotel(row) {
-            const slug = String(getCaseInsensitiveField(row, ['slug', 'Slug']) || '').trim();
             const name = String(getCaseInsensitiveField(row, ['name', 'Name']) || '').trim();
+            const rawSlug = String(getCaseInsensitiveField(row, ['slug', 'Slug']) || '').trim();
+            const slug = slugifyHotelName(rawSlug || name);
             return {
                 slug,
                 name,
@@ -3383,13 +3422,12 @@ image.png<!DOCTYPE html>
                 destination: getCaseInsensitiveField(row, ['destination', 'Destination']),
                 location: getCaseInsensitiveField(row, ['location', 'Location']),
                 rating: getCaseInsensitiveField(row, ['rating', 'Rating']),
-                islandSize: getCaseInsensitiveField(row, ['islandSize', 'Island Size']),
                 reefType: getCaseInsensitiveField(row, ['reefType', 'Reef Type']),
                 experience: getCaseInsensitiveField(row, ['experience', 'Experience']),
                 mealPlan: getCaseInsensitiveField(row, ['mealPlan', 'Meal Plan']),
-                rooms: getCaseInsensitiveField(row, ['rooms', 'Rooms']),
-                restaurants: getCaseInsensitiveField(row, ['restaurants', 'Restaurants']),
-                bars: getCaseInsensitiveField(row, ['bars', 'Bars']),
+                rooms: getCaseInsensitiveField(row, ['rooms', 'Rooms', 'No. of Rooms', 'No Of Rooms', 'No.of Rooms', 'Number of Rooms', '# of Rooms', '# of rooms']),
+                restaurants: getCaseInsensitiveField(row, ['restaurants', 'Restaurants', 'No. of Restaurants', 'No Of Restaurants', 'No.of Restaurants', 'Number of Restaurants', '# of Restaurants']),
+                bars: getCaseInsensitiveField(row, ['bars', 'Bars', 'No. of Bars', 'No Of Bars', 'No.of Bars', 'Number of Bars', '# of Bars']),
                 transferType: getCaseInsensitiveField(row, ['transferType', 'Transfer Type']),
                 description: getCaseInsensitiveField(row, ['description', 'Description']),
                 imageUrl: getCaseInsensitiveField(row, ['imageUrl', 'Image URL']),
@@ -3538,12 +3576,13 @@ image.png<!DOCTYPE html>
                 });
                 const preparedHotels = await Promise.all(hotels.map(async (hotel) => {
                     if (!hotel) return null;
-                    const slug = String(hotel.slug || '').trim();
+                    const slug = slugifyHotelName(hotel.slug || hotel.name || '');
                     if (!slug || !String(hotel.name || '').trim() || !isHotelActive(hotel.active)) return null;
                     const imageSet = await resolveHotelImageSet(slug);
                     if (!imageSet) return null;
                     return {
                         ...hotel,
+                        slug,
                         imageBasePath: imageSet.basePath,
                         imageUrl: String(hotel.imageUrl || '').trim() || imageSet.images[0],
                         galleryImages: Array.isArray(hotel.galleryImages) && hotel.galleryImages.length
@@ -3572,7 +3611,12 @@ image.png<!DOCTYPE html>
                     const key = HOTEL_SLUG_TO_DESTINATION_KEY[hotel.slug];
                     if (!key) return;
                     const gallery = Array.isArray(hotel.galleryImages) ? hotel.galleryImages.filter(Boolean) : [];
-                    const features = [hotel.mealPlan, hotel.reefType, hotel.islandSize, hotel.experience].filter(Boolean);
+                    const features = [
+                        hotel.mealPlan,
+                        hotel.reefType,
+                        getDestinationIslandAreaDisplay(hotel.destination),
+                        hotel.experience
+                    ].filter(Boolean);
                     destinationOverrides[key] = {
                         title: hotel.name || '',
                         description: hotel.description || '',
