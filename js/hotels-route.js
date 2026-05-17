@@ -12,6 +12,8 @@ const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
+const IMAGE_EXISTS_CACHE = new Map();
+const IMAGE_PROBE_TIMEOUT_MS = 450;
 let hotelDataCacheCleanupTimerId = null;
 
 function loadJsonData(url) {
@@ -281,30 +283,38 @@ function saveCachedHotelData(slug, signature, hotelData) {
 }
 
 async function doesImageExist(url) {
-  const withTimeout = async (requestUrl, options = {}, timeoutMs = 900) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await fetch(requestUrl, { ...options, signal: controller.signal });
-      return response;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  };
+  if (IMAGE_EXISTS_CACHE.has(url)) {
+    return IMAGE_EXISTS_CACHE.get(url);
+  }
 
-  try {
-    const headResponse = await withTimeout(url, { method: "HEAD", cache: "no-store" });
-    if (headResponse.ok) return true;
-    if (headResponse.status !== 405) return false;
-  } catch (error) {
-    // Ignore and attempt GET fallback.
-  }
-  try {
-    const getResponse = await withTimeout(url, { cache: "no-store" });
-    return getResponse.ok;
-  } catch (error) {
-    return false;
-  }
+  const pendingCheck = (async () => {
+    const withTimeout = async (requestUrl, options = {}) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), IMAGE_PROBE_TIMEOUT_MS);
+      try {
+        return await fetch(requestUrl, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    try {
+      const headResponse = await withTimeout(url, { method: "HEAD", cache: "force-cache" });
+      if (headResponse.ok) return true;
+      if (headResponse.status !== 405) return false;
+    } catch (error) {
+      // Ignore and attempt GET fallback.
+    }
+    try {
+      const getResponse = await withTimeout(url, { method: "GET", cache: "force-cache" });
+      return getResponse.ok;
+    } catch (error) {
+      return false;
+    }
+  })();
+
+  IMAGE_EXISTS_CACHE.set(url, pendingCheck);
+  return pendingCheck;
 }
 
 async function resolveHotelImageBasePath(slug) {
@@ -332,15 +342,30 @@ async function findFirstExistingImage(folderPath, baseName) {
 }
 
 async function collectNumberedImages(folderPath) {
-  const imageUrls = [];
-  for (const imageIndex of IMAGE_INDEXES) {
-    const imageUrl = await findFirstExistingImage(folderPath, String(imageIndex));
+  const firstImage = await findFirstExistingImage(folderPath, "1");
+  if (!firstImage) {
+    const fallbackImage = await findFirstExistingImage(folderPath, "add_image");
+    return fallbackImage ? [fallbackImage] : [];
+  }
+
+  const imageUrls = [firstImage];
+  const preferredExt = (firstImage.match(/\.([a-z0-9]+)(?:$|\?)/i) || [])[1]?.toLowerCase() || "";
+  const otherIndexes = IMAGE_INDEXES.filter((index) => index !== 1);
+
+  const resolved = await Promise.all(
+    otherIndexes.map(async (index) => {
+      if (preferredExt) {
+        const preferredUrl = `${folderPath}/${index}.${preferredExt}`;
+        if (await doesImageExist(preferredUrl)) return preferredUrl;
+      }
+      return findFirstExistingImage(folderPath, String(index));
+    })
+  );
+
+  for (const imageUrl of resolved) {
     if (imageUrl) imageUrls.push(imageUrl);
   }
-  if (!imageUrls.length) {
-    const fallbackImage = await findFirstExistingImage(folderPath, "add_image");
-    if (fallbackImage) imageUrls.push(fallbackImage);
-  }
+
   return imageUrls;
 }
 
@@ -374,27 +399,44 @@ function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, ent
   }));
 }
 
+function areSectionItemsHydrated(items) {
+  if (!Array.isArray(items) || !items.length) return true;
+  return items.every((item) => item.loaded);
+}
+
 async function hydrateSectionItems(section, onProgress) {
   if (!section || !Array.isArray(section.items) || section.itemsLoaded) return;
   const items = section.items;
-  const total = items.length || 1;
-  const hydratedItems = [];
-
-  for (let index = 0; index < items.length; index += 1) {
-    const item = items[index];
-    if (item.loaded) {
-      hydratedItems.push(item);
-    } else {
-      const images = await collectNumberedImages(item.folderPath);
-      hydratedItems.push({ ...item, images, loaded: true });
-    }
-    if (typeof onProgress === "function") {
-      onProgress(Math.round(((index + 1) / total) * 100));
-    }
+  if (areSectionItemsHydrated(items)) {
+    section.itemsLoaded = true;
+    return;
   }
+
+  const total = items.length || 1;
+  let completed = 0;
+
+  const hydratedItems = await Promise.all(
+    items.map(async (item) => {
+      if (item.loaded) return item;
+      const images = await collectNumberedImages(item.folderPath);
+      completed += 1;
+      if (typeof onProgress === "function") {
+        onProgress(Math.round((completed / total) * 100));
+      }
+      return { ...item, images, loaded: true };
+    })
+  );
 
   section.items = hydratedItems;
   section.itemsLoaded = true;
+}
+
+async function hydrateAllHotelSections(sections) {
+  const pending = sections.filter(
+    (section) => section && Array.isArray(section.items) && section.items.length && !section.itemsLoaded
+  );
+  if (!pending.length) return;
+  await Promise.all(pending.map((section) => hydrateSectionItems(section)));
 }
 
 function normalizeSheetHotel(row) {
@@ -485,10 +527,30 @@ async function prepareHotelMedia(hotel, onProgress) {
   const wellnessItemsText = parseNamedItemsWithDescription(hotel.wellness);
   const restaurantItemsText = parseNamedItemsWithDescription(hotel.restaurantNames);
 
-  const roomTypeItems = buildIndexedSectionItems(imageBasePath, slug, "rooms", "room", roomTypeItemsText);
-  const facilityItems = buildIndexedSectionItems(imageBasePath, slug, "facilities", "fac", facilityItemsText);
-  const wellnessItems = buildIndexedSectionItems(imageBasePath, slug, "wellness", "well", wellnessItemsText);
-  const restaurantItems = buildIndexedSectionItems(imageBasePath, slug, "restaurants", "res", restaurantItemsText);
+  const roomSection = {
+    items: buildIndexedSectionItems(imageBasePath, slug, "rooms", "room", roomTypeItemsText),
+    itemsLoaded: false
+  };
+  const facilitySection = {
+    items: buildIndexedSectionItems(imageBasePath, slug, "facilities", "fac", facilityItemsText),
+    itemsLoaded: false
+  };
+  const wellnessSection = {
+    items: buildIndexedSectionItems(imageBasePath, slug, "wellness", "well", wellnessItemsText),
+    itemsLoaded: false
+  };
+  const restaurantSection = {
+    items: buildIndexedSectionItems(imageBasePath, slug, "restaurants", "res", restaurantItemsText),
+    itemsLoaded: false
+  };
+
+  if (typeof onProgress === "function") onProgress(88);
+  await hydrateAllHotelSections([roomSection, facilitySection, wellnessSection, restaurantSection]);
+
+  const roomTypeItems = roomSection.items;
+  const facilityItems = facilitySection.items;
+  const wellnessItems = wellnessSection.items;
+  const restaurantItems = restaurantSection.items;
 
   return {
     ...hotel,
@@ -581,6 +643,11 @@ function updateState(type, message, percent) {
     return;
   }
   stateEl.textContent = message;
+}
+
+function hideHotelPageLoading(progress) {
+  if (progress) progress.stop();
+  updateState("success", "");
 }
 
 function setupImageLightbox(contentEl) {
@@ -872,10 +939,12 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       tab.setAttribute("aria-selected", isActive ? "true" : "false");
     });
     panelTitle.textContent = section.title;
-    if (!section.itemsLoaded && section.items.some((item) => item.folderPath)) {
+    const needsHydration =
+      !section.itemsLoaded && section.items.some((item) => item.folderPath && !item.loaded);
+    if (needsHydration) {
       const sectionProgress = createLoadingProgress({
         baseMessage: `Loading ${section.title.toLowerCase()}`,
-        estimateMs: 6000,
+        estimateMs: 4000,
         onUpdate: (text) => {
           panelBody.innerHTML = `<p class="info-empty loading-with-progress">${escapeHtml(text)}</p>`;
         }
@@ -885,7 +954,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       await hydrateSectionItems(section, (itemPercent) => {
         sectionProgress.setProgress(8 + Math.round(itemPercent * 0.9));
       });
-      sectionProgress.complete();
+      sectionProgress.stop();
     }
     panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName });
     bindSectionThumbs();
@@ -939,7 +1008,9 @@ function animateNumericDetailValues(contentEl) {
   });
 }
 
-async function renderHotel(hotel, persistedState = {}) {
+async function renderHotel(hotel, persistedState = {}, options = {}) {
+  const onPrimaryReady =
+    typeof options.onPrimaryReady === "function" ? options.onPrimaryReady : null;
   const titleEl = document.getElementById("hotelTitle");
   const headerMetaEl = document.getElementById("hotelHeaderMeta");
   const contentEl = document.getElementById("hotelContent");
@@ -980,10 +1051,26 @@ async function renderHotel(hotel, persistedState = {}) {
   ];
 
   const infoSections = {
-    rooms: { title: "Room Types", items: hotel.roomTypeItems || [], itemsLoaded: false },
-    restaurants: { title: "Restaurants", items: hotel.restaurantItems || [], itemsLoaded: false },
-    facilities: { title: "Facilities", items: hotel.facilityItems || [], itemsLoaded: false },
-    wellness: { title: "Wellness", items: hotel.wellnessItems || [], itemsLoaded: false }
+    rooms: {
+      title: "Room Types",
+      items: hotel.roomTypeItems || [],
+      itemsLoaded: areSectionItemsHydrated(hotel.roomTypeItems)
+    },
+    restaurants: {
+      title: "Restaurants",
+      items: hotel.restaurantItems || [],
+      itemsLoaded: areSectionItemsHydrated(hotel.restaurantItems)
+    },
+    facilities: {
+      title: "Facilities",
+      items: hotel.facilityItems || [],
+      itemsLoaded: areSectionItemsHydrated(hotel.facilityItems)
+    },
+    wellness: {
+      title: "Wellness",
+      items: hotel.wellnessItems || [],
+      itemsLoaded: areSectionItemsHydrated(hotel.wellnessItems)
+    }
   };
 
   if (headerMetaEl) {
@@ -1065,12 +1152,19 @@ async function renderHotel(hotel, persistedState = {}) {
     initialIndex: Number(persistedState.galleryIndex || 0),
     onGalleryIndexChange: (index) => saveHotelViewState(hotel.slug, { galleryIndex: index })
   });
-  await setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
+  animateNumericDetailValues(contentEl);
+
+  // Main gallery + details are visible — hide the page-level loader now.
+  if (onPrimaryReady) onPrimaryReady();
+
+  // Rooms / restaurants tabs load images in the background (can take several seconds).
+  void setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
     initialTab: String(persistedState.activeTab || "rooms"),
     hotelName,
     onTabChange: (tabKey) => saveHotelViewState(hotel.slug, { activeTab: tabKey })
+  }).catch((error) => {
+    console.error("Failed to initialize hotel info tabs:", error);
   });
-  animateNumericDetailValues(contentEl);
 }
 
 async function initHotelsRoutePage() {
@@ -1099,10 +1193,11 @@ async function initHotelsRoutePage() {
       return;
     }
 
-    pageProgress.setProgress(98);
+    pageProgress.setProgress(96);
     const persistedState = loadHotelViewState(slug);
-    await renderHotel(hotel, persistedState);
-    pageProgress.complete();
+    await renderHotel(hotel, persistedState, {
+      onPrimaryReady: () => hideHotelPageLoading(pageProgress)
+    });
 
     const restoreScrollY = Number(persistedState.scrollY);
     if (Number.isFinite(restoreScrollY) && restoreScrollY >= 0) {
@@ -1148,7 +1243,6 @@ async function initHotelsRoutePage() {
       }
     });
 
-    updateState("success", "");
   } catch (error) {
     pageProgress.stop();
     console.error(error);
