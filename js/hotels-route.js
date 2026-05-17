@@ -12,8 +12,13 @@ const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
-const IMAGE_EXISTS_CACHE = new Map();
-const IMAGE_PROBE_TIMEOUT_MS = 450;
+const IMAGE_OK_CACHE = new Set();
+const IMAGE_PROBE_INFLIGHT = new Map();
+const IMAGE_PROBE_TIMEOUT_MS = 4000;
+const MAX_CONCURRENT_IMAGE_PROBES = 6;
+const HOTEL_MEDIA_CACHE_VERSION = 3;
+let activeImageProbes = 0;
+const imageProbeWaitQueue = [];
 let hotelDataCacheCleanupTimerId = null;
 
 function loadJsonData(url) {
@@ -262,6 +267,10 @@ function loadCachedHotelData(slug, signature) {
     if (signature && parsed.signature !== signature) {
       return null;
     }
+    if (parsed.mediaCacheVersion !== HOTEL_MEDIA_CACHE_VERSION) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
     return parsed.data || null;
   } catch (error) {
     return null;
@@ -274,6 +283,7 @@ function saveCachedHotelData(slug, signature, hotelData) {
     const payload = {
       expiresAt: Date.now() + HOTEL_DATA_CACHE_TTL_MS,
       signature,
+      mediaCacheVersion: HOTEL_MEDIA_CACHE_VERSION,
       data: hotelData
     };
     sessionStorage.setItem(key, JSON.stringify(payload));
@@ -282,39 +292,74 @@ function saveCachedHotelData(slug, signature, hotelData) {
   }
 }
 
-async function doesImageExist(url) {
-  if (IMAGE_EXISTS_CACHE.has(url)) {
-    return IMAGE_EXISTS_CACHE.get(url);
+function runWithImageProbeLimit(task) {
+  if (activeImageProbes < MAX_CONCURRENT_IMAGE_PROBES) {
+    activeImageProbes += 1;
+    return Promise.resolve()
+      .then(task)
+      .finally(() => {
+        activeImageProbes -= 1;
+        const next = imageProbeWaitQueue.shift();
+        if (next) next();
+      });
   }
 
-  const pendingCheck = (async () => {
+  return new Promise((resolve, reject) => {
+    imageProbeWaitQueue.push(() => {
+      runWithImageProbeLimit(task).then(resolve, reject);
+    });
+  });
+}
+
+async function doesImageExist(url) {
+  if (IMAGE_OK_CACHE.has(url)) return true;
+  if (IMAGE_PROBE_INFLIGHT.has(url)) return IMAGE_PROBE_INFLIGHT.get(url);
+
+  const pendingCheck = runWithImageProbeLimit(async () => {
     const withTimeout = async (requestUrl, options = {}) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), IMAGE_PROBE_TIMEOUT_MS);
+      const timeoutId = window.setTimeout(() => controller.abort(), IMAGE_PROBE_TIMEOUT_MS);
       try {
         return await fetch(requestUrl, { ...options, signal: controller.signal });
       } finally {
-        clearTimeout(timeoutId);
+        window.clearTimeout(timeoutId);
       }
     };
 
     try {
-      const headResponse = await withTimeout(url, { method: "HEAD", cache: "force-cache" });
-      if (headResponse.ok) return true;
+      const headResponse = await withTimeout(url, { method: "HEAD", cache: "no-store" });
+      if (headResponse.ok) {
+        IMAGE_OK_CACHE.add(url);
+        return true;
+      }
       if (headResponse.status !== 405) return false;
     } catch (error) {
-      // Ignore and attempt GET fallback.
+      // Try a tiny ranged GET next.
     }
+
     try {
-      const getResponse = await withTimeout(url, { method: "GET", cache: "force-cache" });
-      return getResponse.ok;
+      const rangeResponse = await withTimeout(url, {
+        method: "GET",
+        cache: "no-store",
+        headers: { Range: "bytes=0-0" }
+      });
+      if (rangeResponse.ok) {
+        IMAGE_OK_CACHE.add(url);
+        return true;
+      }
     } catch (error) {
       return false;
     }
-  })();
 
-  IMAGE_EXISTS_CACHE.set(url, pendingCheck);
-  return pendingCheck;
+    return false;
+  });
+
+  IMAGE_PROBE_INFLIGHT.set(url, pendingCheck);
+  try {
+    return await pendingCheck;
+  } finally {
+    IMAGE_PROBE_INFLIGHT.delete(url);
+  }
 }
 
 async function resolveHotelImageBasePath(slug) {
@@ -335,58 +380,30 @@ async function resolveHotelImageBasePath(slug) {
 }
 
 async function findFirstExistingImage(folderPath, baseName) {
-  const candidates = IMAGE_EXTENSIONS.map((ext) => `${folderPath}/${baseName}.${ext}`);
-  const checks = await Promise.all(candidates.map((candidate) => doesImageExist(candidate)));
-  const matchedIndex = checks.findIndex(Boolean);
-  return matchedIndex >= 0 ? candidates[matchedIndex] : "";
+  for (const ext of IMAGE_EXTENSIONS) {
+    const candidate = `${folderPath}/${baseName}.${ext}`;
+    if (await doesImageExist(candidate)) return candidate;
+  }
+  return "";
 }
 
 async function collectNumberedImages(folderPath) {
-  const firstImage = await findFirstExistingImage(folderPath, "1");
-  if (!firstImage) {
-    const fallbackImage = await findFirstExistingImage(folderPath, "add_image");
-    return fallbackImage ? [fallbackImage] : [];
-  }
-
-  const imageUrls = [firstImage];
-  const preferredExt = (firstImage.match(/\.([a-z0-9]+)(?:$|\?)/i) || [])[1]?.toLowerCase() || "";
-  const otherIndexes = IMAGE_INDEXES.filter((index) => index !== 1);
-
-  const resolved = await Promise.all(
-    otherIndexes.map(async (index) => {
-      if (preferredExt) {
-        const preferredUrl = `${folderPath}/${index}.${preferredExt}`;
-        if (await doesImageExist(preferredUrl)) return preferredUrl;
-      }
-      return findFirstExistingImage(folderPath, String(index));
-    })
-  );
-
-  for (const imageUrl of resolved) {
+  const imageUrls = [];
+  for (const index of IMAGE_INDEXES) {
+    const imageUrl = await findFirstExistingImage(folderPath, String(index));
     if (imageUrl) imageUrls.push(imageUrl);
   }
+  if (imageUrls.length) return imageUrls;
 
-  return imageUrls;
+  const fallbackImage = await findFirstExistingImage(folderPath, "add_image");
+  return fallbackImage ? [fallbackImage] : [];
 }
 
 async function collectMainGalleryImages(basePath, slug, firstImage) {
   const folderPath = `${basePath}/${slug}`;
-  const hasNumberedPattern = /\/1\.[a-z0-9]+(?:$|\?)/i.test(firstImage);
-  if (!hasNumberedPattern) return [firstImage];
-
-  const indexedImages = new Map([[1, firstImage]]);
-  const resolved = await Promise.all(
-    IMAGE_INDEXES.filter((index) => index !== 1).map(async (index) => ({
-      index,
-      image: await findFirstExistingImage(folderPath, String(index))
-    }))
-  );
-
-  for (const item of resolved) {
-    if (item.image) indexedImages.set(item.index, item.image);
-  }
-
-  return IMAGE_INDEXES.map((index) => indexedImages.get(index)).filter(Boolean);
+  const images = await collectNumberedImages(folderPath);
+  if (images.length) return images;
+  return firstImage ? [firstImage] : [];
 }
 
 function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, entries) {
@@ -415,17 +432,19 @@ async function hydrateSectionItems(section, onProgress) {
   const total = items.length || 1;
   let completed = 0;
 
-  const hydratedItems = await Promise.all(
-    items.map(async (item) => {
-      if (item.loaded) return item;
-      const images = await collectNumberedImages(item.folderPath);
-      completed += 1;
-      if (typeof onProgress === "function") {
-        onProgress(Math.round((completed / total) * 100));
-      }
-      return { ...item, images, loaded: true };
-    })
-  );
+  const hydratedItems = [];
+  for (const item of items) {
+    if (item.loaded) {
+      hydratedItems.push(item);
+      continue;
+    }
+    const images = await collectNumberedImages(item.folderPath);
+    hydratedItems.push({ ...item, images, loaded: true });
+    completed += 1;
+    if (typeof onProgress === "function") {
+      onProgress(Math.round((completed / total) * 100));
+    }
+  }
 
   section.items = hydratedItems;
   section.itemsLoaded = true;
@@ -436,7 +455,9 @@ async function hydrateAllHotelSections(sections) {
     (section) => section && Array.isArray(section.items) && section.items.length && !section.itemsLoaded
   );
   if (!pending.length) return;
-  await Promise.all(pending.map((section) => hydrateSectionItems(section)));
+  for (const section of pending) {
+    await hydrateSectionItems(section);
+  }
 }
 
 function normalizeSheetHotel(row) {
@@ -846,7 +867,7 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
                         data-image-index="${imageIndex}"
                         aria-label="Open image ${imageIndex + 1}"
                       >
-                        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}">
+                        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}" loading="lazy" onerror="this.onerror=null;this.closest('button')?.remove();">
                       </button>
                     `)
                     .join("")}
