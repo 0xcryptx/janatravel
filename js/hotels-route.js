@@ -14,9 +14,10 @@ const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
 const IMAGE_OK_CACHE = new Set();
 const IMAGE_PROBE_INFLIGHT = new Map();
-const IMAGE_PROBE_TIMEOUT_MS = 4000;
-const MAX_CONCURRENT_IMAGE_PROBES = 6;
-const HOTEL_MEDIA_CACHE_VERSION = 3;
+const IMAGE_PROBE_TIMEOUT_MS = 3000;
+const MAX_CONCURRENT_IMAGE_PROBES = 8;
+const MAIN_GALLERY_PROBE_BUDGET_MS = 10000;
+const HOTEL_MEDIA_CACHE_VERSION = 4;
 let activeImageProbes = 0;
 const imageProbeWaitQueue = [];
 let hotelDataCacheCleanupTimerId = null;
@@ -380,19 +381,17 @@ async function resolveHotelImageBasePath(slug) {
 }
 
 async function findFirstExistingImage(folderPath, baseName) {
-  for (const ext of IMAGE_EXTENSIONS) {
-    const candidate = `${folderPath}/${baseName}.${ext}`;
-    if (await doesImageExist(candidate)) return candidate;
-  }
-  return "";
+  const candidates = IMAGE_EXTENSIONS.map((ext) => `${folderPath}/${baseName}.${ext}`);
+  const checks = await Promise.all(candidates.map((candidate) => doesImageExist(candidate)));
+  const matchedIndex = checks.findIndex(Boolean);
+  return matchedIndex >= 0 ? candidates[matchedIndex] : "";
 }
 
 async function collectNumberedImages(folderPath) {
-  const imageUrls = [];
-  for (const index of IMAGE_INDEXES) {
-    const imageUrl = await findFirstExistingImage(folderPath, String(index));
-    if (imageUrl) imageUrls.push(imageUrl);
-  }
+  const resolved = await Promise.all(
+    IMAGE_INDEXES.map((index) => findFirstExistingImage(folderPath, String(index)))
+  );
+  const imageUrls = resolved.filter(Boolean);
   if (imageUrls.length) return imageUrls;
 
   const fallbackImage = await findFirstExistingImage(folderPath, "add_image");
@@ -401,9 +400,21 @@ async function collectNumberedImages(folderPath) {
 
 async function collectMainGalleryImages(basePath, slug, firstImage) {
   const folderPath = `${basePath}/${slug}`;
-  const images = await collectNumberedImages(folderPath);
-  if (images.length) return images;
-  return firstImage ? [firstImage] : [];
+  const quickFallback = firstImage ? [firstImage] : [];
+
+  try {
+    const images = await Promise.race([
+      collectNumberedImages(folderPath),
+      new Promise((resolve) => {
+        window.setTimeout(() => resolve(quickFallback), MAIN_GALLERY_PROBE_BUDGET_MS);
+      })
+    ]);
+    if (images.length) return images;
+  } catch (error) {
+    console.warn("Gallery probe failed, using first image only:", error);
+  }
+
+  return quickFallback;
 }
 
 function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, entries) {
@@ -430,21 +441,22 @@ async function hydrateSectionItems(section, onProgress) {
   }
 
   const total = items.length || 1;
-  let completed = 0;
 
-  const hydratedItems = [];
-  for (const item of items) {
-    if (item.loaded) {
-      hydratedItems.push(item);
-      continue;
-    }
-    const images = await collectNumberedImages(item.folderPath);
-    hydratedItems.push({ ...item, images, loaded: true });
-    completed += 1;
-    if (typeof onProgress === "function") {
-      onProgress(Math.round((completed / total) * 100));
-    }
-  }
+  const hydratedItems = await Promise.all(
+    items.map(async (item, index) => {
+      if (item.loaded) {
+        if (typeof onProgress === "function") {
+          onProgress(Math.round(((index + 1) / total) * 100));
+        }
+        return item;
+      }
+      const images = await collectNumberedImages(item.folderPath);
+      if (typeof onProgress === "function") {
+        onProgress(Math.round(((index + 1) / total) * 100));
+      }
+      return { ...item, images, loaded: true };
+    })
+  );
 
   section.items = hydratedItems;
   section.itemsLoaded = true;
@@ -548,30 +560,12 @@ async function prepareHotelMedia(hotel, onProgress) {
   const wellnessItemsText = parseNamedItemsWithDescription(hotel.wellness);
   const restaurantItemsText = parseNamedItemsWithDescription(hotel.restaurantNames);
 
-  const roomSection = {
-    items: buildIndexedSectionItems(imageBasePath, slug, "rooms", "room", roomTypeItemsText),
-    itemsLoaded: false
-  };
-  const facilitySection = {
-    items: buildIndexedSectionItems(imageBasePath, slug, "facilities", "fac", facilityItemsText),
-    itemsLoaded: false
-  };
-  const wellnessSection = {
-    items: buildIndexedSectionItems(imageBasePath, slug, "wellness", "well", wellnessItemsText),
-    itemsLoaded: false
-  };
-  const restaurantSection = {
-    items: buildIndexedSectionItems(imageBasePath, slug, "restaurants", "res", restaurantItemsText),
-    itemsLoaded: false
-  };
+  const roomTypeItems = buildIndexedSectionItems(imageBasePath, slug, "rooms", "room", roomTypeItemsText);
+  const facilityItems = buildIndexedSectionItems(imageBasePath, slug, "facilities", "fac", facilityItemsText);
+  const wellnessItems = buildIndexedSectionItems(imageBasePath, slug, "wellness", "well", wellnessItemsText);
+  const restaurantItems = buildIndexedSectionItems(imageBasePath, slug, "restaurants", "res", restaurantItemsText);
 
-  if (typeof onProgress === "function") onProgress(88);
-  await hydrateAllHotelSections([roomSection, facilitySection, wellnessSection, restaurantSection]);
-
-  const roomTypeItems = roomSection.items;
-  const facilityItems = facilitySection.items;
-  const wellnessItems = wellnessSection.items;
-  const restaurantItems = restaurantSection.items;
+  if (typeof onProgress === "function") onProgress(95);
 
   return {
     ...hotel,
@@ -1178,7 +1172,28 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
   // Main gallery + details are visible — hide the page-level loader now.
   if (onPrimaryReady) onPrimaryReady();
 
-  // Rooms / restaurants tabs load images in the background (can take several seconds).
+  // Preload tab images in the background (does not block the page loader).
+  void hydrateAllHotelSections(Object.values(infoSections)).catch((error) => {
+    console.error("Background section preload failed:", error);
+  });
+
+  // If the hero loaded before the full gallery probe finished, expand thumbs in the background.
+  if (hotel.imageBasePath && galleryImages.length <= 1) {
+    void (async () => {
+      const folderPath = `${hotel.imageBasePath}/${hotel.slug}`;
+      const fullGallery = await collectNumberedImages(folderPath);
+      if (fullGallery.length <= 1) return;
+      hotel.mainImages = fullGallery;
+      hotel.galleryImages = fullGallery;
+      setupHotelGallery(contentEl, fullGallery, hotelName, lightboxApi, {
+        initialIndex: Number(persistedState.galleryIndex || 0),
+        onGalleryIndexChange: (index) => saveHotelViewState(hotel.slug, { galleryIndex: index })
+      });
+    })().catch((error) => {
+      console.warn("Background gallery expansion failed:", error);
+    });
+  }
+
   void setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
     initialTab: String(persistedState.activeTab || "rooms"),
     hotelName,
@@ -1198,6 +1213,8 @@ async function initHotelsRoutePage() {
   pageProgress.start();
   pageProgress.setProgress(2);
 
+  let hotel = null;
+
   try {
     const params = new URLSearchParams(window.location.search);
     const slug = String(params.get("id") || "").trim().toLowerCase();
@@ -1207,14 +1224,16 @@ async function initHotelsRoutePage() {
       return;
     }
 
-    const hotel = await loadHotelBySlug(slug, (percent) => pageProgress.setProgress(percent));
+    hotel = await loadHotelBySlug(slug, (percent) => {
+      pageProgress.setProgress(Math.min(percent, 94));
+    });
     if (!hotel) {
       pageProgress.stop();
       updateState("empty", "Hotel package not found.");
       return;
     }
 
-    pageProgress.setProgress(96);
+    pageProgress.setProgress(95);
     const persistedState = loadHotelViewState(slug);
     await renderHotel(hotel, persistedState, {
       onPrimaryReady: () => hideHotelPageLoading(pageProgress)
@@ -1268,6 +1287,11 @@ async function initHotelsRoutePage() {
     pageProgress.stop();
     console.error(error);
     updateState("error", "Failed to load hotel package data.");
+  } finally {
+    const stateEl = document.getElementById("hotelPageState");
+    if (hotel && stateEl && stateEl.classList.contains("loading")) {
+      hideHotelPageLoading(pageProgress);
+    }
   }
 }
 
