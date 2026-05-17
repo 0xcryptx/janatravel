@@ -17,7 +17,9 @@ const IMAGE_PROBE_INFLIGHT = new Map();
 const IMAGE_PROBE_TIMEOUT_MS = 3000;
 const MAX_CONCURRENT_IMAGE_PROBES = 8;
 const MAIN_GALLERY_PROBE_BUDGET_MS = 10000;
-const HOTEL_MEDIA_CACHE_VERSION = 4;
+const HOTEL_MEDIA_CACHE_VERSION = 5;
+/** Prefer common hotel asset extensions first (browser tries fallbacks on error). */
+const IMAGE_EXT_PRIORITY = ["jpg", "avif", "webp", "jpeg", "png"];
 let activeImageProbes = 0;
 const imageProbeWaitQueue = [];
 let hotelDataCacheCleanupTimerId = null;
@@ -41,6 +43,80 @@ function escapeHtml(value) {
 function resolveImagePath(path) {
   if (!path) return "";
   return path;
+}
+
+function getHotelImageFolderPaths(slug) {
+  const normalizedSlug = String(slug || "").trim();
+  if (!normalizedSlug) return [];
+  const orderedBases = [...HOTEL_IMAGE_BASE_PATHS].sort((a, b) => {
+    const aHasAssets = a.includes("assets");
+    const bHasAssets = b.includes("assets");
+    if (aHasAssets === bHasAssets) return 0;
+    return aHasAssets ? -1 : 1;
+  });
+  return orderedBases.map((basePath) => `${basePath}/${normalizedSlug}`);
+}
+
+function buildImageCandidatesForSlot(folderPaths, index) {
+  const folders = Array.isArray(folderPaths) ? folderPaths : [folderPaths].filter(Boolean);
+  const candidates = [];
+  for (const folder of folders) {
+    for (const ext of IMAGE_EXT_PRIORITY) {
+      candidates.push(`${folder}/${index}.${ext}`);
+    }
+    for (const ext of IMAGE_EXTENSIONS) {
+      if (!IMAGE_EXT_PRIORITY.includes(ext)) {
+        candidates.push(`${folder}/${index}.${ext}`);
+      }
+    }
+  }
+  return [...new Set(candidates)];
+}
+
+function buildOptimisticGallerySlots(slug) {
+  const folderPaths = getHotelImageFolderPaths(slug);
+  return IMAGE_INDEXES.map((index) => buildImageCandidatesForSlot(folderPaths, index));
+}
+
+function buildOptimisticImagesForFolder(folderPath) {
+  return IMAGE_INDEXES.map((index) => buildImageCandidatesForSlot(folderPath, index)[0]).filter(Boolean);
+}
+
+function serializeImageFallbacks(candidates) {
+  return escapeHtml(JSON.stringify(Array.isArray(candidates) ? candidates.slice(1) : []));
+}
+
+function imageFallbackOnErrorAttr() {
+  return 'onerror="window.janaHotelImageFallback&&window.janaHotelImageFallback(this)"';
+}
+
+function janaHotelImageFallback(img) {
+  if (!img) return;
+  let fallbacks = [];
+  try {
+    fallbacks = JSON.parse(img.dataset.fallbacks || "[]");
+  } catch (error) {
+    fallbacks = [];
+  }
+  const next = fallbacks.shift();
+  if (next) {
+    img.dataset.fallbacks = JSON.stringify(fallbacks);
+    img.src = next;
+    return;
+  }
+  img.onerror = null;
+  const thumbButton = img.closest(".section-thumb-btn");
+  if (thumbButton) {
+    thumbButton.remove();
+    return;
+  }
+  if (img.classList.contains("room-image-main") || img.id === "hotelMainImage" || img.id === "hotelLightboxImage") {
+    img.src = HOTEL_PLACEHOLDER_IMAGE;
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.janaHotelImageFallback = janaHotelImageFallback;
 }
 
 function createWhatsAppLink(hotelName) {
@@ -418,13 +494,20 @@ async function collectMainGalleryImages(basePath, slug, firstImage) {
 }
 
 function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, entries) {
-  return entries.map((entry, index) => ({
-    label: entry.label,
-    description: entry.description || "",
-    folderPath: `${basePath}/${slug}/${sectionFolder}/${itemPrefix}${index + 1}`,
-    images: [],
-    loaded: false
-  }));
+  return entries.map((entry, index) => {
+    const folderPath = `${basePath}/${slug}/${sectionFolder}/${itemPrefix}${index + 1}`;
+    const imageCandidates = IMAGE_INDEXES.map((slotIndex) =>
+      buildImageCandidatesForSlot(folderPath, slotIndex)
+    );
+    return {
+      label: entry.label,
+      description: entry.description || "",
+      folderPath,
+      imageCandidates,
+      images: imageCandidates.map((candidates) => candidates[0]).filter(Boolean),
+      loaded: true
+    };
+  });
 }
 
 function areSectionItemsHydrated(items) {
@@ -540,20 +623,18 @@ function normalizeSheetHotel(row) {
   };
 }
 
-async function prepareHotelMedia(hotel, onProgress) {
+function prepareHotelMedia(hotel, onProgress) {
   if (!hotel) return null;
   const slug = String(hotel.slug || "").trim();
   if (!slug || !String(hotel.name || "").trim() || !isHotelActive(hotel.active)) return null;
 
-  if (typeof onProgress === "function") onProgress(62);
-  const imageBaseResult = await resolveHotelImageBasePath(slug);
-  if (!imageBaseResult) return null;
   if (typeof onProgress === "function") onProgress(72);
-  const imageBasePath = imageBaseResult.basePath;
-  const firstImage = imageBaseResult.firstImage;
-  const mainImages = await collectMainGalleryImages(imageBasePath, slug, firstImage);
-  if (!mainImages.length) return null;
-  if (typeof onProgress === "function") onProgress(85);
+  const imageBasePath = HOTEL_IMAGE_BASE_PATHS.find((path) => path.includes("assets")) || HOTEL_IMAGE_BASE_PATHS[0];
+  const mainImageCandidates = buildOptimisticGallerySlots(slug);
+  const mainImages = mainImageCandidates
+    .map((candidates) => candidates[0])
+    .filter(Boolean);
+  const heroImage = mainImages[0] || HOTEL_PLACEHOLDER_IMAGE;
 
   const roomTypeItemsText = parseNamedItemsWithDescription(hotel.roomTypes);
   const facilityItemsText = parseNamedItemsWithDescription(hotel.facilities);
@@ -571,9 +652,10 @@ async function prepareHotelMedia(hotel, onProgress) {
     ...hotel,
     slug,
     imageBasePath,
-    mainImages,
-    imageUrl: String(hotel.imageUrl || "").trim() || mainImages[0] || HOTEL_PLACEHOLDER_IMAGE,
-    galleryImages: mainImages,
+    mainImageCandidates,
+    mainImages: mainImages.length ? mainImages : [heroImage],
+    imageUrl: String(hotel.imageUrl || "").trim() || heroImage,
+    galleryImages: mainImages.length ? mainImages : [heroImage],
     roomTypeItemsText,
     facilityItemsText,
     wellnessItemsText,
@@ -600,8 +682,7 @@ async function loadHotelsData() {
     hotels = Array.isArray(local) ? local : [];
   }
 
-  const preparedHotels = await Promise.all(hotels.map((hotel) => prepareHotelMedia(hotel)));
-  return preparedHotels.filter(Boolean);
+  return hotels.map((hotel) => prepareHotelMedia(hotel)).filter(Boolean);
 }
 
 async function loadHotelBySlug(slug, onProgress) {
@@ -637,7 +718,7 @@ async function loadHotelBySlug(slug, onProgress) {
     if (typeof onProgress === "function") onProgress(96);
     return cachedHotel;
   }
-  const preparedHotel = await prepareHotelMedia(matchedHotel, (mediaProgress) => {
+  const preparedHotel = prepareHotelMedia(matchedHotel, (mediaProgress) => {
     if (typeof onProgress === "function") {
       onProgress(55 + Math.round(mediaProgress * 0.4));
     }
@@ -751,6 +832,19 @@ function setupImageLightbox(contentEl) {
   return { open: openLightbox };
 }
 
+function applyImageWithFallbacks(imgEl, candidates) {
+  if (!imgEl) return;
+  const list = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+  if (!list.length) {
+    imgEl.removeAttribute("data-fallbacks");
+    imgEl.src = HOTEL_PLACEHOLDER_IMAGE;
+    return;
+  }
+  imgEl.src = list[0];
+  imgEl.dataset.fallbacks = JSON.stringify(list.slice(1));
+  imgEl.onerror = () => janaHotelImageFallback(imgEl);
+}
+
 function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = {}) {
   const mainImageEl = contentEl.querySelector("#hotelMainImage");
   const thumbButtons = Array.from(contentEl.querySelectorAll(".thumb-btn"));
@@ -762,6 +856,7 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = 
   if (!mainImageEl || !thumbButtons.length) return;
 
   const galleryImages = images.length ? images : [HOTEL_PLACEHOLDER_IMAGE];
+  const imageCandidatesByIndex = Array.isArray(options.imageCandidates) ? options.imageCandidates : [];
   let currentIndex = 0;
   let touchStartX = 0;
   let touchCurrentX = 0;
@@ -774,8 +869,11 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = 
     if (!galleryImages.length) return;
     const normalizedIndex = ((nextIndex % galleryImages.length) + galleryImages.length) % galleryImages.length;
     currentIndex = normalizedIndex;
-    const nextSrc = resolveImagePath(galleryImages[currentIndex]) || HOTEL_PLACEHOLDER_IMAGE;
-    mainImageEl.src = nextSrc;
+    const slotCandidates = imageCandidatesByIndex[currentIndex];
+    const fallbackCandidates = Array.isArray(slotCandidates) && slotCandidates.length
+      ? slotCandidates
+      : [resolveImagePath(galleryImages[currentIndex]) || HOTEL_PLACEHOLDER_IMAGE];
+    applyImageWithFallbacks(mainImageEl, fallbackCandidates);
     mainImageEl.alt = `${hotelName} view ${currentIndex + 1}`;
     if (counterEl) counterEl.textContent = `${currentIndex + 1} / ${galleryImages.length}`;
     thumbButtons.forEach((btn, index) => {
@@ -846,7 +944,7 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
             ? sectionKey === "rooms"
               ? `<div class="room-image-viewer" data-room-item-index="${itemIndex}">
                   <button type="button" class="room-image-nav room-image-nav--prev" data-room-nav="prev" aria-label="Previous room image">&#10094;</button>
-                  <img class="room-image-main" src="${escapeHtml(item.images[0])}" alt="${escapeHtml(item.label)} image 1">
+                  <img class="room-image-main" src="${escapeHtml(item.images[0])}" data-fallbacks="${serializeImageFallbacks((item.imageCandidates && item.imageCandidates[0]) || item.images)}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(item.label)} image 1">
                   <button type="button" class="room-image-nav room-image-nav--next" data-room-nav="next" aria-label="Next room image">&#10095;</button>
                   <span class="room-image-counter">1 / ${item.images.length}</span>
                 </div>`
@@ -861,7 +959,7 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
                         data-image-index="${imageIndex}"
                         aria-label="Open image ${imageIndex + 1}"
                       >
-                        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}" loading="lazy" onerror="this.onerror=null;this.closest('button')?.remove();">
+                        <img src="${escapeHtml(imageUrl)}" data-fallbacks="${serializeImageFallbacks((item.imageCandidates && item.imageCandidates[imageIndex]) || [imageUrl])}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}" loading="lazy" ${imageFallbackOnErrorAttr()}>
                       </button>
                     `)
                     .join("")}
@@ -926,7 +1024,9 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       const setActiveImage = (nextIndex) => {
         const normalizedIndex = ((nextIndex % images.length) + images.length) % images.length;
         currentIndex = normalizedIndex;
-        mainImageEl.src = resolveImagePath(images[currentIndex]);
+        const slotCandidates =
+          roomItem?.imageCandidates?.[normalizedIndex] || [resolveImagePath(images[currentIndex])];
+        applyImageWithFallbacks(mainImageEl, slotCandidates);
         mainImageEl.alt = `${roomItem?.label || "Room"} image ${currentIndex + 1}`;
         counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
       };
@@ -954,23 +1054,6 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       tab.setAttribute("aria-selected", isActive ? "true" : "false");
     });
     panelTitle.textContent = section.title;
-    const needsHydration =
-      !section.itemsLoaded && section.items.some((item) => item.folderPath && !item.loaded);
-    if (needsHydration) {
-      const sectionProgress = createLoadingProgress({
-        baseMessage: `Loading ${section.title.toLowerCase()}`,
-        estimateMs: 4000,
-        onUpdate: (text) => {
-          panelBody.innerHTML = `<p class="info-empty loading-with-progress">${escapeHtml(text)}</p>`;
-        }
-      });
-      sectionProgress.start();
-      sectionProgress.setProgress(4);
-      await hydrateSectionItems(section, (itemPercent) => {
-        sectionProgress.setProgress(8 + Math.round(itemPercent * 0.9));
-      });
-      sectionProgress.stop();
-    }
     panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName });
     bindSectionThumbs();
     bindRoomImageViewers();
@@ -1035,8 +1118,11 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
   if (titleEl) titleEl.textContent = hotelName;
   document.title = `${hotelName} | JANA Travel`;
 
+  const mainImageCandidates = Array.isArray(hotel.mainImageCandidates) ? hotel.mainImageCandidates : [];
   const galleryImages = Array.isArray(hotel.mainImages) && hotel.mainImages.length ? hotel.mainImages : [HOTEL_PLACEHOLDER_IMAGE];
-  const mainImage = galleryImages[0] || HOTEL_PLACEHOLDER_IMAGE;
+  const heroCandidates = mainImageCandidates[0]?.length ? mainImageCandidates[0] : galleryImages;
+  const mainImage = (Array.isArray(heroCandidates) ? heroCandidates[0] : heroCandidates) || HOTEL_PLACEHOLDER_IMAGE;
+  const heroFallbacksAttr = serializeImageFallbacks(Array.isArray(heroCandidates) ? heroCandidates : [mainImage]);
   const ratingLabel = formatRating(hotel.rating);
   const starCount = parseStarRating(hotel.rating);
   const destinationValue = String(hotel.destination || "").trim();
@@ -1104,18 +1190,23 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
     <div class="media-gallery">
       <div class="hero hero--interactive">
         <button type="button" class="hero-nav hero-nav--prev" id="hotelGalleryPrev" aria-label="Previous image">&#10094;</button>
-        <img id="hotelMainImage" src="${escapeHtml(mainImage)}" alt="${escapeHtml(hotelName)} view 1">
+        <img id="hotelMainImage" src="${escapeHtml(mainImage)}" data-fallbacks="${heroFallbacksAttr}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(hotelName)} view 1">
         <button type="button" class="hero-nav hero-nav--next" id="hotelGalleryNext" aria-label="Next image">&#10095;</button>
         <span class="hero-counter" id="hotelGalleryCounter">1 / ${galleryImages.length}</span>
         <button type="button" class="maximize-btn" id="hotelMaximizeBtn">Click to expand</button>
       </div>
       <div class="thumb-strip" id="hotelThumbStrip" role="list" aria-label="Hotel image previews">
       ${galleryImages
-        .map((img, index) => `
+        .map((img, index) => {
+          const thumbCandidates = mainImageCandidates[index]?.length
+            ? mainImageCandidates[index]
+            : [resolveImagePath(img)];
+          const thumbSrc = thumbCandidates[0] || HOTEL_PLACEHOLDER_IMAGE;
+          return `
           <button type="button" class="thumb-btn${index === 0 ? " is-active" : ""}" data-index="${index}" role="listitem" aria-label="Show image ${index + 1}">
-            <img src="${escapeHtml(resolveImagePath(img))}" alt="${escapeHtml(hotelName)} thumbnail ${index + 1}">
-          </button>
-        `)
+            <img src="${escapeHtml(thumbSrc)}" data-fallbacks="${serializeImageFallbacks(thumbCandidates)}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(hotelName)} thumbnail ${index + 1}">
+          </button>`;
+        })
         .join("")}
       </div>
     </div>
@@ -1164,35 +1255,13 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
 
   const lightboxApi = setupImageLightbox(contentEl);
   setupHotelGallery(contentEl, galleryImages, hotelName, lightboxApi, {
+    imageCandidates: mainImageCandidates,
     initialIndex: Number(persistedState.galleryIndex || 0),
     onGalleryIndexChange: (index) => saveHotelViewState(hotel.slug, { galleryIndex: index })
   });
   animateNumericDetailValues(contentEl);
 
-  // Main gallery + details are visible — hide the page-level loader now.
   if (onPrimaryReady) onPrimaryReady();
-
-  // Preload tab images in the background (does not block the page loader).
-  void hydrateAllHotelSections(Object.values(infoSections)).catch((error) => {
-    console.error("Background section preload failed:", error);
-  });
-
-  // If the hero loaded before the full gallery probe finished, expand thumbs in the background.
-  if (hotel.imageBasePath && galleryImages.length <= 1) {
-    void (async () => {
-      const folderPath = `${hotel.imageBasePath}/${hotel.slug}`;
-      const fullGallery = await collectNumberedImages(folderPath);
-      if (fullGallery.length <= 1) return;
-      hotel.mainImages = fullGallery;
-      hotel.galleryImages = fullGallery;
-      setupHotelGallery(contentEl, fullGallery, hotelName, lightboxApi, {
-        initialIndex: Number(persistedState.galleryIndex || 0),
-        onGalleryIndexChange: (index) => saveHotelViewState(hotel.slug, { galleryIndex: index })
-      });
-    })().catch((error) => {
-      console.warn("Background gallery expansion failed:", error);
-    });
-  }
 
   void setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
     initialTab: String(persistedState.activeTab || "rooms"),
@@ -1207,7 +1276,7 @@ async function initHotelsRoutePage() {
   startHotelDataCacheAutoCleanup();
   const pageProgress = createLoadingProgress({
     baseMessage: "Loading hotel package",
-    estimateMs: 14000,
+    estimateMs: 3500,
     onUpdate: (text, percent) => updateState("loading", text, percent)
   });
   pageProgress.start();
