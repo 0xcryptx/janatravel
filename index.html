@@ -797,6 +797,16 @@
             letter-spacing: 0.01em;
         }
 
+        .packages-loading-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2.5rem 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--aqua-dark);
+            font-variant-numeric: tabular-nums;
+        }
+
         .destinations-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2684,6 +2694,7 @@
     <script>
         window.JANA_HOTELS_SHEET_URL = "https://opensheet.elk.sh/1v3F_YYEJl1mhoN9Hs2F6ee8SzXjsbJdGvXqczB9LKL4/Form%20Responses%201";
     </script>
+    <script type="module" src="js/loading-progress.js"></script>
     <!-- JANA_DEV_SITE_PASSWORD_GATE START -->
     <script src="js/site-access-gate.js"></script>
     <!-- JANA_DEV_SITE_PASSWORD_GATE END -->
@@ -3564,21 +3575,60 @@
         }
 
         async function applyHotelJsonDataToIndex() {
+            const grid = document.getElementById('destinationsGrid');
+            const loadingStateId = 'packagesLoadingState';
+            const formatLoading = (message, percent) => {
+                if (window.JanaLoadingProgress && typeof window.JanaLoadingProgress.formatLoadingText === 'function') {
+                    return window.JanaLoadingProgress.formatLoadingText(message, percent);
+                }
+                return `${String(message || 'Loading').replace(/\s*\.{3}\s*$/, '').trim()} ${Math.round(percent)}%`;
+            };
+
+            let packagesProgress = null;
+            if (grid && window.JanaLoadingProgress) {
+                grid.innerHTML = `<p class="packages-loading-state" id="${loadingStateId}">${formatLoading('Loading packages', 0)}</p>`;
+                packagesProgress = window.JanaLoadingProgress.createLoadingProgress({
+                    baseMessage: 'Loading packages',
+                    estimateMs: 16000,
+                    onUpdate: (text) => {
+                        const el = document.getElementById(loadingStateId);
+                        if (el) el.textContent = text;
+                    }
+                });
+                packagesProgress.start();
+                packagesProgress.setProgress(3);
+            }
+
             try {
                 const sourceUrl = (window.JANA_HOTELS_SHEET_URL || '').trim() || 'data/hotels.json';
+                if (packagesProgress) packagesProgress.setProgress(10);
                 const response = await fetch(sourceUrl, { cache: 'no-store' });
-                if (!response.ok) return;
+                if (!response.ok) {
+                    if (packagesProgress) packagesProgress.stop();
+                    return;
+                }
+                if (packagesProgress) packagesProgress.setProgress(28);
                 const rawHotels = await response.json();
-                if (!Array.isArray(rawHotels)) return;
+                if (!Array.isArray(rawHotels)) {
+                    if (packagesProgress) packagesProgress.stop();
+                    return;
+                }
                 const hotels = rawHotels.map(row => {
                     if (row && (row.slug || row.name || row.description)) return row;
                     return normalizeSheetHotel(row || {});
                 });
+                if (packagesProgress) packagesProgress.setProgress(38);
+                const hotelTotal = hotels.length || 1;
+                let hotelsPrepared = 0;
                 const preparedHotels = await Promise.all(hotels.map(async (hotel) => {
                     if (!hotel) return null;
                     const slug = slugifyHotelName(hotel.slug || hotel.name || '');
                     if (!slug || !String(hotel.name || '').trim() || !isHotelActive(hotel.active)) return null;
                     const imageSet = await resolveHotelImageSet(slug);
+                    hotelsPrepared += 1;
+                    if (packagesProgress) {
+                        packagesProgress.setProgress(38 + Math.round((hotelsPrepared / hotelTotal) * 52));
+                    }
                     if (!imageSet) return null;
                     return {
                         ...hotel,
@@ -3590,11 +3640,13 @@
                             : [imageSet.images[0]]
                     };
                 }));
+                if (packagesProgress) packagesProgress.setProgress(94);
                 const validHotels = preparedHotels.filter(Boolean);
                 const noResultsEl = document.getElementById('noResults');
                 if (!validHotels.length) {
                     const grid = document.getElementById('destinationsGrid');
                     if (grid) grid.innerHTML = '';
+                    if (packagesProgress) packagesProgress.stop();
                     updateContactInterestOptions([]);
                     if (noResultsEl) {
                         noResultsEl.style.display = 'block';
@@ -3605,6 +3657,7 @@
                 }
                 updateContactInterestOptions(validHotels);
                 renderHotelCardsFromData(validHotels);
+                if (packagesProgress) packagesProgress.complete();
                 if (noResultsEl) noResultsEl.style.display = 'none';
 
                 validHotels.forEach(hotel => {
@@ -3636,6 +3689,7 @@
                     filterDestinations();
                 }
             } catch (error) {
+                if (packagesProgress) packagesProgress.stop();
                 console.error('Failed to load hotel JSON data for index:', error);
             }
         }

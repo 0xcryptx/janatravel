@@ -508,7 +508,8 @@
     .cta a { display:inline-block; text-decoration:none; background:var(--aqua-dark); color:#fff; padding:.95rem 1.8rem; border-radius:999px; font-weight:700; font-size:1.03rem; transition:background .2s ease, transform .2s ease, box-shadow .2s ease; box-shadow:0 8px 16px rgba(0,139,139,.18); }
     .cta a:hover { background:var(--aqua-blue); transform:translateY(-1px); box-shadow:0 12px 20px rgba(0,139,139,.24); }
     .page-state { margin:0 auto 1rem; max-width:720px; padding:.8rem 1rem; border-radius:12px; font-size:.95rem; text-align:center; }
-    .page-state.loading { background:rgba(0,206,209,.12); color:var(--aqua-dark); border:1px solid rgba(0,206,209,.3); }
+    .page-state.loading { background:rgba(0,206,209,.12); color:var(--aqua-dark); border:1px solid rgba(0,206,209,.3); font-variant-numeric:tabular-nums; }
+    .info-empty.loading-with-progress { font-variant-numeric:tabular-nums; font-weight:500; }
     .page-state.success { display:none; }
     .page-state.empty { background:#fff9e8; color:#8a6a11; border:1px solid #f4df9e; }
     .page-state.error { background:#ffeef0; color:#9b1d2b; border:1px solid #f3bcc5; }
@@ -558,7 +559,7 @@
   <main class="wrap">
     <h1 id="hotelTitle">Hotel Package</h1>
     <div id="hotelHeaderMeta" class="hotel-header-meta"></div>
-    <div id="hotelPageState" class="page-state loading">Loading hotel package...</div>
+    <div id="hotelPageState" class="page-state loading">Loading hotel package 0%</div>
     <section id="hotelContent"></section>
   </main>
 

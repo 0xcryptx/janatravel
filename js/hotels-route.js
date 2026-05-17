@@ -1,3 +1,5 @@
+import { createLoadingProgress, formatLoadingText } from "./loading-progress.js";
+
 const LOCAL_JSON_URL = "../data/hotels.json";
 const WHATSAPP_NUMBER = "971501771927";
 const HOTEL_PLACEHOLDER_IMAGE = "../assets/images/add_image.webp";
@@ -372,15 +374,25 @@ function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, ent
   }));
 }
 
-async function hydrateSectionItems(section) {
+async function hydrateSectionItems(section, onProgress) {
   if (!section || !Array.isArray(section.items) || section.itemsLoaded) return;
-  const hydratedItems = await Promise.all(
-    section.items.map(async (item) => {
-      if (item.loaded) return item;
+  const items = section.items;
+  const total = items.length || 1;
+  const hydratedItems = [];
+
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index];
+    if (item.loaded) {
+      hydratedItems.push(item);
+    } else {
       const images = await collectNumberedImages(item.folderPath);
-      return { ...item, images, loaded: true };
-    })
-  );
+      hydratedItems.push({ ...item, images, loaded: true });
+    }
+    if (typeof onProgress === "function") {
+      onProgress(Math.round(((index + 1) / total) * 100));
+    }
+  }
+
   section.items = hydratedItems;
   section.itemsLoaded = true;
 }
@@ -453,17 +465,20 @@ function normalizeSheetHotel(row) {
   };
 }
 
-async function prepareHotelMedia(hotel) {
+async function prepareHotelMedia(hotel, onProgress) {
   if (!hotel) return null;
   const slug = String(hotel.slug || "").trim();
   if (!slug || !String(hotel.name || "").trim() || !isHotelActive(hotel.active)) return null;
 
+  if (typeof onProgress === "function") onProgress(62);
   const imageBaseResult = await resolveHotelImageBasePath(slug);
   if (!imageBaseResult) return null;
+  if (typeof onProgress === "function") onProgress(72);
   const imageBasePath = imageBaseResult.basePath;
   const firstImage = imageBaseResult.firstImage;
   const mainImages = await collectMainGalleryImages(imageBasePath, slug, firstImage);
   if (!mainImages.length) return null;
+  if (typeof onProgress === "function") onProgress(85);
 
   const roomTypeItemsText = parseNamedItemsWithDescription(hotel.roomTypes);
   const facilityItemsText = parseNamedItemsWithDescription(hotel.facilities);
@@ -512,42 +527,59 @@ async function loadHotelsData() {
   return preparedHotels.filter(Boolean);
 }
 
-async function loadHotelBySlug(slug) {
+async function loadHotelBySlug(slug, onProgress) {
   const normalizedSlug = String(slug || "").trim().toLowerCase();
   if (!normalizedSlug) return null;
 
   const runtimeUrl = (window.JANA_HOTELS_SHEET_URL || "").trim();
   const sourceUrl = runtimeUrl || GOOGLE_SHEETS_HOTELS_URL;
 
+  if (typeof onProgress === "function") onProgress(8);
   let hotels = [];
   if (sourceUrl) {
     const raw = await loadJsonData(sourceUrl);
+    if (typeof onProgress === "function") onProgress(32);
     if (Array.isArray(raw)) {
       hotels = raw.map(normalizeSheetHotel);
     }
   } else {
     const local = await loadJsonData(LOCAL_JSON_URL);
+    if (typeof onProgress === "function") onProgress(32);
     hotels = Array.isArray(local) ? local : [];
   }
 
+  if (typeof onProgress === "function") onProgress(45);
   const matchedHotel = hotels.find(
     (item) => String(item?.slug || "").trim().toLowerCase() === normalizedSlug
   );
   if (!matchedHotel || !isHotelActive(matchedHotel.active)) return null;
+  if (typeof onProgress === "function") onProgress(52);
   const hotelSignature = JSON.stringify(matchedHotel);
   const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
-  if (cachedHotel) return cachedHotel;
-  const preparedHotel = await prepareHotelMedia(matchedHotel);
+  if (cachedHotel) {
+    if (typeof onProgress === "function") onProgress(96);
+    return cachedHotel;
+  }
+  const preparedHotel = await prepareHotelMedia(matchedHotel, (mediaProgress) => {
+    if (typeof onProgress === "function") {
+      onProgress(55 + Math.round(mediaProgress * 0.4));
+    }
+  });
   if (preparedHotel) {
     saveCachedHotelData(normalizedSlug, hotelSignature, preparedHotel);
   }
+  if (typeof onProgress === "function") onProgress(96);
   return preparedHotel;
 }
 
-function updateState(type, message) {
+function updateState(type, message, percent) {
   const stateEl = document.getElementById("hotelPageState");
   if (!stateEl) return;
   stateEl.className = `page-state ${type}`;
+  if (type === "loading" && typeof percent === "number") {
+    stateEl.textContent = formatLoadingText(message, percent);
+    return;
+  }
   stateEl.textContent = message;
 }
 
@@ -841,8 +873,19 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
     });
     panelTitle.textContent = section.title;
     if (!section.itemsLoaded && section.items.some((item) => item.folderPath)) {
-      panelBody.innerHTML = `<p class="info-empty">Loading ${escapeHtml(section.title.toLowerCase())}...</p>`;
-      await hydrateSectionItems(section);
+      const sectionProgress = createLoadingProgress({
+        baseMessage: `Loading ${section.title.toLowerCase()}`,
+        estimateMs: 6000,
+        onUpdate: (text) => {
+          panelBody.innerHTML = `<p class="info-empty loading-with-progress">${escapeHtml(text)}</p>`;
+        }
+      });
+      sectionProgress.start();
+      sectionProgress.setProgress(4);
+      await hydrateSectionItems(section, (itemPercent) => {
+        sectionProgress.setProgress(8 + Math.round(itemPercent * 0.9));
+      });
+      sectionProgress.complete();
     }
     panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName });
     bindSectionThumbs();
@@ -1032,23 +1075,34 @@ async function renderHotel(hotel, persistedState = {}) {
 
 async function initHotelsRoutePage() {
   startHotelDataCacheAutoCleanup();
-  updateState("loading", "Loading hotel package...");
+  const pageProgress = createLoadingProgress({
+    baseMessage: "Loading hotel package",
+    estimateMs: 14000,
+    onUpdate: (text, percent) => updateState("loading", text, percent)
+  });
+  pageProgress.start();
+  pageProgress.setProgress(2);
+
   try {
     const params = new URLSearchParams(window.location.search);
     const slug = String(params.get("id") || "").trim().toLowerCase();
     if (!slug) {
+      pageProgress.stop();
       updateState("error", "Missing hotel id in URL.");
       return;
     }
 
-    const hotel = await loadHotelBySlug(slug);
+    const hotel = await loadHotelBySlug(slug, (percent) => pageProgress.setProgress(percent));
     if (!hotel) {
+      pageProgress.stop();
       updateState("empty", "Hotel package not found.");
       return;
     }
 
+    pageProgress.setProgress(98);
     const persistedState = loadHotelViewState(slug);
     await renderHotel(hotel, persistedState);
+    pageProgress.complete();
 
     const restoreScrollY = Number(persistedState.scrollY);
     if (Number.isFinite(restoreScrollY) && restoreScrollY >= 0) {
@@ -1096,6 +1150,7 @@ async function initHotelsRoutePage() {
 
     updateState("success", "");
   } catch (error) {
+    pageProgress.stop();
     console.error(error);
     updateState("error", "Failed to load hotel package data.");
   }
