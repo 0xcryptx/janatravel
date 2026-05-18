@@ -799,7 +799,7 @@ const PACKAGES_HEADING_FEATURED = {
     subtitle: 'Handpicked packages for unforgettable getaways.'
 };
 const PACKAGES_HEADING_ALL = {
-    title: 'All Packages',
+    title: 'All Hotels',
     subtitle: 'Browse our full collection of curated stays across the Maldives and Indian Ocean.'
 };
 const PACKAGES_HEADING_FILTERED = {
