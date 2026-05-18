@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- JANA_DEV_SITE_PASSWORD_GATE START — delete this block + /js/site-access-gate.js when live -->
+    <script>
+        (function () {
+            if (/(?:^|;\s*)jana_site_access=1(?:;|$)/.test(document.cookie)) return;
+            try { if (sessionStorage.getItem('jana:siteAccessUnlocked') === '1') return; } catch (e) {}
+            document.documentElement.classList.add('site-gate-pending');
+        })();
+    </script>
+    <!-- JANA_DEV_SITE_PASSWORD_GATE END (head) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Contact | JANA Travel</title>
+    <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/css/intlTelInput.css">
+    <link rel="stylesheet" href="/css/site.css">
+    <meta name="description" content="Contact JANA Travel to plan your dream vacation.">
+</head>
+<body>
+    <header class="nav-wrapper">
+        <nav>
+            <a href="/" class="logo">
+                <img src="/public/JanaTravelLogo.webp" alt="JANA Travel Logo">
+                <span class="logo-text">JANA <span>Travel</span></span>
+            </a>
+            <ul class="nav-links desktop-nav">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about/">About</a></li>
+                <li><a href="/destinations/">Destinations</a></li>
+                <li><a href="/hotels/">Hotels</a></li>
+                <li><a href="/services/">Services</a></li>
+                <li><a href="/contact/">Contact</a></li>
+            </ul>
+            <div class="mobile-menu" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+        <ul class="nav-links mobile-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about/">About</a></li>
+            <li><a href="/destinations/">Destinations</a></li>
+            <li><a href="/hotels/">Hotels</a></li>
+            <li><a href="/services/">Services</a></li>
+            <li><a href="/contact/">Contact</a></li>
+        </ul>
+    </header>
+    <main class="page-main contact">
+<section class="contact" id="contact">
+        <div class="section-title">
+            <h2>Contact Us</h2>
+            <p>Ready to plan your dream vacation? Get in touch!</p>
+        </div>
+        <div class="contact-container">
+            <div class="contact-info fade-in">
+                <h3>Get In Touch</h3>
+                <div class="contact-item">
+                    <div class="contact-icon">📍</div>
+                    <div class="contact-item-content">
+                        <h4>Our Office</h4>
+                        <p>Office 1208, Donna Tower, Dubai Silicon Oasis Dubai, United Arab Emirates</p>
+                    </div>
+                </div>
+                <div class="contact-map">
+                    <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d1266.0935675628348!2d55.36972815553035!3d25.117064283373693!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43f1c16c46dd%3A0x9478c8fe4e82ec1f!2sJana%20Travel!5e0!3m2!1sen!2sae!4v1778554295695!5m2!1sen!2sae" 
+                        width="100%" 
+                        height="200" 
+                        style="border:0; border-radius: 15px;" 
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">📞</div>
+                    <div class="contact-item-content">
+                        <h4>Phone</h4>
+                        <p><a href="tel:+97144558750">+971 4 455 8750</a></p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">✉️</div>
+                    <div class="contact-item-content">
+                        <h4>Email</h4>
+                        <p><a href="mailto:book@jana.travel.com">book@jana.travel.com</a></p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">⏰</div>
+                    <div class="contact-item-content">
+                        <h4>Working Hours</h4>
+                        <p>Mon - Fri: 9:00 AM - 6:00 PM<br>Sat: 10:00 AM - 4:00 PM</p>
+                    </div>
+                </div>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/profile.php?id=100063245288326" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
+                        <img src="/assets/images/facebook_logo.png" alt="Facebook">
+                    </a>
+                    <a href="https://www.instagram.com/jana_travel_me?utm_source=ig_web_button_share_sheet&amp;igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
+                        <img src="/assets/images/instagram_logo.png" alt="Instagram">
+                    </a>
+                    <a href="https://wa.me/971501771927" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="WhatsApp">
+                        <img src="/assets/images/whatsapp_logo.png" alt="WhatsApp">
+                    </a>
+                </div>
+            </div>
+            <form class="contact-form fade-in" onsubmit="handleSubmit(event)" novalidate>
+                <h3>Send Us a Message</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name *</label>
+                        <input type="text" id="firstName" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name *</label>
+                        <input type="text" id="lastName" name="lastName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" placeholder="name@email.com" required>
+                </div>
+                <div class="form-group form-group-phone">
+                    <label for="contact-phone">Phone Number</label>
+                    <input type="tel" id="contact-phone" name="phone" autocomplete="tel-national" inputmode="tel">
+                </div>
+                <div class="form-group">
+                    <label for="interest">I'm Interested In *</label>
+                    <select id="interest" name="interest" required>
+                        <option value="">Select a hotel</option>
+                        <option value="any-hotel">Any hotel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="message">Your Message *</label>
+                    <textarea id="message" name="message" placeholder="Tell us about your dream vacation..." required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Send Message</button>
+            </form>
+        </div>
+    </section>
+    </main>
+<footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>JANA Travel</h4>
+                <p>JANA Travel creates tailor-made luxury holidays with handpicked resorts, seamless planning, and personal service from start to finish.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="/">Home</a>
+                <a href="/about/">About Us</a>
+                <a href="/destinations/">Destinations</a>
+                <a href="/hotels/">Hotels</a>
+                <a href="/services/">Services</a>
+                <a href="/contact/">Contact</a>
+            </div>
+            <div class="footer-section">
+                <h4>Explore</h4>
+                <a class="footer-explore-link" href="/maldives/">Maldives</a>
+                <a class="footer-explore-link" href="/seychelles/">Seychelles</a>
+                <a class="footer-explore-link" href="/mauritius/">Mauritius</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact Details</h4>
+                <p><a href="tel:+97144558750">+971 4 455 8750</a></p>
+                <p><a href="mailto:book@jana.travel.com">book@jana.travel.com</a></p>
+                <p><a href="https://maps.app.goo.gl/NTWDDfnBYraZsZgDA" target="_blank" rel="noopener noreferrer">Office 1208, Donna Tower, Dubai Silicon Oasis, Dubai, UAE</a></p>
+                <div class="footer-social-links">
+                    <a href="https://www.facebook.com/profile.php?id=100063245288326" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="Facebook">
+                        <img src="/assets/images/facebook_logo.png" alt="Facebook">
+                    </a>
+                    <a href="https://www.instagram.com/jana_travel_me?utm_source=ig_web_button_share_sheet&amp;igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="Instagram">
+                        <img src="/assets/images/instagram_logo.png" alt="Instagram">
+                    </a>
+                    <a href="https://wa.me/971501771927" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="WhatsApp">
+                        <img src="/assets/images/whatsapp_logo.png" alt="WhatsApp">
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 JANA Travel. All rights reserved.</p>
+        </div>
+    </footer>
+    <script>
+        window.JANA_HOTELS_SHEET_URL = "https://opensheet.elk.sh/1v3F_YYEJl1mhoN9Hs2F6ee8SzXjsbJdGvXqczB9LKL4/Form%20Responses%201";
+    </script>
+    <script src="/js/site-access-gate.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/js/intlTelInput.min.js"></script>
+    <script src="/js/site-common.js"></script>
+    <script src="/js/contact-page.js"></script>
+</body>
+</html>

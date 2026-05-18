@@ -12,11 +12,11 @@
     </script>
     <!-- JANA_DEV_SITE_PASSWORD_GATE END (head) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>JANA Travel - Your Gateway to Paradise</title>
+    <title>About | JANA Travel</title>
     <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/site.css">
-    <meta name="description" content="Explore JANA Travel hotels and curated paradise stays.">
+    <meta name="description" content="About JANA Travel — your trusted partner for luxury Indian Ocean holidays.">
 </head>
 <body>
     <header class="nav-wrapper">
@@ -48,63 +48,40 @@
             <li><a href="/contact/">Contact</a></li>
         </ul>
     </header>
-    <section class="hero" id="home">
-        <div class="hero-content">
-            <h1>Discover Paradise, One Island at a Time</h1>
-            <p>Let JANA Travel take you to crystal-clear waters, pristine beaches, and unforgettable memories. Your dream vacation awaits.</p>
-            <a href="/hotels/" class="cta-button">Explore Hotels</a>
-        </div>
-    </section>
-    <section class="gallery" id="gallery">
+    <main class="page-main about">
+<section class="about" id="about">
         <div class="section-title">
-            <h2>Photo Gallery</h2>
-            <p>Click the stack to explore our paradise collection</p>
+            <h2>About JANA Travel</h2>
+            <p>Your trusted partner for extraordinary travel experiences</p>
         </div>
-        
-        <div class="gallery-container">
-            <!-- Photo Stack (Collapsed) -->
-            <div class="photo-stack" id="photoStack" onclick="expandGallery()">
-                <div class="stack-card" style="--i: 0;"></div>
-                <div class="stack-card" style="--i: 1;"></div>
-                <div class="stack-card" style="--i: 2;"></div>
-                <div class="stack-card" style="--i: 3;"></div>
-                <div class="stack-card" style="--i: 4;"></div>
-                <div class="stack-label">
-                    <span class="stack-hint">Click to explore</span>
-                </div>
+        <div class="about-container">
+            <div class="about-image fade-in">
+                <img src="https://images.unsplash.com/photo-1573843981267-be1999ff37cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Maldives Resort">
             </div>
-
-            <!-- Grid Gallery (Expanded) -->
-            <div class="gallery-expanded" id="galleryExpanded">
-                <button class="collapse-btn" onclick="collapseGallery()">
-                    <span>✕</span> Back to Stack
-                </button>
-                <div class="gallery-grid" id="galleryGrid">
-                    <!-- Images loaded dynamically -->
-                </div>
+            <div class="about-content fade-in">
+                <h3>Crafting Extraordinary Journeys Across the Maldives and Beyond</h3>
+                <p>At JANA Travel, we create exceptional travel experiences designed around you. Specializing in the Maldives and the Indian Ocean, we craft personalized journeys that combine luxury, comfort, and unforgettable moments.</p>
+                <p>Whether it’s a romantic escape, a family holiday, or a special celebration, our team is dedicated to handling every detail with care. From handpicked resorts to seamless itineraries, we make every trip effortless, elegant, and truly memorable.</p>
             </div>
         </div>
-    </section>
 
-    <div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">
-        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
-        <button class="lightbox-btn lightbox-prev" onclick="event.stopPropagation(); changeSlide(-1)">&#10094;</button>
-        <div class="lightbox-swipe-container" id="lightboxSwipeContainer">
-            <div class="lightbox-image-container" id="lightboxContainer">
-                <img id="lightboxImage" src="" alt="">
+        <div class="about-vm-grid fade-in">
+            <div class="about-vm-card">
+                <h4>Vision</h4>
+                <p>To inspire unforgettable luxury travel experiences through expert knowledge, trusted partnerships, and personalized service.</p>
+            </div>
+            <div class="about-vm-card">
+                <h4>Mission</h4>
+                <p>To plan and deliver seamless, tailor-made journeys with honesty, attention to detail, and exceptional care.</p>
+            </div>
         </div>
-            <div class="lightbox-image-container lightbox-prev-image" id="lightboxPrevContainer">
-                <img id="lightboxPrevImage" src="" alt="">
-            </div>
-            <div class="lightbox-image-container lightbox-next-image" id="lightboxNextContainer">
-                <img id="lightboxNextImage" src="" alt="">
-            </div>
-            </div>
-        <button class="lightbox-btn lightbox-next" onclick="event.stopPropagation(); changeSlide(1)">&#10095;</button>
-        <div class="lightbox-counter" id="lightboxCounter"></div>
-            </div>
 
-    <footer>
+        <div class="about-award fade-in">
+            <img src="/assets/images/ita-voting-badge-2023-v2-300x300.svg" alt="ITA Voting Badge 2023">
+        </div>
+</section>
+    </main>
+<footer>
         <div class="footer-content">
             <div class="footer-section">
                 <h4>JANA Travel</h4>
@@ -152,6 +129,5 @@
     </script>
     <script src="/js/site-access-gate.js"></script>
     <script src="/js/site-common.js"></script>
-    <script src="/js/gallery.js"></script>
 </body>
 </html>

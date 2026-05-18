@@ -12,11 +12,11 @@
     </script>
     <!-- JANA_DEV_SITE_PASSWORD_GATE END (head) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>JANA Travel - Your Gateway to Paradise</title>
+    <title>Destinations | JANA Travel</title>
     <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/site.css">
-    <meta name="description" content="Explore JANA Travel hotels and curated paradise stays.">
+    <meta name="description" content="Explore Maldives, Seychelles, and Mauritius with JANA Travel.">
 </head>
 <body>
     <header class="nav-wrapper">
@@ -48,63 +48,40 @@
             <li><a href="/contact/">Contact</a></li>
         </ul>
     </header>
-    <section class="hero" id="home">
-        <div class="hero-content">
-            <h1>Discover Paradise, One Island at a Time</h1>
-            <p>Let JANA Travel take you to crystal-clear waters, pristine beaches, and unforgettable memories. Your dream vacation awaits.</p>
-            <a href="/hotels/" class="cta-button">Explore Hotels</a>
+    <main class="page-main destinations-page">
+        <div class="destinations-title-block">
+            <h1>Explore Destinations</h1>
+            <p>Explore country highlights, travel tips, and popular areas.</p>
         </div>
-    </section>
-    <section class="gallery" id="gallery">
-        <div class="section-title">
-            <h2>Photo Gallery</h2>
-            <p>Click the stack to explore our paradise collection</p>
-        </div>
-        
-        <div class="gallery-container">
-            <!-- Photo Stack (Collapsed) -->
-            <div class="photo-stack" id="photoStack" onclick="expandGallery()">
-                <div class="stack-card" style="--i: 0;"></div>
-                <div class="stack-card" style="--i: 1;"></div>
-                <div class="stack-card" style="--i: 2;"></div>
-                <div class="stack-card" style="--i: 3;"></div>
-                <div class="stack-card" style="--i: 4;"></div>
-                <div class="stack-label">
-                    <span class="stack-hint">Click to explore</span>
+
+        <section class="country-grid">
+            <a class="country-card" href="/maldives/">
+                <img src="/assets/images/maldives_1.jpg" alt="Maldives">
+                <span class="country-card-cta" aria-hidden="true">Click to view</span>
+                <div class="country-card-content">
+                    <h2>Maldives</h2>
+                    <p>Luxury overwater villas, turquoise lagoons, private island resorts, and dreamy beach escapes.</p>
                 </div>
-            </div>
-
-            <!-- Grid Gallery (Expanded) -->
-            <div class="gallery-expanded" id="galleryExpanded">
-                <button class="collapse-btn" onclick="collapseGallery()">
-                    <span>✕</span> Back to Stack
-                </button>
-                <div class="gallery-grid" id="galleryGrid">
-                    <!-- Images loaded dynamically -->
+            </a>
+            <a class="country-card" href="/seychelles/">
+                <img src="/assets/images/seychelles_1.jpg" alt="Seychelles">
+                <span class="country-card-cta" aria-hidden="true">Click to view</span>
+                <div class="country-card-content">
+                    <h2>Seychelles</h2>
+                    <p>Granite beaches, crystal-clear waters, lush nature, island hopping, and peaceful luxury stays.</p>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">
-        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
-        <button class="lightbox-btn lightbox-prev" onclick="event.stopPropagation(); changeSlide(-1)">&#10094;</button>
-        <div class="lightbox-swipe-container" id="lightboxSwipeContainer">
-            <div class="lightbox-image-container" id="lightboxContainer">
-                <img id="lightboxImage" src="" alt="">
-        </div>
-            <div class="lightbox-image-container lightbox-prev-image" id="lightboxPrevContainer">
-                <img id="lightboxPrevImage" src="" alt="">
-            </div>
-            <div class="lightbox-image-container lightbox-next-image" id="lightboxNextContainer">
-                <img id="lightboxNextImage" src="" alt="">
-            </div>
-            </div>
-        <button class="lightbox-btn lightbox-next" onclick="event.stopPropagation(); changeSlide(1)">&#10095;</button>
-        <div class="lightbox-counter" id="lightboxCounter"></div>
-            </div>
-
-    <footer>
+            </a>
+            <a class="country-card" href="/mauritius/">
+                <img src="/assets/images/mauritius_1.webp" alt="Mauritius">
+                <span class="country-card-cta" aria-hidden="true">Click to view</span>
+                <div class="country-card-content">
+                    <h2>Mauritius</h2>
+                    <p>Beach resorts, mountain views, waterfalls, rich culture, and relaxing oceanfront escapes.</p>
+                </div>
+            </a>
+        </section>
+    </main>
+<footer>
         <div class="footer-content">
             <div class="footer-section">
                 <h4>JANA Travel</h4>
@@ -152,6 +129,5 @@
     </script>
     <script src="/js/site-access-gate.js"></script>
     <script src="/js/site-common.js"></script>
-    <script src="/js/gallery.js"></script>
 </body>
 </html>

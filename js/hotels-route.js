@@ -1,10 +1,10 @@
 import { createLoadingProgress, formatLoadingText } from "./loading-progress.js";
 
-const LOCAL_JSON_URL = "../data/hotels.json";
+const LOCAL_JSON_URL = "/data/hotels.json";
 const WHATSAPP_NUMBER = "971501771927";
-const HOTEL_PLACEHOLDER_IMAGE = "../assets/images/add_image.webp";
+const HOTEL_PLACEHOLDER_IMAGE = "/assets/images/add_image.webp";
 const GOOGLE_SHEETS_HOTELS_URL = "";
-const HOTEL_IMAGE_BASE_PATHS = ["../hotel_images", "../assets/hotel_images"];
+const HOTEL_IMAGE_BASE_PATHS = ["/assets/hotel_images"];
 const IMAGE_INDEXES = [1, 2, 3, 4];
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif"];
 const HOTEL_VIEW_STATE_PREFIX = "jana:hotelViewState:";
@@ -139,6 +139,13 @@ function formatRating(value) {
   return raw;
 }
 
+function formatDistanceFromAirport(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "Not specified";
+  if (/\bkm\b/i.test(raw)) return raw;
+  return `${raw} km`;
+}
+
 function parseStarRating(value) {
   const raw = String(value || "").trim();
   if (!raw) return 0;
@@ -164,22 +171,6 @@ function getDestinationPageUrl(destination) {
   if (normalized.includes("maldives")) return "../maldives/";
   if (normalized.includes("seychelles")) return "../seychelles/";
   if (normalized.includes("mauritius")) return "../mauritius/";
-  return "";
-}
-
-/** Destination total land area (display). Single source — change here to update hotel pages everywhere. Not read from sheets/forms. */
-const DESTINATION_LAND_AREA_SQ_KM_DISPLAY = Object.freeze({
-  maldives: "298 sq km",
-  seychelles: "457 sq km",
-  mauritius: "2,040 sq km"
-});
-
-function getDestinationIslandAreaDisplay(destination) {
-  const normalized = String(destination || "").toLowerCase().trim();
-  if (!normalized) return "";
-  if (normalized.includes("maldives")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.maldives;
-  if (normalized.includes("seychelles")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.seychelles;
-  if (normalized.includes("mauritius")) return DESTINATION_LAND_AREA_SQ_KM_DISPLAY.mauritius;
   return "";
 }
 
@@ -579,6 +570,12 @@ function normalizeSheetHotel(row) {
       "Location Link"
     ]),
     rating: getCaseInsensitiveField(row, ["rating", "Rating"]),
+    islandSize: getCaseInsensitiveField(row, [
+      "islandSize",
+      "Island Size",
+      "Island size",
+      "island size"
+    ]),
     reefType: getCaseInsensitiveField(row, ["reefType", "Reef Type"]),
     experience: getCaseInsensitiveField(row, ["experience", "Experience"]),
     mealPlan: getCaseInsensitiveField(row, ["mealPlan", "Meal Plan"]),
@@ -933,7 +930,7 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = 
 function renderSectionItemsHtml(items, sectionKey, options = {}) {
   const hotelName = String(options.hotelName || "").trim();
   if (!items.length) {
-    return `<p class="info-empty">Not specified yet.</p>`;
+    return `<p class="info-empty">Not specified.</p>`;
   }
   const renderedItems = items
     .map((item, itemIndex) => `
@@ -1129,13 +1126,13 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
   const destinationPageUrl = getDestinationPageUrl(destinationValue);
   const mapUrl = String(hotel.googleMapsLink || "").trim();
   const hasMapUrl = /^https?:\/\//i.test(mapUrl);
-  const locationValue = String(hotel.location || "").trim() || "Not specified yet";
-  const distanceFromAirportValue = String(hotel.distanceFromAirport || "").trim() || "Not specified yet";
-  const restaurantsCount = String(hotel.restaurants || "").trim() || "Not specified yet";
+  const locationValue = String(hotel.location || "").trim() || "Not specified";
+  const distanceFromAirportValue = formatDistanceFromAirport(hotel.distanceFromAirport);
+  const restaurantsCount = String(hotel.restaurants || "").trim() || "Not specified";
 
-  const roomsCount = String(hotel.rooms || "").trim() || "Not specified yet";
-  const barsCount = String(hotel.bars || "").trim() || "Not specified yet";
-  const islandSizeDisplay = getDestinationIslandAreaDisplay(destinationValue) || "Not specified yet";
+  const roomsCount = String(hotel.rooms || "").trim() || "Not specified";
+  const barsCount = String(hotel.bars || "").trim() || "Not specified";
+  const islandSizeDisplay = String(hotel.islandSize || "").trim() || "Not specified";
 
   const details = [
     ["Location", locationValue],
@@ -1227,8 +1224,8 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
               label === "Destination" && destinationPageUrl && value
                 ? `<a class="value value-link" href="${destinationPageUrl}">${escapeHtml(value)}</a>`
                 : label === "Location" && hasMapUrl
-                  ? `<a class="value value-link" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value || "Not specified yet")}</a>`
-                  : `<span class="value">${escapeHtml(value || "Not specified yet")}</span>`
+                  ? `<a class="value value-link" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value || "Not specified")}</a>`
+                  : `<span class="value">${escapeHtml(value || "Not specified")}</span>`
             }
           </div>
         `)
