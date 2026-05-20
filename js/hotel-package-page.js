@@ -28,6 +28,14 @@ function createWhatsAppLink(message) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 }
 
+function formatIslandSizeDisplay(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "Not specified";
+  if (/\bsq\.?\s*km\b/i.test(raw)) return raw;
+  if (/^\d+(\.\d+)?$/.test(raw)) return `${raw} sq km`;
+  return raw;
+}
+
 function getSlugFromCurrentPath() {
   const path = window.location.pathname;
   const segments = path.split("/").filter(Boolean);
@@ -61,7 +69,7 @@ function renderHotelPage(hotel) {
     ["Destination", hotel.destination],
     ["Location", hotel.location],
     ["Rating", hotel.rating],
-    ["Island Size", String(hotel.islandSize || "").trim() || "Not specified"],
+    ["Island Size", formatIslandSizeDisplay(hotel.islandSize)],
     ["Reef Type", hotel.reefType],
     ["Experience", hotel.experience],
     ["Meal Plan", hotel.mealPlan],

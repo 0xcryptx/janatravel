@@ -15,6 +15,7 @@
   <title>Hotel Package | JANA Travel</title>
   <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/media-viewer-chrome.css">
   <style>
     :root { --aqua-blue:#00CED1; --aqua-dark:#008B8B; --aqua-light:#7FEFEF; --text:#1A3A3A; }
     * { box-sizing:border-box; margin:0; padding:0; }
@@ -88,21 +89,86 @@
     .hero img { width:100%; height:min(52vw,480px); object-fit:cover; display:block; }
     .media-gallery { margin:1.2rem 0 1.4rem; }
     .hero--interactive { position:relative; margin-bottom:.8rem; cursor:zoom-in; }
+    .hero-swipe-viewport,
+    .room-swipe-viewport {
+      position:relative;
+      width:100%;
+      overflow:hidden;
+      touch-action:pan-y pinch-zoom;
+    }
+    .swipe-track {
+      display:flex;
+      width:100%;
+      will-change:transform;
+      transform:translateZ(0);
+    }
+    .swipe-track.is-dragging { transition:none !important; }
+    .swipe-slide {
+      flex:0 0 100%;
+      width:100%;
+      backface-visibility:hidden;
+      -webkit-backface-visibility:hidden;
+    }
+    .hero-swipe-viewport .swipe-slide img {
+      width:100%;
+      height:min(52vw,480px);
+      object-fit:cover;
+      display:block;
+      pointer-events:none;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .room-swipe-viewport .swipe-slide img {
+      width:100%;
+      height:210px;
+      object-fit:cover;
+      display:block;
+      pointer-events:none;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .hero-swipe-viewport .swipe-slide--current img,
+    .room-swipe-viewport .swipe-slide--current img {
+      pointer-events:auto;
+      cursor:zoom-in;
+    }
+    .lightbox-swipe-viewport {
+      width:min(92vw,1100px);
+      max-height:calc(100vh - 9.5rem);
+      max-height:calc(100dvh - 9.5rem);
+      overflow:hidden;
+      touch-action:pan-y pinch-zoom;
+    }
+    .lightbox-swipe-viewport .swipe-slide {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:0;
+    }
+    .lightbox-swipe-viewport .swipe-slide img {
+      width:auto;
+      height:auto;
+      max-width:100%;
+      max-height:calc(100vh - 9.5rem);
+      max-height:calc(100dvh - 9.5rem);
+      object-fit:contain;
+      border-radius:12px;
+      display:block;
+      margin:0 auto;
+      pointer-events:none;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
     .hero-nav {
       position:absolute;
       top:50%;
       transform:translateY(-50%);
       width:50px;
       height:50px;
-      border:none;
       border-radius:999px;
-      background:rgba(0,0,0,.5);
-      color:#fff;
       font-size:1.2rem;
       line-height:1;
-      cursor:pointer;
       z-index:10;
-      transition:all .3s ease;
     }
     @media (hover:hover) {
       .hero-nav,
@@ -123,38 +189,30 @@
     .hero-nav--prev { left:15px; }
     .hero-nav--next { right:15px; }
     .hero-nav:hover {
-      background:var(--aqua-dark);
-      transform:translateY(-50%);
+      transform:translateY(-50%) scale(1.05);
     }
     .hero-counter {
       position:absolute;
       bottom:15px;
       left:50%;
       transform:translateX(-50%);
-      color:white;
       font-size:1rem;
-      background:rgba(0,0,0,.5);
       padding:8px 20px;
-      border-radius:20px;
+      border-radius:999px;
       z-index:10;
+      pointer-events:none;
     }
     .maximize-btn {
       position:absolute;
       right:15px;
       bottom:15px;
-      border:none;
       border-radius:999px;
-      background:rgba(0,0,0,.5);
-      color:white;
-      font-weight:600;
       font-size:.88rem;
       padding:.4rem .85rem;
-      transition:all .3s ease;
       z-index:10;
     }
     .maximize-btn:hover {
-      background:var(--aqua-dark);
-      transform:none;
+      transform:translateY(-1px);
     }
     .thumb-strip {
       display:flex;
@@ -162,6 +220,8 @@
       overflow-x:auto;
       padding:.15rem .1rem .55rem;
       scroll-snap-type:x proximity;
+      -webkit-overflow-scrolling:touch;
+      scroll-behavior:smooth;
     }
     .thumb-btn {
       flex:0 0 86px;
@@ -191,33 +251,38 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:1rem;
+      padding:3.5rem 4.5rem 5.25rem;
+      box-sizing:border-box;
     }
     .image-lightbox[hidden] { display:none !important; }
     .image-lightbox img {
-      width:min(95vw,1100px);
-      max-height:88vh;
+      width:auto;
+      height:auto;
+      max-width:min(92vw,1100px);
+      max-height:calc(100vh - 9.5rem);
+      max-height:calc(100dvh - 9.5rem);
       object-fit:contain;
       border-radius:12px;
+    }
+    .image-lightbox .lightbox-swipe-viewport {
+      z-index:1;
+      flex-shrink:1;
+      min-height:0;
     }
     .lightbox-counter {
       position:absolute;
       left:50%;
-      bottom:30px;
+      bottom:1.15rem;
       transform:translateX(-50%);
-      border:none;
-      border-radius:999px;
-      background:rgba(0,0,0,.5);
-      color:white;
       font-size:1rem;
-      font-weight:600;
       padding:8px 20px;
+      border-radius:999px;
+      z-index:12;
+      pointer-events:none;
     }
     .lightbox-close,
     .lightbox-nav {
       position:absolute;
-      cursor:pointer;
-      transition:all .3s ease;
     }
     .lightbox-close {
       top:20px;
@@ -235,21 +300,22 @@
       width:60px;
       height:60px;
       border-radius:50%;
-      border:none;
-      background:rgba(255,255,255,.1);
-      color:white;
       font-size:1.5rem;
       line-height:1;
+      z-index:10;
     }
     .lightbox-nav--prev { left:30px; }
     .lightbox-nav--next { right:30px; }
+    .lightbox-close {
+      cursor:pointer;
+      transition:color .3s ease, transform .3s ease;
+    }
     .lightbox-close:hover {
       color:var(--aqua-light);
       transform:rotate(90deg);
     }
     .lightbox-nav:hover {
-      background:var(--aqua-blue);
-      transform:translateY(-50%);
+      transform:translateY(-50%) scale(1.05);
     }
     body.lightbox-open { overflow:hidden; }
     h2 { color:var(--aqua-dark); margin:1rem 0 .55rem; font-size:1.25rem; }
@@ -347,9 +413,14 @@
     }
     .section-room-grid {
       display:grid;
-      grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns:repeat(3, minmax(0, 1fr));
       gap:.8rem;
       align-items:start;
+    }
+    @media (max-width:1024px) {
+      .section-room-grid {
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+      }
     }
     .section-item--room {
       padding:.9rem;
@@ -390,13 +461,14 @@
       overflow:hidden;
       background:#fff;
       box-shadow:0 6px 12px rgba(0,139,139,.1);
+      cursor:zoom-in;
     }
     .room-image-main {
       width:100%;
       height:210px;
       object-fit:cover;
       display:block;
-      cursor:pointer;
+      cursor:zoom-in;
     }
     .room-image-nav {
       position:absolute;
@@ -404,19 +476,14 @@
       transform:translateY(-50%);
       width:34px;
       height:34px;
-      border:none;
       border-radius:999px;
-      background:rgba(0,139,139,.78);
-      color:#fff;
       font-size:1.02rem;
-      cursor:pointer;
       display:flex;
       align-items:center;
       justify-content:center;
       z-index:2;
       opacity:0;
       pointer-events:none;
-      transition:background .2s ease, transform .2s ease, opacity .2s ease;
     }
     .room-image-viewer:hover .room-image-nav,
     .room-image-viewer:focus-within .room-image-nav {
@@ -424,7 +491,6 @@
       pointer-events:auto;
     }
     .room-image-nav:hover {
-      background:var(--aqua-blue);
       transform:translateY(-50%) scale(1.05);
     }
     .room-image-nav--prev { left:.55rem; }
@@ -434,15 +500,12 @@
       left:50%;
       bottom:.5rem;
       transform:translateX(-50%);
-      background:rgba(0,0,0,.58);
-      color:#fff;
       font-size:.76rem;
-      font-weight:600;
       padding:.2rem .48rem;
       border-radius:999px;
       line-height:1.2;
       opacity:0;
-      transition:opacity .2s ease;
+      pointer-events:none;
     }
     .room-image-viewer:hover .room-image-counter,
     .room-image-viewer:focus-within .room-image-counter {
@@ -534,7 +597,7 @@
         flex:0 0 auto;
       }
       .section-room-grid {
-        grid-template-columns:1fr;
+        grid-template-columns:minmax(0, 1fr);
       }
       .detail-card--wide { grid-column:1 / -1; max-width:none; }
       .thumb-btn { flex-basis:92px; }
@@ -543,6 +606,20 @@
       .hero-counter { font-size:.75rem; padding:.22rem .56rem; }
       .maximize-btn { font-size:.85rem; padding:.35rem .7rem; }
       .lightbox-nav { width:40px; height:40px; }
+      .image-lightbox {
+        padding:3rem 1rem 4.75rem;
+      }
+      .lightbox-swipe-viewport,
+      .lightbox-swipe-viewport .swipe-slide img,
+      .image-lightbox img {
+        max-height:calc(100vh - 8rem);
+        max-height:calc(100dvh - 8rem);
+      }
+      .lightbox-counter {
+        bottom:.85rem;
+        font-size:.9rem;
+        padding:6px 14px;
+      }
     }
   </style>
 </head>

@@ -64,12 +64,12 @@
         <!-- Filter Section -->
         <div class="filter-container">
             <div class="filter-card">
-                <h3>Find Your Perfect Trip</h3>
+                <h3>Find Your Perfect Stay</h3>
                 <div class="filter-grid">
                     <div class="filter-group">
-                        <label for="countryFilterTrigger">Destination</label>
+                        <span class="filter-group__label" id="countryFilterLabel">Destination</span>
                         <div class="filter-select" data-filter-select>
-                            <button type="button" class="filter-select__trigger" id="countryFilterTrigger" aria-haspopup="listbox" aria-expanded="false">
+                            <button type="button" class="filter-select__trigger" id="countryFilterTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="countryFilterLabel">
                                 <span class="filter-select__value">All Destinations</span>
                                 <span class="filter-select__chevron" aria-hidden="true">▾</span>
                             </button>
@@ -82,9 +82,9 @@
                         </div>
                     </div>
                     <div class="filter-group">
-                        <label for="tripTypeTrigger">Experience</label>
+                        <span class="filter-group__label" id="tripTypeLabel">Experience</span>
                         <div class="filter-select" data-filter-select>
-                            <button type="button" class="filter-select__trigger" id="tripTypeTrigger" aria-haspopup="listbox" aria-expanded="false">
+                            <button type="button" class="filter-select__trigger" id="tripTypeTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="tripTypeLabel">
                                 <span class="filter-select__value">All Experiences</span>
                                 <span class="filter-select__chevron" aria-hidden="true">▾</span>
                             </button>
@@ -103,7 +103,7 @@
                 </div>
                 <div class="filter-actions">
                     <button class="filter-btn secondary" onclick="resetFilters()">Reset Filters</button>
-                    <button class="filter-btn primary" onclick="runPackagesFilterSearch()">Search Packages</button>
+                    <button class="filter-btn primary" onclick="runPackagesFilterSearch()">Search Hotels</button>
                 </div>
             </div>
         </div>
@@ -111,7 +111,7 @@
         <div class="packages-catalog-nav" id="packagesCatalogNav" role="tablist" aria-label="Browse packages">
             <div class="packages-catalog-nav__inner">
                 <button type="button" class="packages-catalog-nav__btn is-active" role="tab" id="tabPackagesFeatured" aria-selected="true" onclick="selectPackagesCatalog('featured')">Featured</button>
-                <button type="button" class="packages-catalog-nav__btn" role="tab" id="tabPackagesAll" aria-selected="false" onclick="selectPackagesCatalog('all')">All hotels</button>
+                <button type="button" class="packages-catalog-nav__btn" role="tab" id="tabPackagesAll" aria-selected="false" onclick="selectPackagesCatalog('all')">All Hotels</button>
             </div>
             <div class="packages-catalog-nav__countries" id="packagesCatalogCountries" aria-label="Filter all packages by destination">
                 <button type="button" class="packages-country-chip is-active" data-country-chip="all" onclick="togglePackagesCountryFilter('all')">All</button>
@@ -122,8 +122,8 @@
         </div>
 
         <div class="featured-packages-heading">
-            <h3 id="packagesHeadingTitle">Featured Packages</h3>
-            <p id="packagesHeadingSubtitle">Handpicked packages for unforgettable getaways.</p>
+            <h3 id="packagesHeadingTitle">Featured Hotels</h3>
+            <p id="packagesHeadingSubtitle">Handpicked hotels for unforgettable getaways.</p>
             <span class="packages-country-tag" id="packagesCountryTag">All Destinations</span>
         </div>
 

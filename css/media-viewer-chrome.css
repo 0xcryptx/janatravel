@@ -1,0 +1,72 @@
+/**
+ * Shared glass controls for image viewers (arrows, expand, page counter).
+ * Used on home gallery, hotels modal/lightbox, and hotel package pages.
+ */
+
+.hero-nav,
+.carousel-btn,
+.lightbox-btn,
+.lightbox-nav,
+.room-image-nav {
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    color: #fff;
+    cursor: pointer;
+    transition:
+        background 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.22s ease,
+        transform 0.22s ease,
+        color 0.22s ease,
+        opacity 0.2s ease;
+}
+
+.hero-nav:hover,
+.carousel-btn:hover,
+.lightbox-btn:hover,
+.lightbox-nav:hover,
+.room-image-nav:hover {
+    background: var(--aqua-blue, #00ced1);
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow:
+        0 6px 18px rgba(0, 206, 209, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    color: #fff;
+}
+
+.hero-counter,
+.lightbox-counter,
+.room-image-counter,
+.maximize-btn,
+.expand-hint {
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    color: #fff;
+    font-weight: 600;
+    transition:
+        background 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.22s ease,
+        transform 0.22s ease,
+        color 0.22s ease,
+        opacity 0.2s ease;
+}
+
+.maximize-btn:hover {
+    background: var(--aqua-blue, #00ced1);
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow:
+        0 6px 18px rgba(0, 206, 209, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    color: #fff;
+}

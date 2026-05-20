@@ -53,7 +53,7 @@ function openLightbox() {
     document.documentElement.style.overflow = 'hidden';
     lightboxOpen = true;
     updateAdjacentImages();
-    resetSwipePositions();
+    resetSwipePositionsInstant();
 }
 
 function updateLightbox() {
@@ -93,14 +93,106 @@ function updateAdjacentImages() {
     if (nextImg) nextImg.src = currentImages[nextIndex];
 }
 
-function resetSwipePositions() {
+const SWIPE_SETTLE_MS = 440;
+const SWIPE_SETTLE_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+function waitForTransformTransition(el, durationMs) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const settle = () => {
+            if (settled) return;
+            settled = true;
+            el.removeEventListener('transitionend', onEnd);
+            resolve();
+        };
+        const onEnd = (event) => {
+            if (event.target !== el || event.propertyName !== 'transform') return;
+            settle();
+        };
+        el.addEventListener('transitionend', onEnd);
+        setTimeout(settle, durationMs + 60);
+    });
+}
+
+async function animateLightboxSwipe(direction) {
+    const mainContainer = document.getElementById('lightboxContainer');
+    const prevContainer = document.getElementById('lightboxPrevContainer');
+    const nextContainer = document.getElementById('lightboxNextContainer');
+    const prevImage = document.getElementById('lightboxPrevImage');
+    const nextImage = document.getElementById('lightboxNextImage');
+    if (!mainContainer || !prevContainer || !nextContainer) return;
+
+    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
+    mainContainer.style.transition = transition;
+    prevContainer.style.transition = transition;
+    nextContainer.style.transition = transition;
+
+    if (direction === 'right') {
+        mainContainer.style.transform = 'translateX(100%)';
+        prevContainer.style.transform = 'translateX(0)';
+    } else {
+        mainContainer.style.transform = 'translateX(-100%)';
+        nextContainer.style.transform = 'translateX(0)';
+    }
+
+    await waitForTransformTransition(mainContainer, SWIPE_SETTLE_MS);
+
+    const visibleSrc =
+        (direction === 'right' ? prevImage : nextImage)?.currentSrc ||
+        (direction === 'right' ? prevImage : nextImage)?.src;
+    changeSlide(direction === 'right' ? -1 : 1);
+    const mainImage = document.getElementById('lightboxImage');
+    if (visibleSrc && mainImage) mainImage.src = visibleSrc;
+
+    mainContainer.style.transition = 'none';
+    prevContainer.style.transition = 'none';
+    nextContainer.style.transition = 'none';
+    mainContainer.style.transform = 'translateX(0)';
+    prevContainer.style.transform = 'translateX(-100%)';
+    nextContainer.style.transform = 'translateX(100%)';
+    mainContainer.offsetHeight;
+    mainContainer.style.transition = '';
+    prevContainer.style.transition = '';
+    nextContainer.style.transition = '';
+}
+
+function resetSwipePositionsInstant() {
     const mainContainer = document.getElementById('lightboxContainer');
     const prevContainer = document.getElementById('lightboxPrevContainer');
     const nextContainer = document.getElementById('lightboxNextContainer');
     if (!mainContainer || !prevContainer || !nextContainer) return;
+
+    mainContainer.style.transition = 'none';
+    prevContainer.style.transition = 'none';
+    nextContainer.style.transition = 'none';
     mainContainer.style.transform = 'translateX(0)';
     prevContainer.style.transform = 'translateX(-100%)';
     nextContainer.style.transform = 'translateX(100%)';
+    mainContainer.offsetHeight;
+    mainContainer.style.transition = '';
+    prevContainer.style.transition = '';
+    nextContainer.style.transition = '';
+}
+
+async function resetSwipePositions() {
+    const mainContainer = document.getElementById('lightboxContainer');
+    const prevContainer = document.getElementById('lightboxPrevContainer');
+    const nextContainer = document.getElementById('lightboxNextContainer');
+    if (!mainContainer || !prevContainer || !nextContainer) return;
+
+    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
+    mainContainer.style.transition = transition;
+    prevContainer.style.transition = transition;
+    nextContainer.style.transition = transition;
+    mainContainer.style.transform = 'translateX(0)';
+    prevContainer.style.transform = 'translateX(-100%)';
+    nextContainer.style.transform = 'translateX(100%)';
+
+    await waitForTransformTransition(mainContainer, SWIPE_SETTLE_MS);
+
+    mainContainer.style.transition = '';
+    prevContainer.style.transition = '';
+    nextContainer.style.transition = '';
 }
 
 function isMobile() {
@@ -250,7 +342,7 @@ function initLightboxSwipe() {
     const swipeThreshold = 50;
 
     swipeContainer.addEventListener('touchstart', (e) => {
-        if (!isMobile() || !lightboxOpen) return;
+        if (!lightboxOpen) return;
         touchStartX = e.touches[0].clientX;
         touchCurrentX = touchStartX;
         isSwiping = true;
@@ -259,7 +351,7 @@ function initLightboxSwipe() {
     }, { passive: true });
 
     swipeContainer.addEventListener('touchmove', (e) => {
-        if (!isSwiping || !isMobile()) return;
+        if (!isSwiping) return;
         touchCurrentX = e.touches[0].clientX;
         const diff = touchCurrentX - touchStartX;
         document.getElementById('lightboxContainer').style.transform = `translateX(${diff}px)`;
@@ -267,15 +359,16 @@ function initLightboxSwipe() {
         document.getElementById('lightboxNextContainer').style.transform = `translateX(calc(100% + ${diff}px))`;
     }, { passive: true });
 
-    swipeContainer.addEventListener('touchend', () => {
-        if (!isSwiping || !isMobile()) return;
+    swipeContainer.addEventListener('touchend', async () => {
+        if (!isSwiping) return;
         isSwiping = false;
         swipeContainer.classList.remove('swiping');
         const diff = touchCurrentX - touchStartX;
         if (Math.abs(diff) > swipeThreshold) {
-            changeSlide(diff > 0 ? -1 : 1);
+            await animateLightboxSwipe(diff > 0 ? 'right' : 'left');
+        } else {
+            await resetSwipePositions();
         }
-        resetSwipePositions();
     }, { passive: true });
 }
 

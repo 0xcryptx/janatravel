@@ -426,31 +426,77 @@ function normalizeSheetHotel(row) {
     };
 }
 
+const TRIP_TYPE_VALUES = [
+    'all-inclusive-holidays',
+    'family-holidays',
+    'honeymoon-couples',
+    'private-island-escapes',
+    'wellness-retreats',
+    'luxury-beach-holidays',
+    'adventure-water-sports'
+];
+
+const TRIP_TYPE_PATTERNS = [
+    { id: 'all-inclusive-holidays', test: (text) => /all[\s-]?inclusive/.test(text) },
+    { id: 'family-holidays', test: (text) => /\bfamily\b|\bkids\b|children/.test(text) },
+    { id: 'honeymoon-couples', test: (text) => /honeymoon|\bcouples?\b/.test(text) },
+    { id: 'private-island-escapes', test: (text) => /private\s*island/.test(text) },
+    { id: 'wellness-retreats', test: (text) => /wellness|spa\s*retreat/.test(text) },
+    { id: 'luxury-beach-holidays', test: (text) => /luxury\s*beach|\bluxury\b/.test(text) },
+    { id: 'adventure-water-sports', test: (text) => /adventure|water\s*sport|\bdiving\b|snorkel/.test(text) }
+];
+
+function getHotelSearchText(hotel) {
+    return [
+        hotel.experience,
+        hotel.smallDescription,
+        hotel.shortDescription,
+        hotel.description,
+        hotel.name,
+        hotel.slug
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+}
+
 function inferExperienceTags(hotel) {
-    const source = String(hotel.experience || '').toLowerCase();
-    if (!source.trim()) return [];
-
     const tags = new Set();
-    const tokens = source
+    const experienceRaw = String(hotel.experience || '').trim();
+
+    experienceRaw
         .split(/[,;|\n]+/)
-        .map(v => v.trim())
-        .filter(Boolean);
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean)
+        .forEach((token) => {
+            const asSlug = token
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            if (TRIP_TYPE_VALUES.includes(token)) tags.add(token);
+            if (TRIP_TYPE_VALUES.includes(asSlug)) tags.add(asSlug);
+        });
 
-    const addTagFromToken = (value) => {
-        const compact = value.replace(/[^a-z0-9]+/g, ' ').trim();
-        if (!compact) return;
-        if (compact.includes('all inclusive') || compact.includes('all-inclusive')) tags.add('all-inclusive-holidays');
-        else if (compact.includes('family')) tags.add('family-holidays');
-        else if (compact.includes('honeymoon') || compact.includes('couple')) tags.add('honeymoon-couples');
-        else if (compact.includes('private island')) tags.add('private-island-escapes');
-        else if (compact.includes('wellness')) tags.add('wellness-retreats');
-        else if (compact.includes('luxury beach') || compact === 'luxury') tags.add('luxury-beach-holidays');
-        else if (compact.includes('adventure') || compact.includes('water sport')) tags.add('adventure-water-sports');
-    };
+    const searchText = getHotelSearchText(hotel);
+    TRIP_TYPE_PATTERNS.forEach(({ id, test }) => {
+        if (test(searchText)) tags.add(id);
+    });
 
-    tokens.forEach(addTagFromToken);
-    if (!tags.size) addTagFromToken(source);
+    const slug = String(hotel.slug || '').toLowerCase();
+    const destinationKey = HOTEL_SLUG_TO_DESTINATION_KEY[slug];
+    if (destinationKey === 'family') tags.add('family-holidays');
+    if (destinationKey === 'honeymoon') tags.add('honeymoon-couples');
+    if (destinationKey === 'diving') tags.add('adventure-water-sports');
+
     return Array.from(tags);
+}
+
+function cardMatchesTripType(card, tripType) {
+    if (!tripType || tripType === 'all') return true;
+    const typeTags = (card.dataset.type || '').split('|').filter(Boolean);
+    if (typeTags.includes(tripType)) return true;
+    const searchText = (card.dataset.searchText || '').toLowerCase();
+    const pattern = TRIP_TYPE_PATTERNS.find((entry) => entry.id === tripType);
+    return pattern ? pattern.test(searchText) : false;
 }
 
 function inferKidsAllowed(hotel) {
@@ -495,6 +541,7 @@ function renderHotelCardsFromData(hotels) {
         card.dataset.hotelSlug = slug;
         card.dataset.price = String(hotel.price || (primaryTag === 'luxury-beach-holidays' ? 2399 : primaryTag === 'family-holidays' ? 1999 : 1799));
         card.dataset.type = experienceTags.join('|');
+        card.dataset.searchText = getHotelSearchText(hotel);
         card.dataset.kids = String(kidsAllowed);
         card.dataset.travelers = String(maxTravelers);
         card.dataset.country = String(hotel.destination || '').toLowerCase();
@@ -738,7 +785,70 @@ function initFilterCustomSelects() {
             wrapper.insertBefore(menu, select);
         }
 
+        const isTouchLikeDevice = () =>
+            window.matchMedia('(max-width: 768px)').matches ||
+            window.matchMedia('(pointer: coarse)').matches;
+
+        const clearScrollbarHint = (menuEl) => {
+            if (!menuEl) return;
+            if (menuEl._scrollbarHintTimer) {
+                clearTimeout(menuEl._scrollbarHintTimer);
+                menuEl._scrollbarHintTimer = null;
+            }
+            if (menuEl._scrollbarBounceTimer) {
+                clearTimeout(menuEl._scrollbarBounceTimer);
+                menuEl._scrollbarBounceTimer = null;
+            }
+            menuEl.classList.remove('is-scrollbar-hint');
+            const wrapper = menuEl.closest('[data-filter-select]');
+            if (wrapper) wrapper.classList.remove('is-scrollbar-hint-active');
+            const cue = menuEl.querySelector('.filter-select__scroll-cue');
+            if (cue) cue.classList.remove('is-visible');
+        };
+
+        const ensureScrollCue = (menuEl) => {
+            let cue = menuEl.querySelector('.filter-select__scroll-cue');
+            if (!cue) {
+                cue = document.createElement('span');
+                cue.className = 'filter-select__scroll-cue';
+                cue.setAttribute('aria-hidden', 'true');
+                cue.textContent = '⌄';
+                menuEl.appendChild(cue);
+            }
+            return cue;
+        };
+
+        const showScrollbarHint = (menuEl) => {
+            if (!menuEl || menuEl.scrollHeight <= menuEl.clientHeight) return;
+            clearScrollbarHint(menuEl);
+            void menuEl.offsetWidth;
+            menuEl.classList.add('is-scrollbar-hint');
+
+            const wrapper = menuEl.closest('[data-filter-select]');
+            const touchLike = isTouchLikeDevice();
+            if (wrapper) wrapper.classList.add('is-scrollbar-hint-active');
+            if (touchLike) ensureScrollCue(menuEl).classList.add('is-visible');
+
+            const scrollTop = menuEl.scrollTop;
+            if (touchLike) {
+                const maxScroll = menuEl.scrollHeight - menuEl.clientHeight;
+                menuEl.scrollTop = Math.min(scrollTop + 40, maxScroll);
+                menuEl._scrollbarBounceTimer = setTimeout(() => {
+                    menuEl.scrollTo({ top: scrollTop, behavior: 'smooth' });
+                    menuEl._scrollbarBounceTimer = null;
+                }, 140);
+            } else {
+                menuEl.scrollTop = scrollTop + 1;
+                menuEl.scrollTop = scrollTop;
+            }
+
+            menuEl._scrollbarHintTimer = setTimeout(() => {
+                clearScrollbarHint(menuEl);
+            }, 1000);
+        };
+
         const closeMenu = () => {
+            clearScrollbarHint(menu);
             menu.hidden = true;
             wrapper.classList.remove('is-open');
             trigger.setAttribute('aria-expanded', 'false');
@@ -749,13 +859,17 @@ function initFilterCustomSelects() {
                 if (openWrapper === wrapper) return;
                 const openMenuEl = openWrapper.querySelector('.filter-select__menu');
                 const openTrigger = openWrapper.querySelector('.filter-select__trigger');
-                if (openMenuEl) openMenuEl.hidden = true;
+                if (openMenuEl) {
+                    clearScrollbarHint(openMenuEl);
+                    openMenuEl.hidden = true;
+                }
                 openWrapper.classList.remove('is-open');
                 if (openTrigger) openTrigger.setAttribute('aria-expanded', 'false');
             });
             menu.hidden = false;
             wrapper.classList.add('is-open');
             trigger.setAttribute('aria-expanded', 'true');
+            requestAnimationFrame(() => showScrollbarHint(menu));
         };
 
         trigger.addEventListener('click', () => {
@@ -795,8 +909,8 @@ function syncDefaultPackageFilters() {
 }
 
 const PACKAGES_HEADING_FEATURED = {
-    title: 'Featured Packages',
-    subtitle: 'Handpicked packages for unforgettable getaways.'
+    title: 'Featured Hotels',
+    subtitle: 'Handpicked hotels for unforgettable getaways.'
 };
 const PACKAGES_HEADING_ALL = {
     title: 'All Hotels',
@@ -916,11 +1030,9 @@ function filterHotels() {
             return;
         }
 
-        const typeTags = (card.dataset.type || '').split('|').filter(Boolean);
-
         let show = true;
 
-        if (tripType !== 'all' && !typeTags.includes(tripType)) show = false;
+        if (!cardMatchesTripType(card, tripType)) show = false;
         if (appliedCountry !== 'all' && getCardCountry(card) !== appliedCountry) show = false;
         if (filterByCountry && !selectedPackagesCountries.has(getCardCountry(card))) show = false;
 
@@ -986,14 +1098,19 @@ function selectPackagesCatalog(mode) {
 }
 
 function runPackagesFilterSearch() {
-    appliedTripType = document.getElementById('tripType').value;
-    appliedCountry = document.getElementById('countryFilter').value;
+    const tripTypeEl = document.getElementById('tripType');
+    const countryEl = document.getElementById('countryFilter');
+    appliedTripType = tripTypeEl ? tripTypeEl.value : 'all';
+    appliedCountry = countryEl ? countryEl.value : 'all';
 
     packagesNavScope = null;
     updatePackagesNavTabs();
     applyFilteredPackagesHeading();
     const grid = document.getElementById('hotelsGrid');
-    if (grid) grid.classList.add('hotels-grid--filtering');
+    if (grid) {
+        grid.classList.add('hotels-grid--filtering');
+        grid.classList.remove('show-all');
+    }
     filterHotels();
 }
 
@@ -1117,7 +1234,6 @@ const carouselSwipeThreshold = 50;
 const carouselSwipeContainer = document.getElementById('carouselSwipeContainer');
 
 carouselSwipeContainer.addEventListener('touchstart', function(e) {
-    if (!isMobile()) return;
     carouselTouchStartX = e.touches[0].clientX;
     carouselTouchCurrentX = carouselTouchStartX;
     isCarouselSwiping = true;
@@ -1126,7 +1242,7 @@ carouselSwipeContainer.addEventListener('touchstart', function(e) {
 }, { passive: true });
 
 carouselSwipeContainer.addEventListener('touchmove', function(e) {
-    if (!isCarouselSwiping || !isMobile()) return;
+    if (!isCarouselSwiping) return;
     carouselTouchCurrentX = e.touches[0].clientX;
     const diff = carouselTouchCurrentX - carouselTouchStartX;
     
@@ -1135,34 +1251,58 @@ carouselSwipeContainer.addEventListener('touchmove', function(e) {
     document.getElementById('carouselSlideNext').style.transform = `translateX(calc(100% + ${diff}px))`;
 }, { passive: true });
 
-carouselSwipeContainer.addEventListener('touchend', function(e) {
-    if (!isCarouselSwiping || !isMobile()) return;
+carouselSwipeContainer.addEventListener('touchend', async function() {
+    if (!isCarouselSwiping) return;
     isCarouselSwiping = false;
     carouselSwipeContainer.classList.remove('swiping');
-    
+
     const diff = carouselTouchCurrentX - carouselTouchStartX;
-    
+
     if (Math.abs(diff) > carouselSwipeThreshold) {
         if (diff > 0) {
-            animateCarouselSwipe('right');
+            await animateCarouselSwipe('right');
         } else {
-            animateCarouselSwipe('left');
+            await animateCarouselSwipe('left');
         }
     } else {
-        resetCarouselSwipePositions();
+        await resetCarouselSwipePositions();
     }
 }, { passive: true });
 
-function animateCarouselSwipe(direction) {
+const SWIPE_SETTLE_MS = 440;
+const SWIPE_SETTLE_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+function waitForTransformTransition(el, durationMs) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const settle = () => {
+            if (settled) return;
+            settled = true;
+            el.removeEventListener('transitionend', onEnd);
+            resolve();
+        };
+        const onEnd = (event) => {
+            if (event.target !== el || event.propertyName !== 'transform') return;
+            settle();
+        };
+        el.addEventListener('transitionend', onEnd);
+        setTimeout(settle, durationMs + 60);
+    });
+}
+
+async function animateCarouselSwipe(direction) {
     const mainSlide = document.getElementById('carouselSlideMain');
     const prevSlide = document.getElementById('carouselSlidePrev');
     const nextSlide = document.getElementById('carouselSlideNext');
     const mainImage = document.getElementById('modalImage');
-    
-    mainSlide.style.transition = 'transform 0.3s ease';
-    prevSlide.style.transition = 'transform 0.3s ease';
-    nextSlide.style.transition = 'transform 0.3s ease';
-    
+    const prevImage = document.getElementById('carouselPrevImage');
+    const nextImage = document.getElementById('carouselNextImage');
+    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
+
+    mainSlide.style.transition = transition;
+    prevSlide.style.transition = transition;
+    nextSlide.style.transition = transition;
+
     if (direction === 'right') {
         mainSlide.style.transform = 'translateX(100%)';
         prevSlide.style.transform = 'translateX(0)';
@@ -1170,62 +1310,56 @@ function animateCarouselSwipe(direction) {
         mainSlide.style.transform = 'translateX(-100%)';
         nextSlide.style.transform = 'translateX(0)';
     }
-    
-    setTimeout(() => {
-        // Update slide index
-        if (direction === 'right') {
-            currentSlide--;
-            if (currentSlide < 0) currentSlide = currentImages.length - 1;
-        } else {
-            currentSlide++;
-            if (currentSlide >= currentImages.length) currentSlide = 0;
-        }
-        
-        // Update main image
-        mainImage.src = currentImages[currentSlide];
-        
-        // Instantly reset positions
-        mainSlide.style.transition = 'none';
-        prevSlide.style.transition = 'none';
-        nextSlide.style.transition = 'none';
-        
-        mainSlide.style.transform = 'translateX(0)';
-        prevSlide.style.transform = 'translateX(-100%)';
-        nextSlide.style.transform = 'translateX(100%)';
-        
-        // Force reflow
-        mainSlide.offsetHeight;
-        
-        // Clear transitions
-        mainSlide.style.transition = '';
-        prevSlide.style.transition = '';
-        nextSlide.style.transition = '';
-        
-        // Update dots and adjacent images
-        updateDots();
-        updateCarouselAdjacentImages();
-        updateLightbox();
-    }, 300);
-}
 
-function resetCarouselSwipePositions(instant) {
-    const mainSlide = document.getElementById('carouselSlideMain');
-    const prevSlide = document.getElementById('carouselSlidePrev');
-    const nextSlide = document.getElementById('carouselSlideNext');
-    
-    mainSlide.style.transition = 'transform 0.3s ease';
-    prevSlide.style.transition = 'transform 0.3s ease';
-    nextSlide.style.transition = 'transform 0.3s ease';
-    
+    await waitForTransformTransition(mainSlide, SWIPE_SETTLE_MS);
+
+    if (direction === 'right') {
+        currentSlide--;
+        if (currentSlide < 0) currentSlide = currentImages.length - 1;
+    } else {
+        currentSlide++;
+        if (currentSlide >= currentImages.length) currentSlide = 0;
+    }
+
+    const visibleSrc =
+        (direction === 'right' ? prevImage : nextImage)?.currentSrc ||
+        (direction === 'right' ? prevImage : nextImage)?.src;
+    mainImage.src = visibleSrc || currentImages[currentSlide];
+
+    mainSlide.style.transition = 'none';
+    prevSlide.style.transition = 'none';
+    nextSlide.style.transition = 'none';
     mainSlide.style.transform = 'translateX(0)';
     prevSlide.style.transform = 'translateX(-100%)';
     nextSlide.style.transform = 'translateX(100%)';
-    
-    setTimeout(() => {
-        mainSlide.style.transition = '';
-        prevSlide.style.transition = '';
-        nextSlide.style.transition = '';
-    }, 300);
+    mainSlide.offsetHeight;
+    mainSlide.style.transition = '';
+    prevSlide.style.transition = '';
+    nextSlide.style.transition = '';
+
+    updateDots();
+    updateCarouselAdjacentImages();
+    updateLightbox();
+}
+
+async function resetCarouselSwipePositions() {
+    const mainSlide = document.getElementById('carouselSlideMain');
+    const prevSlide = document.getElementById('carouselSlidePrev');
+    const nextSlide = document.getElementById('carouselSlideNext');
+    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
+
+    mainSlide.style.transition = transition;
+    prevSlide.style.transition = transition;
+    nextSlide.style.transition = transition;
+    mainSlide.style.transform = 'translateX(0)';
+    prevSlide.style.transform = 'translateX(-100%)';
+    nextSlide.style.transform = 'translateX(100%)';
+
+    await waitForTransformTransition(mainSlide, SWIPE_SETTLE_MS);
+
+    mainSlide.style.transition = '';
+    prevSlide.style.transition = '';
+    nextSlide.style.transition = '';
 }
 
 // Lightbox: fullscreen view with cursor-follow magnify on the image (desktop only)
@@ -1294,9 +1428,7 @@ function openLightbox() {
     if (typeof updateAdjacentImages === 'function') {
         updateAdjacentImages();
     }
-    if (typeof resetSwipePositions === 'function') {
-        resetSwipePositions();
-    }
+    resetSwipePositionsInstant();
 }
 
 function updateLightbox() {
@@ -1363,7 +1495,6 @@ function updateAdjacentImages() {
 }
 
 swipeContainer.addEventListener('touchstart', function(e) {
-    if (!isMobile()) return;
     touchStartX = e.touches[0].clientX;
     touchCurrentX = touchStartX;
     isSwiping = true;
@@ -1372,7 +1503,7 @@ swipeContainer.addEventListener('touchstart', function(e) {
 }, { passive: true });
 
 swipeContainer.addEventListener('touchmove', function(e) {
-    if (!isSwiping || !isMobile()) return;
+    if (!isSwiping) return;
     touchCurrentX = e.touches[0].clientX;
     const diff = touchCurrentX - touchStartX;
     
@@ -1382,37 +1513,37 @@ swipeContainer.addEventListener('touchmove', function(e) {
     document.getElementById('lightboxNextContainer').style.transform = `translateX(calc(100% + ${diff}px))`;
 }, { passive: true });
 
-swipeContainer.addEventListener('touchend', function(e) {
-    if (!isSwiping || !isMobile()) return;
+swipeContainer.addEventListener('touchend', async function() {
+    if (!isSwiping) return;
     isSwiping = false;
     swipeContainer.classList.remove('swiping');
-    
+
     const diff = touchCurrentX - touchStartX;
-    
+
     if (Math.abs(diff) > swipeThreshold) {
         if (diff > 0) {
-            // Swiped right - go to previous
-            animateSwipe('right');
+            await animateSwipe('right');
         } else {
-            // Swiped left - go to next
-            animateSwipe('left');
+            await animateSwipe('left');
         }
     } else {
-        // Reset positions
-        resetSwipePositions();
+        await resetSwipePositions();
     }
 }, { passive: true });
 
-function animateSwipe(direction) {
+async function animateSwipe(direction) {
     const mainContainer = document.getElementById('lightboxContainer');
     const prevContainer = document.getElementById('lightboxPrevContainer');
     const nextContainer = document.getElementById('lightboxNextContainer');
     const mainImage = document.getElementById('lightboxImage');
-    
-    mainContainer.style.transition = 'transform 0.3s ease';
-    prevContainer.style.transition = 'transform 0.3s ease';
-    nextContainer.style.transition = 'transform 0.3s ease';
-    
+    const prevImage = document.getElementById('lightboxPrevImage');
+    const nextImage = document.getElementById('lightboxNextImage');
+    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
+
+    mainContainer.style.transition = transition;
+    prevContainer.style.transition = transition;
+    nextContainer.style.transition = transition;
+
     if (direction === 'right') {
         mainContainer.style.transform = 'translateX(100%)';
         prevContainer.style.transform = 'translateX(0)';
@@ -1420,80 +1551,76 @@ function animateSwipe(direction) {
         mainContainer.style.transform = 'translateX(-100%)';
         nextContainer.style.transform = 'translateX(0)';
     }
-    
-    setTimeout(() => {
-        // Update slide index
-        if (direction === 'right') {
-            currentSlide--;
-            if (currentSlide < 0) currentSlide = currentImages.length - 1;
-        } else {
-            currentSlide++;
-            if (currentSlide >= currentImages.length) currentSlide = 0;
-        }
-        
-        // Update main image to new current image BEFORE resetting positions
-        mainImage.src = currentImages[currentSlide];
-        document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
-        resetLightboxMagnify();
 
-        // Instantly reset positions (no transition)
-        mainContainer.style.transition = 'none';
-        prevContainer.style.transition = 'none';
-        nextContainer.style.transition = 'none';
-        
-        mainContainer.style.transform = 'translateX(0)';
-        prevContainer.style.transform = 'translateX(-100%)';
-        nextContainer.style.transform = 'translateX(100%)';
-        
-        // Force reflow
-        mainContainer.offsetHeight;
-        
-        // Clear inline transitions
-        mainContainer.style.transition = '';
-        prevContainer.style.transition = '';
-        nextContainer.style.transition = '';
-        
-        // Update adjacent images and carousel dots
-        updateAdjacentImages();
-        updateDots();
-        document.getElementById('modalImage').src = currentImages[currentSlide];
-    }, 300);
-}
+    await waitForTransformTransition(mainContainer, SWIPE_SETTLE_MS);
 
-function resetSwipePositions(instant) {
-    const mainContainer = document.getElementById('lightboxContainer');
-    const prevContainer = document.getElementById('lightboxPrevContainer');
-    const nextContainer = document.getElementById('lightboxNextContainer');
-    
-    if (instant) {
-        // Instant reset after successful swipe - no animation
-        mainContainer.style.transition = 'none';
-        prevContainer.style.transition = 'none';
-        nextContainer.style.transition = 'none';
+    if (direction === 'right') {
+        currentSlide--;
+        if (currentSlide < 0) currentSlide = currentImages.length - 1;
     } else {
-        // Animated reset when swipe is cancelled
-        mainContainer.style.transition = 'transform 0.3s ease';
-        prevContainer.style.transition = 'transform 0.3s ease';
-        nextContainer.style.transition = 'transform 0.3s ease';
+        currentSlide++;
+        if (currentSlide >= currentImages.length) currentSlide = 0;
     }
-    
+
+    const visibleSrc =
+        (direction === 'right' ? prevImage : nextImage)?.currentSrc ||
+        (direction === 'right' ? prevImage : nextImage)?.src;
+    mainImage.src = visibleSrc || currentImages[currentSlide];
+    document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
+    resetLightboxMagnify();
+
+    mainContainer.style.transition = 'none';
+    prevContainer.style.transition = 'none';
+    nextContainer.style.transition = 'none';
     mainContainer.style.transform = 'translateX(0)';
     prevContainer.style.transform = 'translateX(-100%)';
     nextContainer.style.transform = 'translateX(100%)';
-    
-    if (instant) {
-        // Force reflow then clear transition
-        mainContainer.offsetHeight;
-        mainContainer.style.transition = '';
-        prevContainer.style.transition = '';
-        nextContainer.style.transition = '';
-    } else {
-        setTimeout(() => {
-            mainContainer.style.transition = '';
-            prevContainer.style.transition = '';
-            nextContainer.style.transition = '';
-        }, 300);
-    }
+    mainContainer.offsetHeight;
+    mainContainer.style.transition = '';
+    prevContainer.style.transition = '';
+    nextContainer.style.transition = '';
+
+    updateAdjacentImages();
+    updateDots();
+    document.getElementById('modalImage').src = currentImages[currentSlide];
+}
+
+function resetSwipePositionsInstant() {
+    const mainContainer = document.getElementById('lightboxContainer');
+    const prevContainer = document.getElementById('lightboxPrevContainer');
+    const nextContainer = document.getElementById('lightboxNextContainer');
+    if (!mainContainer || !prevContainer || !nextContainer) return;
+
+    mainContainer.style.transition = 'none';
+    prevContainer.style.transition = 'none';
+    nextContainer.style.transition = 'none';
+    mainContainer.style.transform = 'translateX(0)';
+    prevContainer.style.transform = 'translateX(-100%)';
+    nextContainer.style.transform = 'translateX(100%)';
+    mainContainer.offsetHeight;
+    mainContainer.style.transition = '';
+    prevContainer.style.transition = '';
+    nextContainer.style.transition = '';
+}
+
+async function resetSwipePositions() {
+    const mainContainer = document.getElementById('lightboxContainer');
+    const prevContainer = document.getElementById('lightboxPrevContainer');
+    const nextContainer = document.getElementById('lightboxNextContainer');
+    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
+
+    mainContainer.style.transition = transition;
+    prevContainer.style.transition = transition;
+    nextContainer.style.transition = transition;
+    mainContainer.style.transform = 'translateX(0)';
+    prevContainer.style.transform = 'translateX(-100%)';
+    nextContainer.style.transform = 'translateX(100%)';
+
+    await waitForTransformTransition(mainContainer, SWIPE_SETTLE_MS);
+
+    mainContainer.style.transition = '';
+    prevContainer.style.transition = '';
+    nextContainer.style.transition = '';
 }
 
 applyHotelJsonDataToHotelsPage();
