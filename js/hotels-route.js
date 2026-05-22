@@ -1,4 +1,9 @@
 import { createLoadingProgress, formatLoadingText } from "./loading-progress.js";
+import {
+  bindJanaSwiperCarousel,
+  preloadJanaImages,
+  preloadJanaSlideNeighbors
+} from "./jana-swiper.js";
 
 const LOCAL_JSON_URL = "/data/hotels.json";
 const WHATSAPP_NUMBER = "971501771927";
@@ -772,312 +777,6 @@ function hideHotelPageLoading(progress) {
   updateState("success", "");
 }
 
-function bindSwipeCarousel({
-  mountBefore,
-  mainImageEl,
-  getSlideCount,
-  getSlideSources,
-  onIndexChange,
-  initialIndex = 0,
-  viewportClass = "swipe-viewport",
-  swipeThreshold = 48
-}) {
-  if (!mountBefore || !mainImageEl || !mountBefore.parentNode) return null;
-
-  const viewport = document.createElement("div");
-  viewport.className = viewportClass;
-  const track = document.createElement("div");
-  track.className = "swipe-track";
-
-  const prevSlide = document.createElement("div");
-  const currentSlide = document.createElement("div");
-  const nextSlide = document.createElement("div");
-  prevSlide.className = "swipe-slide";
-  currentSlide.className = "swipe-slide swipe-slide--current";
-  nextSlide.className = "swipe-slide";
-
-  const prevImg = document.createElement("img");
-  const nextImg = document.createElement("img");
-  prevImg.draggable = false;
-  nextImg.draggable = false;
-  prevImg.decoding = "async";
-  nextImg.decoding = "async";
-  mainImageEl.draggable = false;
-
-  mountBefore.parentNode.insertBefore(viewport, mountBefore);
-  prevSlide.appendChild(prevImg);
-  currentSlide.appendChild(mainImageEl);
-  nextSlide.appendChild(nextImg);
-  track.append(prevSlide, currentSlide, nextSlide);
-  viewport.appendChild(track);
-
-  let index = initialIndex;
-  let touchStartX = 0;
-  let touchCurrentX = 0;
-  let prevTouchX = 0;
-  let prevTouchTime = 0;
-  let releaseVelocity = 0;
-  let isDragging = false;
-  let isAnimating = false;
-  let viewportWidth = 0;
-  let trackOffsetPx = 0;
-  let dragMoved = false;
-  let moveRaf = 0;
-
-  const SWIPE_SETTLE_MS = 440;
-  const SWIPE_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
-
-  const applySlideImage = (imgEl, slideIndex) => {
-    const count = getSlideCount();
-    if (!count) return;
-    const normalized = ((slideIndex % count) + count) % count;
-    const data = getSlideSources(normalized) || {};
-    if (data.candidates && data.candidates.length) {
-      applyImageWithFallbacks(imgEl, data.candidates);
-      return;
-    }
-    imgEl.src = data.src || HOTEL_PLACEHOLDER_IMAGE;
-  };
-
-  const syncAdjacent = () => {
-    const count = getSlideCount();
-    const hideAdjacent = count <= 1;
-    prevSlide.hidden = hideAdjacent;
-    nextSlide.hidden = hideAdjacent;
-    if (hideAdjacent) return;
-    applySlideImage(prevImg, index - 1);
-    applySlideImage(nextImg, index + 1);
-  };
-
-  const measureViewport = () => {
-    viewportWidth = viewport.offsetWidth || mountBefore.parentElement?.offsetWidth || window.innerWidth;
-    return viewportWidth;
-  };
-
-  const centerOffset = () => -viewportWidth;
-
-  const setTrackOffset = (px, { animate = false, durationMs = SWIPE_SETTLE_MS } = {}) => {
-    trackOffsetPx = px;
-    if (animate) {
-      track.classList.remove("is-dragging");
-      track.style.transition = `transform ${durationMs}ms ${SWIPE_EASING}`;
-    } else {
-      track.classList.add("is-dragging");
-      track.style.transition = "none";
-    }
-    track.style.transform = `translate3d(${px}px, 0, 0)`;
-  };
-
-  const snapToCenter = (animate = true) => {
-    measureViewport();
-    setTrackOffset(centerOffset(), { animate, durationMs: SWIPE_SETTLE_MS });
-  };
-
-  const waitForTrackTransition = (durationMs) =>
-    new Promise((resolve) => {
-      let settled = false;
-      const settle = () => {
-        if (settled) return;
-        settled = true;
-        track.removeEventListener("transitionend", onTransitionEnd);
-        resolve();
-      };
-      const onTransitionEnd = (event) => {
-        if (event.target !== track || event.propertyName !== "transform") return;
-        settle();
-      };
-      track.addEventListener("transitionend", onTransitionEnd);
-      window.setTimeout(settle, durationMs + 60);
-    });
-
-  const animateTrackTo = (targetPx) => {
-    measureViewport();
-    const distance = Math.abs(targetPx - trackOffsetPx);
-    const durationMs = Math.min(
-      SWIPE_SETTLE_MS,
-      Math.max(220, Math.round((distance / Math.max(viewportWidth, 1)) * SWIPE_SETTLE_MS))
-    );
-    setTrackOffset(targetPx, { animate: true, durationMs });
-    return waitForTrackTransition(durationMs);
-  };
-
-  const resetTrackInstant = (px) => {
-    track.classList.add("is-dragging");
-    track.style.transition = "none";
-    track.style.transform = `translate3d(${px}px, 0, 0)`;
-    trackOffsetPx = px;
-    void track.offsetHeight;
-  };
-
-  const applyMainSlideImage = (slideIndex, visibleImg) => {
-    const count = getSlideCount();
-    if (!count) return;
-    const normalized = ((slideIndex % count) + count) % count;
-    const data = getSlideSources(normalized) || {};
-    const visibleSrc = visibleImg?.currentSrc || visibleImg?.src || "";
-
-    if (visibleImg && visibleSrc) {
-      const candidates =
-        data.candidates && data.candidates.length
-          ? [visibleSrc, ...data.candidates.filter((candidate) => candidate !== visibleSrc)]
-          : [visibleSrc];
-      applyImageWithFallbacks(mainImageEl, candidates, { preserveVisibleSrc: visibleSrc });
-      return;
-    }
-    applySlideImage(mainImageEl, normalized);
-  };
-
-  const commitIndex = (nextIndex, visibleImg) => {
-    const count = getSlideCount();
-    if (!count) return;
-    index = ((nextIndex % count) + count) % count;
-
-    // Hide during re-index so the old center <img> never flashes before the swap paints.
-    viewport.style.visibility = "hidden";
-    void viewport.offsetHeight;
-    applyMainSlideImage(index, visibleImg);
-    resetTrackInstant(centerOffset());
-    syncAdjacent();
-    void viewport.offsetHeight;
-
-    requestAnimationFrame(() => {
-      viewport.style.visibility = "visible";
-      if (onIndexChange) onIndexChange(index);
-    });
-  };
-
-  const finishDrag = async () => {
-    if (!isDragging || isAnimating) return;
-    isDragging = false;
-    if (moveRaf) {
-      cancelAnimationFrame(moveRaf);
-      moveRaf = 0;
-    }
-    measureViewport();
-
-    const diff = touchCurrentX - touchStartX;
-    const progress = diff / Math.max(viewportWidth, 1);
-    const flickThreshold = 0.35;
-    const count = getSlideCount();
-
-    if (count <= 1) {
-      snapToCenter(true);
-      window.setTimeout(() => {
-        dragMoved = false;
-      }, 80);
-      return;
-    }
-
-    let goNext =
-      diff < -swipeThreshold || releaseVelocity < -flickThreshold || progress < -0.18;
-    let goPrev =
-      diff > swipeThreshold || releaseVelocity > flickThreshold || progress > 0.18;
-    if (goNext && goPrev) {
-      goNext = diff < 0;
-      goPrev = diff > 0;
-    }
-
-    await new Promise((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(resolve));
-    });
-
-    isAnimating = true;
-    try {
-      if (!goNext && !goPrev) {
-        await animateTrackTo(centerOffset());
-        return;
-      }
-
-      const targetPx = goNext ? centerOffset() - viewportWidth : centerOffset() + viewportWidth;
-      const nextIndex = goNext ? index + 1 : index - 1;
-      const visibleImg = goNext ? nextImg : prevImg;
-      await animateTrackTo(targetPx);
-      commitIndex(nextIndex, visibleImg);
-    } finally {
-      isAnimating = false;
-      window.setTimeout(() => {
-        dragMoved = false;
-      }, 80);
-    }
-  };
-
-  viewport.addEventListener(
-    "touchstart",
-    (event) => {
-      if (getSlideCount() <= 1 || isAnimating) return;
-      isDragging = true;
-      dragMoved = false;
-      const now = performance.now();
-      touchStartX = event.touches[0].clientX;
-      touchCurrentX = touchStartX;
-      prevTouchX = touchStartX;
-      prevTouchTime = now;
-      releaseVelocity = 0;
-      measureViewport();
-      track.classList.add("is-dragging");
-      syncAdjacent();
-    },
-    { passive: true }
-  );
-
-  viewport.addEventListener(
-    "touchmove",
-    (event) => {
-      if (!isDragging) return;
-      const now = performance.now();
-      touchCurrentX = event.touches[0].clientX;
-      const dt = Math.max(now - prevTouchTime, 16);
-      releaseVelocity = (touchCurrentX - prevTouchX) / dt;
-      prevTouchX = touchCurrentX;
-      prevTouchTime = now;
-      if (Math.abs(touchCurrentX - touchStartX) > 8) dragMoved = true;
-      if (moveRaf) return;
-      moveRaf = requestAnimationFrame(() => {
-        moveRaf = 0;
-        const moveDiff = touchCurrentX - touchStartX;
-        setTrackOffset(centerOffset() + moveDiff, false);
-      });
-    },
-    { passive: true }
-  );
-
-  viewport.addEventListener("touchend", finishDrag);
-  viewport.addEventListener("touchcancel", finishDrag);
-
-  const setIndex = (nextIndex, options = {}) => {
-    const count = getSlideCount();
-    if (!count) return;
-    index = ((nextIndex % count) + count) % count;
-    applySlideImage(mainImageEl, index);
-    syncAdjacent();
-    measureViewport();
-    resetTrackInstant(centerOffset());
-    if (!options.silent && onIndexChange) onIndexChange(index);
-  };
-
-  applySlideImage(mainImageEl, index);
-  syncAdjacent();
-  requestAnimationFrame(() => {
-    measureViewport();
-    resetTrackInstant(centerOffset());
-  });
-
-  if (typeof ResizeObserver === "function") {
-    const resizeObserver = new ResizeObserver(() => snapToCenter(false));
-    resizeObserver.observe(viewport);
-  }
-
-  return {
-    setIndex,
-    refresh: syncAdjacent,
-    didDrag: () => {
-      const moved = dragMoved;
-      dragMoved = false;
-      return moved;
-    }
-  };
-}
-
 function normalizeLightboxPayload(payload, startIndex = 0) {
   if (Array.isArray(payload)) {
     return {
@@ -1104,7 +803,7 @@ function normalizeLightboxPayload(payload, startIndex = 0) {
   };
 }
 
-function setupImageLightbox(contentEl) {
+async function setupImageLightbox(contentEl) {
   const lightbox = contentEl.querySelector("#hotelImageLightbox");
   const lightboxImage = contentEl.querySelector("#hotelLightboxImage");
   const lightboxCounter = contentEl.querySelector("#hotelLightboxCounter");
@@ -1124,8 +823,10 @@ function setupImageLightbox(contentEl) {
     resolvedAtIndex: new Map()
   };
 
-  const cacheResolvedLightboxSrc = (slideIndex) => {
-    const src = lightboxImage.currentSrc || lightboxImage.src;
+  const cacheResolvedLightboxSrc = (slideIndex, imgEl = null) => {
+    const target =
+      imgEl || lightboxSwipe?.getActiveImage?.() || lightboxImage;
+    const src = target?.currentSrc || target?.src;
     if (!src) return;
     lightboxContext.resolvedAtIndex.set(slideIndex, src);
   };
@@ -1152,16 +853,20 @@ function setupImageLightbox(contentEl) {
     }
   };
 
-  const lightboxSwipe = bindSwipeCarousel({
+  const applyLightboxSlide = (imgEl, slideIndex) => {
+    applyImageWithFallbacks(imgEl, getLightboxSlideSources(slideIndex).candidates);
+  };
+
+  const lightboxSwipe = await bindJanaSwiperCarousel({
     mountBefore: lightboxImage,
     mainImageEl: lightboxImage,
     viewportClass: "lightbox-swipe-viewport",
     getSlideCount: () => currentImages.length,
-    getSlideSources: getLightboxSlideSources,
+    applySlideToImage: applyLightboxSlide,
     onIndexChange: (slideIndex) => {
       currentIndex = slideIndex;
       updateLightboxCounter();
-      cacheResolvedLightboxSrc(slideIndex);
+      cacheResolvedLightboxSrc(slideIndex, lightboxSwipe?.getActiveImage?.());
     }
   });
 
@@ -1175,7 +880,7 @@ function setupImageLightbox(contentEl) {
       applyImageWithFallbacks(lightboxImage, getLightboxSlideSources(normalizedIndex).candidates);
     }
     updateLightboxCounter();
-    cacheResolvedLightboxSrc(normalizedIndex);
+    cacheResolvedLightboxSrc(normalizedIndex, lightboxSwipe?.getActiveImage?.() || lightboxImage);
   };
 
   const closeLightbox = () => {
@@ -1205,18 +910,28 @@ function setupImageLightbox(contentEl) {
 
     if (lightboxSwipe) lightboxSwipe.refresh();
     setLightboxImage(normalizedStart);
+    preloadJanaImages(currentImages);
+    preloadJanaSlideNeighbors(currentImages, normalizedStart);
     lightbox.removeAttribute("hidden");
     document.body.classList.add("lightbox-open");
   };
 
-  lightboxImage.addEventListener("load", () => cacheResolvedLightboxSrc(currentIndex));
+  lightboxImage.addEventListener("load", () => {
+    if (currentIndex === 0) {
+      cacheResolvedLightboxSrc(0, lightboxImage);
+    }
+  });
 
   if (closeBtn) closeBtn.addEventListener("click", closeLightbox);
   if (prevBtn) prevBtn.addEventListener("click", () => setLightboxImage(currentIndex - 1));
   if (nextBtn) nextBtn.addEventListener("click", () => setLightboxImage(currentIndex + 1));
 
   lightbox.addEventListener("click", (event) => {
-    if (event.target === lightbox) closeLightbox();
+    const target = event.target;
+    if (!target || !lightbox.contains(target)) return;
+    if (target.closest(".lightbox-close, .lightbox-nav, .lightbox-counter")) return;
+    if (target.closest(".lightbox-swipe-viewport img, .image-lightbox > img")) return;
+    closeLightbox();
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1253,7 +968,7 @@ function applyImageWithFallbacks(imgEl, candidates, options = {}) {
   imgEl.onerror = () => janaHotelImageFallback(imgEl);
 }
 
-function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = {}) {
+async function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = {}) {
   const mainImageEl = contentEl.querySelector("#hotelMainImage");
   const thumbButtons = Array.from(contentEl.querySelectorAll(".thumb-btn"));
   const maximizeBtn = contentEl.querySelector("#hotelMaximizeBtn");
@@ -1288,12 +1003,16 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = 
     return { candidates: fallbackCandidates };
   };
 
-  const gallerySwipe = bindSwipeCarousel({
+  const applyGallerySlide = (imgEl, slideIndex) => {
+    applyImageWithFallbacks(imgEl, getGallerySlideSources(slideIndex).candidates);
+  };
+
+  const gallerySwipe = await bindJanaSwiperCarousel({
     mountBefore: mainImageEl,
     mainImageEl,
     viewportClass: "hero-swipe-viewport",
     getSlideCount: () => galleryImages.length,
-    getSlideSources: getGallerySlideSources,
+    applySlideToImage: applyGallerySlide,
     onIndexChange: updateGalleryUi,
     initialIndex: Number.isFinite(initialIndex) ? initialIndex : 0
   });
@@ -1319,20 +1038,26 @@ function setupHotelGallery(contentEl, images, hotelName, lightboxApi, options = 
     });
   });
 
-  const openMainLightbox = () =>
+  const openMainLightbox = () => {
+    const activeImg = gallerySwipe?.getActiveImage?.() || mainImageEl;
     lightboxApi.open({
       images: galleryImages,
       imageCandidatesByIndex,
       startIndex: currentIndex,
-      resolvedSrc: mainImageEl.currentSrc || mainImageEl.src
+      resolvedSrc: activeImg.currentSrc || activeImg.src
     });
+  };
   if (prevBtn) prevBtn.addEventListener("click", () => setActiveImage(currentIndex - 1));
   if (nextBtn) nextBtn.addEventListener("click", () => setActiveImage(currentIndex + 1));
   if (maximizeBtn) maximizeBtn.addEventListener("click", openMainLightbox);
-  mainImageEl.addEventListener("click", () => {
-    if (gallerySwipe?.didDrag?.()) return;
-    openMainLightbox();
-  });
+  const heroEl = contentEl.querySelector(".hero--interactive");
+  if (heroEl) {
+    heroEl.addEventListener("click", (event) => {
+      if (!event.target.closest("img")) return;
+      if (gallerySwipe?.didDrag?.()) return;
+      openMainLightbox();
+    });
+  }
 
   document.addEventListener("keydown", (event) => {
     if (!contentEl.isConnected) return;
@@ -1438,8 +1163,9 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
     });
   };
 
-  const bindCardImageViewers = () => {
-    panelBody.querySelectorAll(".room-image-viewer").forEach((viewer) => {
+  const bindCardImageViewers = async () => {
+    const viewers = panelBody.querySelectorAll(".room-image-viewer");
+    for (const viewer of viewers) {
       const sectionKey = viewer.dataset.sectionKey || "rooms";
       const itemIndex = Number(viewer.dataset.itemIndex || 0);
       const section = sectionData[sectionKey];
@@ -1460,18 +1186,25 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
       };
 
-      const cardSwipe = bindSwipeCarousel({
-        mountBefore: mainImageEl,
-        mainImageEl,
-        viewportClass: "room-swipe-viewport",
-        getSlideCount: () => images.length,
-        getSlideSources: (slideIndex) => {
-          const slotCandidates =
-            sectionItem?.imageCandidates?.[slideIndex] || [resolveImagePath(images[slideIndex])];
-          return { candidates: slotCandidates };
-        },
-        onIndexChange: updateViewerUi
-      });
+      const applyCardSlide = (imgEl, slideIndex) => {
+        const slotCandidates =
+          sectionItem?.imageCandidates?.[slideIndex] || [resolveImagePath(images[slideIndex])];
+        applyImageWithFallbacks(imgEl, slotCandidates);
+      };
+
+      let cardSwipe = null;
+      try {
+        cardSwipe = await bindJanaSwiperCarousel({
+          mountBefore: mainImageEl,
+          mainImageEl,
+          viewportClass: "room-swipe-viewport",
+          getSlideCount: () => images.length,
+          applySlideToImage: applyCardSlide,
+          onIndexChange: updateViewerUi
+        });
+      } catch (cardSwipeError) {
+        console.error("Room image carousel failed to initialize:", cardSwipeError);
+      }
 
       const setActiveImage = (nextIndex) => {
         const normalizedIndex = ((nextIndex % images.length) + images.length) % images.length;
@@ -1489,11 +1222,12 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
 
       const openCardLightbox = () => {
         if (cardSwipe?.didDrag?.()) return;
+        const activeImg = cardSwipe?.getActiveImage?.() || mainImageEl;
         lightboxApi.open({
           images,
           imageCandidatesByIndex: sectionItem?.imageCandidates || images.map((src) => [src]),
           startIndex: currentIndex,
-          resolvedSrc: mainImageEl.currentSrc || mainImageEl.src
+          resolvedSrc: activeImg.currentSrc || activeImg.src
         });
       };
 
@@ -1505,12 +1239,10 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         event.stopPropagation();
         setActiveImage(currentIndex + 1);
       });
-      mainImageEl.addEventListener("click", (event) => {
-        event.stopPropagation();
-        openCardLightbox();
-      });
       viewer.addEventListener("click", (event) => {
         if (event.target.closest(".room-image-nav")) return;
+        if (!event.target.closest("img")) return;
+        if (cardSwipe?.didDrag?.()) return;
         openCardLightbox();
       });
       mainImageEl.setAttribute("role", "button");
@@ -1528,7 +1260,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         prevBtn.style.display = "none";
         nextBtn.style.display = "none";
       }
-    });
+    }
   };
 
   const setActiveTab = async (key) => {
@@ -1542,7 +1274,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
     panelTitle.textContent = section.title;
     panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName });
     bindSectionThumbs();
-    bindCardImageViewers();
+    await bindCardImageViewers();
     if (onTabChange) onTabChange(key);
   };
 
@@ -1630,12 +1362,13 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
     ["Island Size", islandSizeDisplay],
     ["Reef Type", hotel.reefType],
     ["No. of Rooms", roomsCount],
-    ["Meal Plan", hotel.mealPlan],
     ["No. of Restaurants", restaurantsCount],
     ["No. of Bars", barsCount],
+    ["Meal Plan", hotel.mealPlan],
     ["Transfer Type", hotel.transferType],
     ["Experience", hotel.experience]
   ];
+  const fullWidthDetailLabels = new Set(["Meal Plan", "Transfer Type", "Experience"]);
 
   const infoSections = {
     rooms: {
@@ -1663,7 +1396,7 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
   if (headerMetaEl) {
     const destinationMarkup = destinationValue
       ? destinationPageUrl
-        ? `<a class="hotel-subtitle-link" href="${destinationPageUrl}">${escapeHtml(destinationValue)}</a>`
+        ? `<a class="hotel-subtitle-link" href="${destinationPageUrl}" aria-label="View ${escapeHtml(destinationValue)} destination page">${escapeHtml(destinationValue)}</a>`
         : `<span class="hotel-subtitle-text">${escapeHtml(destinationValue)}</span>`
       : "";
     headerMetaEl.innerHTML = `
@@ -1707,7 +1440,7 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
     <div class="details-grid">
       ${details
         .map(([label, value]) => `
-          <div class="detail-card${label === "Experience" ? " detail-card--wide" : ""}">
+          <div class="detail-card${label === "Experience" ? " detail-card--wide" : ""}${fullWidthDetailLabels.has(label) ? " detail-card--full" : ""}">
             <span class="label">${escapeHtml(label)}</span>
             ${
               label === "Destination" && destinationPageUrl && value
@@ -1739,23 +1472,30 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
     </div>
   `;
 
-  const lightboxApi = setupImageLightbox(contentEl);
-  setupHotelGallery(contentEl, galleryImages, hotelName, lightboxApi, {
-    imageCandidates: mainImageCandidates,
-    initialIndex: Number(persistedState.galleryIndex || 0),
-    onGalleryIndexChange: (index) => saveHotelViewState(hotel.slug, { galleryIndex: index })
-  });
+  let lightboxApi = { open: () => {} };
+  try {
+    lightboxApi = await setupImageLightbox(contentEl);
+    await setupHotelGallery(contentEl, galleryImages, hotelName, lightboxApi, {
+      imageCandidates: mainImageCandidates,
+      initialIndex: Number(persistedState.galleryIndex || 0),
+      onGalleryIndexChange: (index) => saveHotelViewState(hotel.slug, { galleryIndex: index })
+    });
+  } catch (carouselError) {
+    console.error("Hotel image carousel failed to initialize:", carouselError);
+  }
   animateNumericDetailValues(contentEl);
 
   if (onPrimaryReady) onPrimaryReady();
 
-  void setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
+  try {
+    await setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
     initialTab: String(persistedState.activeTab || "rooms"),
     hotelName,
     onTabChange: (tabKey) => saveHotelViewState(hotel.slug, { activeTab: tabKey })
-  }).catch((error) => {
-    console.error("Failed to initialize hotel info tabs:", error);
-  });
+    });
+  } catch (tabsError) {
+    console.error("Failed to initialize hotel info tabs:", tabsError);
+  }
 }
 
 async function initHotelsRoutePage() {

@@ -1155,9 +1155,14 @@ function openModal(destinationId) {
 
     currentImages = dest.images;
     currentSlide = 0;
-    
-    updateCarouselImage();
+
+    if (typeof window.preloadCatalogImages === 'function') {
+        window.preloadCatalogImages(currentImages);
+    }
+
     createCarouselDots();
+    rebuildCatalogSwipers();
+    updateDots();
 
     document.getElementById('modalTitle').textContent = dest.title;
     document.getElementById('modalDescription').textContent = dest.description;
@@ -1185,19 +1190,53 @@ function bookCurrentPackageViaWhatsApp() {
     window.open(whatsappUrl, '_blank', 'noopener');
 }
 
-function updateCarouselImage() {
-    document.getElementById('modalImage').src = currentImages[currentSlide];
-    updateDots();
-    updateLightbox();
-    updateCarouselAdjacentImages();
+let carouselSwiperApi = null;
+let lightboxSwiperApi = null;
+let catalogSwiperSyncLock = false;
+
+function normalizeCatalogSlide(index) {
+    if (!currentImages.length) return 0;
+    return ((index % currentImages.length) + currentImages.length) % currentImages.length;
 }
 
-function updateCarouselAdjacentImages() {
-    const prevIndex = currentSlide === 0 ? currentImages.length - 1 : currentSlide - 1;
-    const nextIndex = currentSlide === currentImages.length - 1 ? 0 : currentSlide + 1;
-    
-    document.getElementById('carouselPrevImage').src = currentImages[prevIndex];
-    document.getElementById('carouselNextImage').src = currentImages[nextIndex];
+function setCatalogSlide(index, source = 'api') {
+    if (catalogSwiperSyncLock) return;
+    catalogSwiperSyncLock = true;
+    currentSlide = normalizeCatalogSlide(index);
+
+    if (source !== 'carousel' && carouselSwiperApi && !lightboxOpen) {
+        carouselSwiperApi.slideTo(currentSlide, 0);
+    }
+    if (source !== 'lightbox' && lightboxSwiperApi && lightboxOpen) {
+        lightboxSwiperApi.slideTo(currentSlide, 0);
+    }
+
+    updateDots();
+    if (lightboxOpen) {
+        const counter = document.getElementById('lightboxCounter');
+        if (counter && currentImages.length) {
+            counter.textContent = `${currentSlide + 1} / ${currentImages.length}`;
+        }
+        resetLightboxMagnify();
+    }
+    catalogSwiperSyncLock = false;
+}
+
+function rebuildCatalogSwipers() {
+    if (carouselSwiperApi) {
+        carouselSwiperApi.rebuild();
+        carouselSwiperApi.slideTo(currentSlide, 0);
+    }
+    if (lightboxSwiperApi) {
+        lightboxSwiperApi.rebuild();
+        if (lightboxOpen) {
+            lightboxSwiperApi.slideTo(currentSlide, 0);
+        }
+    }
+}
+
+function updateCarouselImage() {
+    setCatalogSlide(currentSlide, 'api');
 }
 
 function createCarouselDots() {
@@ -1215,151 +1254,11 @@ function updateDots() {
 }
 
 function changeSlide(direction) {
-    currentSlide += direction;
-    if (currentSlide >= currentImages.length) currentSlide = 0;
-    if (currentSlide < 0) currentSlide = currentImages.length - 1;
-    updateCarouselImage();
+    setCatalogSlide(currentSlide + direction, 'api');
 }
 
 function goToSlide(index) {
-    currentSlide = index;
-    updateCarouselImage();
-}
-
-// Carousel swipe for mobile
-let carouselTouchStartX = 0;
-let carouselTouchCurrentX = 0;
-let isCarouselSwiping = false;
-const carouselSwipeThreshold = 50;
-const carouselSwipeContainer = document.getElementById('carouselSwipeContainer');
-
-carouselSwipeContainer.addEventListener('touchstart', function(e) {
-    carouselTouchStartX = e.touches[0].clientX;
-    carouselTouchCurrentX = carouselTouchStartX;
-    isCarouselSwiping = true;
-    carouselSwipeContainer.classList.add('swiping');
-    updateCarouselAdjacentImages();
-}, { passive: true });
-
-carouselSwipeContainer.addEventListener('touchmove', function(e) {
-    if (!isCarouselSwiping) return;
-    carouselTouchCurrentX = e.touches[0].clientX;
-    const diff = carouselTouchCurrentX - carouselTouchStartX;
-    
-    document.getElementById('carouselSlideMain').style.transform = `translateX(${diff}px)`;
-    document.getElementById('carouselSlidePrev').style.transform = `translateX(calc(-100% + ${diff}px))`;
-    document.getElementById('carouselSlideNext').style.transform = `translateX(calc(100% + ${diff}px))`;
-}, { passive: true });
-
-carouselSwipeContainer.addEventListener('touchend', async function() {
-    if (!isCarouselSwiping) return;
-    isCarouselSwiping = false;
-    carouselSwipeContainer.classList.remove('swiping');
-
-    const diff = carouselTouchCurrentX - carouselTouchStartX;
-
-    if (Math.abs(diff) > carouselSwipeThreshold) {
-        if (diff > 0) {
-            await animateCarouselSwipe('right');
-        } else {
-            await animateCarouselSwipe('left');
-        }
-    } else {
-        await resetCarouselSwipePositions();
-    }
-}, { passive: true });
-
-const SWIPE_SETTLE_MS = 440;
-const SWIPE_SETTLE_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
-
-function waitForTransformTransition(el, durationMs) {
-    return new Promise((resolve) => {
-        let settled = false;
-        const settle = () => {
-            if (settled) return;
-            settled = true;
-            el.removeEventListener('transitionend', onEnd);
-            resolve();
-        };
-        const onEnd = (event) => {
-            if (event.target !== el || event.propertyName !== 'transform') return;
-            settle();
-        };
-        el.addEventListener('transitionend', onEnd);
-        setTimeout(settle, durationMs + 60);
-    });
-}
-
-async function animateCarouselSwipe(direction) {
-    const mainSlide = document.getElementById('carouselSlideMain');
-    const prevSlide = document.getElementById('carouselSlidePrev');
-    const nextSlide = document.getElementById('carouselSlideNext');
-    const mainImage = document.getElementById('modalImage');
-    const prevImage = document.getElementById('carouselPrevImage');
-    const nextImage = document.getElementById('carouselNextImage');
-    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
-
-    mainSlide.style.transition = transition;
-    prevSlide.style.transition = transition;
-    nextSlide.style.transition = transition;
-
-    if (direction === 'right') {
-        mainSlide.style.transform = 'translateX(100%)';
-        prevSlide.style.transform = 'translateX(0)';
-    } else {
-        mainSlide.style.transform = 'translateX(-100%)';
-        nextSlide.style.transform = 'translateX(0)';
-    }
-
-    await waitForTransformTransition(mainSlide, SWIPE_SETTLE_MS);
-
-    if (direction === 'right') {
-        currentSlide--;
-        if (currentSlide < 0) currentSlide = currentImages.length - 1;
-    } else {
-        currentSlide++;
-        if (currentSlide >= currentImages.length) currentSlide = 0;
-    }
-
-    const visibleSrc =
-        (direction === 'right' ? prevImage : nextImage)?.currentSrc ||
-        (direction === 'right' ? prevImage : nextImage)?.src;
-    mainImage.src = visibleSrc || currentImages[currentSlide];
-
-    mainSlide.style.transition = 'none';
-    prevSlide.style.transition = 'none';
-    nextSlide.style.transition = 'none';
-    mainSlide.style.transform = 'translateX(0)';
-    prevSlide.style.transform = 'translateX(-100%)';
-    nextSlide.style.transform = 'translateX(100%)';
-    mainSlide.offsetHeight;
-    mainSlide.style.transition = '';
-    prevSlide.style.transition = '';
-    nextSlide.style.transition = '';
-
-    updateDots();
-    updateCarouselAdjacentImages();
-    updateLightbox();
-}
-
-async function resetCarouselSwipePositions() {
-    const mainSlide = document.getElementById('carouselSlideMain');
-    const prevSlide = document.getElementById('carouselSlidePrev');
-    const nextSlide = document.getElementById('carouselSlideNext');
-    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
-
-    mainSlide.style.transition = transition;
-    prevSlide.style.transition = transition;
-    nextSlide.style.transition = transition;
-    mainSlide.style.transform = 'translateX(0)';
-    prevSlide.style.transform = 'translateX(-100%)';
-    nextSlide.style.transform = 'translateX(100%)';
-
-    await waitForTransformTransition(mainSlide, SWIPE_SETTLE_MS);
-
-    mainSlide.style.transition = '';
-    prevSlide.style.transition = '';
-    nextSlide.style.transition = '';
+    setCatalogSlide(index, 'api');
 }
 
 // Lightbox: fullscreen view with cursor-follow magnify on the image (desktop only)
@@ -1368,7 +1267,7 @@ let lightboxScrollPosition = 0;
 const LIGHTBOX_MAGNIFY_SCALE = 2.25;
 
 function resetLightboxMagnify() {
-    const image = document.getElementById('lightboxImage');
+    const image = lightboxSwiperApi?.getActiveImage?.() || document.querySelector('#lightboxSwipeContainer img');
     if (!image) return;
     image.style.transform = '';
     image.style.transformOrigin = '';
@@ -1376,8 +1275,8 @@ function resetLightboxMagnify() {
 
 function onLightboxImageMouseMove(e) {
     if (!lightboxOpen || isMobile()) return;
-    const container = document.getElementById('lightboxContainer');
-    const img = document.getElementById('lightboxImage');
+    const container = document.getElementById('lightboxSwipeContainer');
+    const img = lightboxSwiperApi?.getActiveImage?.() || document.getElementById('lightboxImage');
     if (!container || !img || !img.complete || !img.naturalWidth) return;
     const containerRect = container.getBoundingClientRect();
     const x = e.clientX - containerRect.left;
@@ -1393,13 +1292,12 @@ function onLightboxImageMouseLeave() {
 }
 
 function initLightboxMagnifyListeners() {
-    const img = document.getElementById('lightboxImage');
-    const container = document.getElementById('lightboxContainer');
-    if (!img || !container) return;
+    const container = document.getElementById('lightboxSwipeContainer');
+    if (!container) return;
     container.addEventListener('mousemove', onLightboxImageMouseMove);
     container.addEventListener('mouseleave', onLightboxImageMouseLeave);
-    img.addEventListener('click', function (e) {
-        if (lightboxOpen) e.stopPropagation();
+    container.addEventListener('click', function (e) {
+        if (lightboxOpen && e.target.closest('img')) e.stopPropagation();
     });
 }
 initLightboxMagnifyListeners();
@@ -1414,7 +1312,6 @@ function openLightbox() {
     }
 
     resetLightboxMagnify();
-    document.getElementById('lightboxImage').src = currentImages[currentSlide];
     document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
     document.getElementById('lightboxOverlay').classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -1423,24 +1320,15 @@ function openLightbox() {
     document.body.style.top = `-${lightboxScrollPosition}px`;
     document.documentElement.style.overflow = 'hidden';
     lightboxOpen = true;
-
-    // Load adjacent images for swipe preview
-    if (typeof updateAdjacentImages === 'function') {
-        updateAdjacentImages();
+    if (typeof window.preloadCatalogImages === 'function') {
+        window.preloadCatalogImages(currentImages);
     }
-    resetSwipePositionsInstant();
+    setCatalogSlide(currentSlide, 'api');
 }
 
 function updateLightbox() {
     if (lightboxOpen) {
-        document.getElementById('lightboxImage').src = currentImages[currentSlide];
-        document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
-        resetLightboxMagnify();
-
-        // Update adjacent images for swipe
-        if (typeof updateAdjacentImages === 'function') {
-            updateAdjacentImages();
-        }
+        setCatalogSlide(currentSlide, 'api');
     }
 }
 
@@ -1479,148 +1367,63 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowRight' && (lightboxOpen || document.getElementById('modalOverlay').classList.contains('active'))) changeSlide(1);
 });
 
-// Touch swipe for mobile lightbox navigation
-let touchStartX = 0;
-let touchCurrentX = 0;
-let isSwiping = false;
-const swipeThreshold = 50;
-const swipeContainer = document.getElementById('lightboxSwipeContainer');
+async function initCatalogSwipers() {
+    const { createJanaGallerySwiper, ensureSwiperLoaded, preloadJanaImages } = await import('./jana-swiper.js');
+    await ensureSwiperLoaded();
 
-function updateAdjacentImages() {
-    const prevIndex = currentSlide === 0 ? currentImages.length - 1 : currentSlide - 1;
-    const nextIndex = currentSlide === currentImages.length - 1 ? 0 : currentSlide + 1;
-    
-    document.getElementById('lightboxPrevImage').src = currentImages[prevIndex];
-    document.getElementById('lightboxNextImage').src = currentImages[nextIndex];
-}
+    const carouselEl = document.getElementById('carouselSwipeContainer');
+    const lightboxEl = document.getElementById('lightboxSwipeContainer');
+    if (!carouselEl || !lightboxEl) return;
 
-swipeContainer.addEventListener('touchstart', function(e) {
-    touchStartX = e.touches[0].clientX;
-    touchCurrentX = touchStartX;
-    isSwiping = true;
-    swipeContainer.classList.add('swiping');
-    updateAdjacentImages();
-}, { passive: true });
+    const escapeAttr = (value) =>
+        String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('"', '&quot;')
+            .replaceAll('<', '&lt;');
 
-swipeContainer.addEventListener('touchmove', function(e) {
-    if (!isSwiping) return;
-    touchCurrentX = e.touches[0].clientX;
-    const diff = touchCurrentX - touchStartX;
-    
-    // Move all three containers
-    document.getElementById('lightboxContainer').style.transform = `translateX(${diff}px)`;
-    document.getElementById('lightboxPrevContainer').style.transform = `translateX(calc(-100% + ${diff}px))`;
-    document.getElementById('lightboxNextContainer').style.transform = `translateX(calc(100% + ${diff}px))`;
-}, { passive: true });
+    carouselSwiperApi = await createJanaGallerySwiper(carouselEl, {
+        getImages: () => currentImages,
+        getInitialIndex: () => currentSlide,
+        slideClass: 'carousel-slide',
+        onIndexChange: (index) => {
+            setCatalogSlide(index, 'carousel');
+        },
+        renderSlideInner: (src) =>
+            `<img src="${escapeAttr(src)}" alt="" draggable="false" decoding="async"><div class="expand-hint">Click to expand</div>`
+    });
 
-swipeContainer.addEventListener('touchend', async function() {
-    if (!isSwiping) return;
-    isSwiping = false;
-    swipeContainer.classList.remove('swiping');
+    carouselEl.addEventListener('click', (event) => {
+        if (carouselSwiperApi?.didDrag?.()) return;
+        if (!event.target.closest('img')) return;
+        openLightbox();
+    });
 
-    const diff = touchCurrentX - touchStartX;
-
-    if (Math.abs(diff) > swipeThreshold) {
-        if (diff > 0) {
-            await animateSwipe('right');
-        } else {
-            await animateSwipe('left');
+    lightboxSwiperApi = await createJanaGallerySwiper(lightboxEl, {
+        mode: 'lightbox',
+        getImages: () => currentImages,
+        getInitialIndex: () => currentSlide,
+        slideClass: 'lightbox-image-container',
+        onIndexChange: (index) => {
+            setCatalogSlide(index, 'lightbox');
+        },
+        renderSlideInner: (src, slideIndex, total, initialIndex) => {
+            const norm = total > 0 ? ((initialIndex % total) + total) % total : 0;
+            const prev = total > 0 ? (norm - 1 + total) % total : 0;
+            const next = total > 0 ? (norm + 1) % total : 0;
+            const priority =
+                slideIndex === norm || slideIndex === prev || slideIndex === next
+                    ? ' fetchpriority="high"'
+                    : '';
+            return `<img src="${escapeAttr(src)}" alt="" draggable="false" loading="eager" decoding="async"${priority}>`;
         }
-    } else {
-        await resetSwipePositions();
-    }
-}, { passive: true });
+    });
 
-async function animateSwipe(direction) {
-    const mainContainer = document.getElementById('lightboxContainer');
-    const prevContainer = document.getElementById('lightboxPrevContainer');
-    const nextContainer = document.getElementById('lightboxNextContainer');
-    const mainImage = document.getElementById('lightboxImage');
-    const prevImage = document.getElementById('lightboxPrevImage');
-    const nextImage = document.getElementById('lightboxNextImage');
-    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
-
-    mainContainer.style.transition = transition;
-    prevContainer.style.transition = transition;
-    nextContainer.style.transition = transition;
-
-    if (direction === 'right') {
-        mainContainer.style.transform = 'translateX(100%)';
-        prevContainer.style.transform = 'translateX(0)';
-    } else {
-        mainContainer.style.transform = 'translateX(-100%)';
-        nextContainer.style.transform = 'translateX(0)';
-    }
-
-    await waitForTransformTransition(mainContainer, SWIPE_SETTLE_MS);
-
-    if (direction === 'right') {
-        currentSlide--;
-        if (currentSlide < 0) currentSlide = currentImages.length - 1;
-    } else {
-        currentSlide++;
-        if (currentSlide >= currentImages.length) currentSlide = 0;
-    }
-
-    const visibleSrc =
-        (direction === 'right' ? prevImage : nextImage)?.currentSrc ||
-        (direction === 'right' ? prevImage : nextImage)?.src;
-    mainImage.src = visibleSrc || currentImages[currentSlide];
-    document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
-    resetLightboxMagnify();
-
-    mainContainer.style.transition = 'none';
-    prevContainer.style.transition = 'none';
-    nextContainer.style.transition = 'none';
-    mainContainer.style.transform = 'translateX(0)';
-    prevContainer.style.transform = 'translateX(-100%)';
-    nextContainer.style.transform = 'translateX(100%)';
-    mainContainer.offsetHeight;
-    mainContainer.style.transition = '';
-    prevContainer.style.transition = '';
-    nextContainer.style.transition = '';
-
-    updateAdjacentImages();
-    updateDots();
-    document.getElementById('modalImage').src = currentImages[currentSlide];
+    window.preloadCatalogImages = (urls) => preloadJanaImages(urls);
 }
 
-function resetSwipePositionsInstant() {
-    const mainContainer = document.getElementById('lightboxContainer');
-    const prevContainer = document.getElementById('lightboxPrevContainer');
-    const nextContainer = document.getElementById('lightboxNextContainer');
-    if (!mainContainer || !prevContainer || !nextContainer) return;
-
-    mainContainer.style.transition = 'none';
-    prevContainer.style.transition = 'none';
-    nextContainer.style.transition = 'none';
-    mainContainer.style.transform = 'translateX(0)';
-    prevContainer.style.transform = 'translateX(-100%)';
-    nextContainer.style.transform = 'translateX(100%)';
-    mainContainer.offsetHeight;
-    mainContainer.style.transition = '';
-    prevContainer.style.transition = '';
-    nextContainer.style.transition = '';
-}
-
-async function resetSwipePositions() {
-    const mainContainer = document.getElementById('lightboxContainer');
-    const prevContainer = document.getElementById('lightboxPrevContainer');
-    const nextContainer = document.getElementById('lightboxNextContainer');
-    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
-
-    mainContainer.style.transition = transition;
-    prevContainer.style.transition = transition;
-    nextContainer.style.transition = transition;
-    mainContainer.style.transform = 'translateX(0)';
-    prevContainer.style.transform = 'translateX(-100%)';
-    nextContainer.style.transform = 'translateX(100%)';
-
-    await waitForTransformTransition(mainContainer, SWIPE_SETTLE_MS);
-
-    mainContainer.style.transition = '';
-    prevContainer.style.transition = '';
-    nextContainer.style.transition = '';
-}
-
-applyHotelJsonDataToHotelsPage();
+initCatalogSwipers()
+    .then(() => applyHotelJsonDataToHotelsPage())
+    .catch((error) => {
+        console.error('Failed to initialize Swiper carousels:', error);
+        applyHotelJsonDataToHotelsPage();
+    });

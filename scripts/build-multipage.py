@@ -42,6 +42,8 @@ def script_slice(start_sub: str, end_sub: Optional[str] = None) -> str:
     return script_all[s:].strip()
 
 
+SITE_DEVELOPER_CREDIT = "<!-- Website designed and developed by Build Your Web https://buildyourweb.ae -->"
+
 GATE_HEAD = """    <!-- JANA_DEV_SITE_PASSWORD_GATE START — delete this block + /js/site-access-gate.js when live -->
     <script>
         (function () {
@@ -66,20 +68,7 @@ NAV = """    <header class="nav-wrapper">
                 <li><a href="/services/">Services</a></li>
                 <li><a href="/contact/">Contact</a></li>
             </ul>
-            <div class="mobile-menu" onclick="toggleMenu()">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
         </nav>
-        <ul class="nav-links mobile-nav">
-            <li><a href="/">Home</a></li>
-            <li><a href="/about/">About</a></li>
-            <li><a href="/destinations/">Destinations</a></li>
-            <li><a href="/hotels/">Hotels</a></li>
-            <li><a href="/services/">Services</a></li>
-            <li><a href="/contact/">Contact</a></li>
-        </ul>
     </header>"""
 
 FOOTER = between("<!-- Footer -->", "    <script>\n        window.JANA_HOTELS_SHEET_URL")
@@ -102,6 +91,7 @@ def abs_paths(html: str) -> str:
 def page_shell(title: str, description: str, body: str, extra_head: str = "", scripts: str = "") -> str:
     return f"""<!DOCTYPE html>
 <html lang="en">
+{SITE_DEVELOPER_CREDIT}
 <head>
     <meta charset="UTF-8">
 {GATE_HEAD}
@@ -276,38 +266,38 @@ pages = {
         "JANA Travel - Your Gateway to Paradise",
         "Explore JANA Travel hotels and curated paradise stays.",
         hero + "\n" + gallery,
-        scripts="    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/gallery.js\"></script>",
+        scripts="    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/site-mobile-nav.js\"></script>\n    <script src=\"/js/gallery.js\"></script>",
     ),
     ROOT / "about" / "index.html": page_shell(
         "About | JANA Travel",
         "About JANA Travel — your trusted partner for luxury Indian Ocean holidays.",
         f"    <main class=\"page-main about\">\n{about}\n    </main>",
-        scripts="    <script src=\"/js/site-common.js\"></script>",
+        scripts="    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/site-mobile-nav.js\"></script>",
     ),
     ROOT / "destinations" / "index.html": page_shell(
         "Destinations | JANA Travel",
         "Explore Maldives, Seychelles, and Mauritius with JANA Travel.",
         destinations_body,
-        scripts="    <script src=\"/js/site-common.js\"></script>",
+        scripts="    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/site-mobile-nav.js\"></script>",
     ),
     ROOT / "hotels" / "index.html": page_shell(
         "Hotels | JANA Travel",
         "Browse and filter luxury hotel packages across the Indian Ocean.",
         f"    <main class=\"page-main hotels\">\n{hotels_section}\n    </main>\n{modal}",
-        scripts="    <script type=\"module\" src=\"/js/loading-progress.js\"></script>\n    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/hotels-catalog.js\"></script>",
+        scripts="    <script type=\"module\" src=\"/js/loading-progress.js\"></script>\n    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/site-mobile-nav.js\"></script>\n    <script src=\"/js/hotels-catalog.js\"></script>",
     ),
     ROOT / "services" / "index.html": page_shell(
         "Services | JANA Travel",
         "Luxury travel services from JANA Travel.",
         f"    <main class=\"page-main services\">\n{services}\n    </main>",
-        scripts="    <script src=\"/js/site-common.js\"></script>",
+        scripts="    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/site-mobile-nav.js\"></script>",
     ),
     ROOT / "contact" / "index.html": page_shell(
         "Contact | JANA Travel",
         "Contact JANA Travel to plan your dream vacation.",
         f"    <main class=\"page-main contact\">\n{contact}\n    </main>",
         extra_head='    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/css/intlTelInput.css">\n',
-        scripts="    <script src=\"https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/js/intlTelInput.min.js\"></script>\n    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/contact-page.js\"></script>",
+        scripts="    <script src=\"https://cdn.jsdelivr.net/npm/intl-tel-input@27.0.0/dist/js/intlTelInput.min.js\"></script>\n    <script src=\"/js/site-common.js\"></script>\n    <script src=\"/js/site-mobile-nav.js\"></script>\n    <script src=\"/js/contact-page.js\"></script>",
     ),
 }
 

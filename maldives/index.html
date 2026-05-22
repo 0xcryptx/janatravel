@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- Website designed and developed by Build Your Web https://buildyourweb.ae -->
 <head>
     <meta charset="UTF-8">
     <!-- JANA_DEV_SITE_PASSWORD_GATE START — delete this block + ../js/site-access-gate.js when live -->
@@ -11,7 +12,7 @@
         })();
     </script>
     <!-- JANA_DEV_SITE_PASSWORD_GATE END (head) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Maldives | JANA Travel</title>
     <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -165,18 +166,7 @@
             background: linear-gradient(180deg, rgba(224, 247, 250, 0.72), rgba(240, 253, 255, 0.86));
             border: 1px solid rgba(0, 139, 139, 0.18);
             border-radius: 12px;
-            padding: 0.45rem 0.55rem;
             box-shadow: 0 6px 16px rgba(0, 139, 139, 0.08);
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .weather-table {
-            width: max-content;
-            border-collapse: separate;
-            border-spacing: 0;
-            min-width: 620px;
-            font-size: 0.78rem;
-            color: #2e4f54;
         }
         .weather-table th,
         .weather-table td {
@@ -194,10 +184,6 @@
             text-align: left;
             font-weight: 700;
             color: #1f6168;
-            position: sticky;
-            left: 0;
-            background: rgba(230, 249, 252, 0.94);
-            backdrop-filter: blur(1px);
         }
         .weather-table tbody tr:last-child td {
             border-bottom: none;
@@ -223,16 +209,16 @@
         @media (max-width: 880px) {
             .flow-row, .flow-row.reverse { grid-template-columns: 1fr; }
             .flow-row.reverse .flow-copy, .flow-row.reverse .flow-media { order: initial; }
-            .travel-modes-grid { grid-template-columns: 1fr; }
             .map-end-layout { display: flex; flex-direction: column; }
             .map-center, .area-left, .area-right { grid-column: auto; grid-row: auto; }
             .map-center { order: -1; }
         }
     </style>
+    <link rel="stylesheet" href="/css/destination-country.css">
 </head>
 <body>
     <header class="topbar">
-        <a class="back-link" href="/explore/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">&#8592; Back</a>
+        <a class="back-link" href="/destinations/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">&#8592; Back</a>
         <a class="brand" href="/" onclick="sessionStorage.removeItem('jana:indexScrollY')">
             <img src="/public/JanaTravelLogo.webp" alt="JANA Travel logo">
             <span class="brand-text">JANA <span>Travel</span></span>
@@ -258,57 +244,73 @@
                 <div class="weather-guide" aria-label="Monthly Weather Guide">
                     <h3>Monthly Weather Guide</h3>
                     <div class="weather-guide-card">
-                        <table class="weather-table">
-                            <thead>
-                                <tr>
-                                    <th class="label-col">Month</th>
-                                    <th>Jan</th>
-                                    <th>Feb</th>
-                                    <th>Mar</th>
-                                    <th>Apr</th>
-                                    <th>May</th>
-                                    <th>Jun</th>
-                                    <th>Jul</th>
-                                    <th>Aug</th>
-                                    <th>Sep</th>
-                                    <th>Oct</th>
-                                    <th>Nov</th>
-                                    <th>Dec</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="label-col">Avg. Temp</td>
-                                    <td>28&deg;C</td>
-                                    <td>29&deg;C</td>
-                                    <td>29&deg;C</td>
-                                    <td>30&deg;C</td>
-                                    <td>29&deg;C</td>
-                                    <td>28&deg;C</td>
-                                    <td>28&deg;C</td>
-                                    <td>28&deg;C</td>
-                                    <td>28&deg;C</td>
-                                    <td>28&deg;C</td>
-                                    <td>28&deg;C</td>
-                                    <td>28&deg;C</td>
-                                </tr>
-                                <tr>
-                                    <td class="label-col">Rain Chance</td>
-                                    <td>20%</td>
-                                    <td>15%</td>
-                                    <td>20%</td>
-                                    <td>30%</td>
-                                    <td>55%</td>
-                                    <td>60%</td>
-                                    <td>55%</td>
-                                    <td>60%</td>
-                                    <td>65%</td>
-                                    <td>60%</td>
-                                    <td>45%</td>
-                                    <td>30%</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="weather-table-split">
+                            <table class="weather-table weather-table--labels">
+                                <thead>
+                                    <tr>
+                                        <th scope="row">Month</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">Avg. Temp</th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Rain Chance</th>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="weather-table-scroll" tabindex="0" aria-label="Scroll weather by month">
+                                <table class="weather-table weather-table--months">
+                                    <thead>
+                                        <tr>
+                                            <th>Jan</th>
+                                            <th>Feb</th>
+                                            <th>Mar</th>
+                                            <th>Apr</th>
+                                            <th>May</th>
+                                            <th>Jun</th>
+                                            <th>Jul</th>
+                                            <th>Aug</th>
+                                            <th>Sep</th>
+                                            <th>Oct</th>
+                                            <th>Nov</th>
+                                            <th>Dec</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>28&deg;C</td>
+                                            <td>29&deg;C</td>
+                                            <td>29&deg;C</td>
+                                            <td>30&deg;C</td>
+                                            <td>29&deg;C</td>
+                                            <td>28&deg;C</td>
+                                            <td>28&deg;C</td>
+                                            <td>28&deg;C</td>
+                                            <td>28&deg;C</td>
+                                            <td>28&deg;C</td>
+                                            <td>28&deg;C</td>
+                                            <td>28&deg;C</td>
+                                        </tr>
+                                        <tr>
+                                            <td>20%</td>
+                                            <td>15%</td>
+                                            <td>20%</td>
+                                            <td>30%</td>
+                                            <td>55%</td>
+                                            <td>60%</td>
+                                            <td>55%</td>
+                                            <td>60%</td>
+                                            <td>65%</td>
+                                            <td>60%</td>
+                                            <td>45%</td>
+                                            <td>30%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

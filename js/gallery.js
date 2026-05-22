@@ -1,41 +1,86 @@
-const galleryImages = [
-    '/assets/hotel_images/niyama-private-islands-maldives/1.jpg',
-    '/assets/hotel_images/niyama-private-islands-maldives/2.jpg',
-    '/assets/hotel_images/niyama-private-islands-maldives/3.jpg',
-    '/assets/hotel_images/niyama-private-islands-maldives/4.jpg',
-    '/assets/hotel_images/kandima-maldives/1.jpg',
-    '/assets/hotel_images/kandima-maldives/2.avif',
-    '/assets/hotel_images/kandima-maldives/3.jpg',
-    '/assets/hotel_images/kandima-maldives/4.png',
-    '/assets/hotel_images/waldorf-astoria-maldives-ithaafushi/1.jpg',
-    '/assets/hotel_images/waldorf-astoria-maldives-ithaafushi/2.jpg',
-    '/assets/hotel_images/waldorf-astoria-maldives-ithaafushi/3.avif',
-    '/assets/hotel_images/waldorf-astoria-maldives-ithaafushi/4.jpeg',
-    '/assets/hotel_images/jumeirah-olhahali-island/1.jpg',
-    '/assets/hotel_images/jumeirah-olhahali-island/2.jpg',
-    '/assets/hotel_images/jumeirah-olhahali-island/3.jpg',
-    '/assets/hotel_images/jumeirah-olhahali-island/4.avif',
-    '/assets/hotel_images/intercontinental-maldives-maamunagau-resort/1.avif',
-    '/assets/hotel_images/intercontinental-maldives-maamunagau-resort/2.jpg',
-    '/assets/hotel_images/intercontinental-maldives-maamunagau-resort/3.webp',
-    '/assets/hotel_images/intercontinental-maldives-maamunagau-resort/4.webp',
-    '/assets/hotel_images/radisson-blu-resort-maldives/1.webp',
-    '/assets/hotel_images/radisson-blu-resort-maldives/2.jpg',
-    '/assets/hotel_images/radisson-blu-resort-maldives/3.webp',
-    '/assets/hotel_images/radisson-blu-resort-maldives/4.jpg'
+import {
+    createJanaGallerySwiper,
+    ensureSwiperLoaded,
+    preloadJanaImages,
+    preloadJanaSlideNeighbors
+} from './jana-swiper.js';
+import { loadAllHotelRootGalleryImages } from './hotel-root-images.js';
+
+/** Collapsed stack preview: 3 Maldives + 2 Seychelles (center card = Maldives hero). */
+const GALLERY_STACK_IMAGES = [
+    '/assets/images/seychelles_1.jpg',
+    '/assets/images/maldives_3.jpg',
+    '/assets/images/maldives_1.jpg',
+    '/assets/images/maldives_2.avif',
+    '/assets/images/seychelles_2.jpg'
 ];
 
-let currentImages = galleryImages;
+let galleryImages = [];
+let currentImages = [];
 let currentSlide = 0;
 let lightboxOpen = false;
 let lightboxScrollPosition = 0;
 let galleryScrollPosition = 0;
 let isGalleryExpanded = false;
+let galleryLightboxSwiper = null;
+let gallerySwiperSyncLock = false;
+let lightboxInitPromise = null;
+let lightboxSuppressCloseUntil = 0;
+const LIGHTBOX_MAGNIFY_SCALE = 2.25;
 
 function openGalleryImage(index) {
+    if (!galleryImages.length) return;
     currentImages = galleryImages;
     currentSlide = index;
-    openLightbox();
+    const runOpen = () => {
+        ensureGalleryLightboxReady()
+            .then(() => openLightbox())
+            .catch((error) => {
+                console.error('Failed to open gallery lightbox:', error);
+            });
+    };
+    // Defer so Android's synthetic click after touchend does not hit the overlay and close it.
+    window.requestAnimationFrame(() => window.requestAnimationFrame(runOpen));
+}
+
+function ensureGalleryLightboxReady() {
+    if (!lightboxInitPromise) {
+        lightboxInitPromise = initGalleryLightboxSwiper();
+    }
+    return lightboxInitPromise;
+}
+
+function normalizeGallerySlide(index) {
+    if (!currentImages.length) return 0;
+    return ((index % currentImages.length) + currentImages.length) % currentImages.length;
+}
+
+function setGallerySlide(index, source = 'api') {
+    if (gallerySwiperSyncLock) return;
+    gallerySwiperSyncLock = true;
+    currentSlide = normalizeGallerySlide(index);
+
+    if (source !== 'lightbox' && galleryLightboxSwiper && lightboxOpen) {
+        galleryLightboxSwiper.slideTo(currentSlide, 0);
+    }
+
+    if (lightboxOpen) {
+        const counter = document.getElementById('lightboxCounter');
+        if (counter && currentImages.length) {
+            counter.textContent = `${currentSlide + 1} / ${currentImages.length}`;
+        }
+        resetLightboxMagnify();
+        preloadJanaSlideNeighbors(currentImages, currentSlide);
+    }
+    gallerySwiperSyncLock = false;
+}
+
+function rebuildGalleryLightbox() {
+    if (!galleryLightboxSwiper) return;
+    galleryLightboxSwiper.rebuild();
+    if (lightboxOpen) {
+        galleryLightboxSwiper.slideTo(currentSlide, 0);
+    }
 }
 
 function openLightbox() {
@@ -43,24 +88,18 @@ function openLightbox() {
     if (!overlay) return;
 
     lightboxScrollPosition = window.scrollY;
-    document.getElementById('lightboxImage').src = currentImages[currentSlide];
-    document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
+    lightboxSuppressCloseUntil = Date.now() + 500;
+    resetLightboxMagnify();
     overlay.classList.add('active');
+    clearGalleryItemHover();
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
     document.body.style.top = `-${lightboxScrollPosition}px`;
     document.documentElement.style.overflow = 'hidden';
     lightboxOpen = true;
-    updateAdjacentImages();
-    resetSwipePositionsInstant();
-}
-
-function updateLightbox() {
-    if (!lightboxOpen) return;
-    document.getElementById('lightboxImage').src = currentImages[currentSlide];
-    document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
-    updateAdjacentImages();
+    preloadJanaImages(currentImages);
+    setGallerySlide(currentSlide, 'api');
 }
 
 function closeLightbox() {
@@ -68,6 +107,7 @@ function closeLightbox() {
     if (!overlay) return;
 
     overlay.classList.remove('active');
+    resetLightboxMagnify();
     document.body.style.overflow = '';
     document.body.style.position = '';
     document.body.style.width = '';
@@ -75,128 +115,90 @@ function closeLightbox() {
     document.documentElement.style.overflow = '';
     window.scrollTo(0, lightboxScrollPosition);
     lightboxOpen = false;
+    clearGalleryItemHover();
 }
 
 function changeSlide(direction) {
-    currentSlide += direction;
-    if (currentSlide >= currentImages.length) currentSlide = 0;
-    if (currentSlide < 0) currentSlide = currentImages.length - 1;
-    updateLightbox();
-}
-
-function updateAdjacentImages() {
-    const prevIndex = currentSlide === 0 ? currentImages.length - 1 : currentSlide - 1;
-    const nextIndex = currentSlide === currentImages.length - 1 ? 0 : currentSlide + 1;
-    const prevImg = document.getElementById('lightboxPrevImage');
-    const nextImg = document.getElementById('lightboxNextImage');
-    if (prevImg) prevImg.src = currentImages[prevIndex];
-    if (nextImg) nextImg.src = currentImages[nextIndex];
-}
-
-const SWIPE_SETTLE_MS = 440;
-const SWIPE_SETTLE_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
-
-function waitForTransformTransition(el, durationMs) {
-    return new Promise((resolve) => {
-        let settled = false;
-        const settle = () => {
-            if (settled) return;
-            settled = true;
-            el.removeEventListener('transitionend', onEnd);
-            resolve();
-        };
-        const onEnd = (event) => {
-            if (event.target !== el || event.propertyName !== 'transform') return;
-            settle();
-        };
-        el.addEventListener('transitionend', onEnd);
-        setTimeout(settle, durationMs + 60);
-    });
-}
-
-async function animateLightboxSwipe(direction) {
-    const mainContainer = document.getElementById('lightboxContainer');
-    const prevContainer = document.getElementById('lightboxPrevContainer');
-    const nextContainer = document.getElementById('lightboxNextContainer');
-    const prevImage = document.getElementById('lightboxPrevImage');
-    const nextImage = document.getElementById('lightboxNextImage');
-    if (!mainContainer || !prevContainer || !nextContainer) return;
-
-    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
-    mainContainer.style.transition = transition;
-    prevContainer.style.transition = transition;
-    nextContainer.style.transition = transition;
-
-    if (direction === 'right') {
-        mainContainer.style.transform = 'translateX(100%)';
-        prevContainer.style.transform = 'translateX(0)';
-    } else {
-        mainContainer.style.transform = 'translateX(-100%)';
-        nextContainer.style.transform = 'translateX(0)';
-    }
-
-    await waitForTransformTransition(mainContainer, SWIPE_SETTLE_MS);
-
-    const visibleSrc =
-        (direction === 'right' ? prevImage : nextImage)?.currentSrc ||
-        (direction === 'right' ? prevImage : nextImage)?.src;
-    changeSlide(direction === 'right' ? -1 : 1);
-    const mainImage = document.getElementById('lightboxImage');
-    if (visibleSrc && mainImage) mainImage.src = visibleSrc;
-
-    mainContainer.style.transition = 'none';
-    prevContainer.style.transition = 'none';
-    nextContainer.style.transition = 'none';
-    mainContainer.style.transform = 'translateX(0)';
-    prevContainer.style.transform = 'translateX(-100%)';
-    nextContainer.style.transform = 'translateX(100%)';
-    mainContainer.offsetHeight;
-    mainContainer.style.transition = '';
-    prevContainer.style.transition = '';
-    nextContainer.style.transition = '';
-}
-
-function resetSwipePositionsInstant() {
-    const mainContainer = document.getElementById('lightboxContainer');
-    const prevContainer = document.getElementById('lightboxPrevContainer');
-    const nextContainer = document.getElementById('lightboxNextContainer');
-    if (!mainContainer || !prevContainer || !nextContainer) return;
-
-    mainContainer.style.transition = 'none';
-    prevContainer.style.transition = 'none';
-    nextContainer.style.transition = 'none';
-    mainContainer.style.transform = 'translateX(0)';
-    prevContainer.style.transform = 'translateX(-100%)';
-    nextContainer.style.transform = 'translateX(100%)';
-    mainContainer.offsetHeight;
-    mainContainer.style.transition = '';
-    prevContainer.style.transition = '';
-    nextContainer.style.transition = '';
-}
-
-async function resetSwipePositions() {
-    const mainContainer = document.getElementById('lightboxContainer');
-    const prevContainer = document.getElementById('lightboxPrevContainer');
-    const nextContainer = document.getElementById('lightboxNextContainer');
-    if (!mainContainer || !prevContainer || !nextContainer) return;
-
-    const transition = `transform ${SWIPE_SETTLE_MS}ms ${SWIPE_SETTLE_EASE}`;
-    mainContainer.style.transition = transition;
-    prevContainer.style.transition = transition;
-    nextContainer.style.transition = transition;
-    mainContainer.style.transform = 'translateX(0)';
-    prevContainer.style.transform = 'translateX(-100%)';
-    nextContainer.style.transform = 'translateX(100%)';
-
-    await waitForTransformTransition(mainContainer, SWIPE_SETTLE_MS);
-
-    mainContainer.style.transition = '';
-    prevContainer.style.transition = '';
-    nextContainer.style.transition = '';
+    setGallerySlide(currentSlide + direction, 'api');
 }
 
 function isMobile() {
     return window.matchMedia('(max-width: 768px)').matches;
+}
+
+function resetLightboxMagnify() {
+    const image =
+        galleryLightboxSwiper?.getActiveImage?.() ||
+        document.querySelector('#lightboxSwipeContainer img');
+    if (!image) return;
+    image.style.transform = '';
+    image.style.transformOrigin = '';
+}
+
+function onLightboxImageMouseMove(e) {
+    if (!lightboxOpen || isMobile()) return;
+    const container = document.getElementById('lightboxSwipeContainer');
+    const img = galleryLightboxSwiper?.getActiveImage?.() || container?.querySelector('img');
+    if (!container || !img || !img.complete || !img.naturalWidth) return;
+    const containerRect = container.getBoundingClientRect();
+    const x = e.clientX - containerRect.left;
+    const y = e.clientY - containerRect.top;
+    const xPct = Math.max(0, Math.min(100, (x / containerRect.width) * 100));
+    const yPct = Math.max(0, Math.min(100, (y / containerRect.height) * 100));
+    img.style.transformOrigin = `${xPct}% ${yPct}%`;
+    img.style.transform = `scale(${LIGHTBOX_MAGNIFY_SCALE})`;
+}
+
+function onLightboxImageMouseLeave() {
+    resetLightboxMagnify();
+}
+
+function initLightboxMagnifyListeners() {
+    const container = document.getElementById('lightboxSwipeContainer');
+    if (!container) return;
+    container.addEventListener('mousemove', onLightboxImageMouseMove);
+    container.addEventListener('mouseleave', onLightboxImageMouseLeave);
+    container.addEventListener('click', (e) => {
+        if (lightboxOpen && e.target.closest('img')) e.stopPropagation();
+    });
+}
+
+async function initGalleryLightboxSwiper() {
+    const container = document.getElementById('lightboxSwipeContainer');
+    if (!container) return;
+
+    await ensureSwiperLoaded();
+    const escapeAttr = (value) =>
+        String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('"', '&quot;')
+            .replaceAll('<', '&lt;');
+
+    galleryLightboxSwiper = await createJanaGallerySwiper(container, {
+        mode: 'lightbox',
+        getImages: () => currentImages,
+        getInitialIndex: () => currentSlide,
+        slideClass: 'lightbox-image-container',
+        onIndexChange: (index) => {
+            setGallerySlide(index, 'lightbox');
+        },
+        renderSlideInner: (src, slideIndex, total, initialIndex) => {
+            const norm = total > 0 ? ((initialIndex % total) + total) % total : 0;
+            const prev = total > 0 ? (norm - 1 + total) % total : 0;
+            const next = total > 0 ? (norm + 1) % total : 0;
+            const priority =
+                slideIndex === norm || slideIndex === prev || slideIndex === next
+                    ? ' fetchpriority="high"'
+                    : '';
+            return `<img src="${escapeAttr(src)}" alt="" draggable="false" loading="eager" decoding="async"${priority}>`;
+        }
+    });
+}
+
+function clearGalleryItemHover() {
+    document.querySelectorAll('.gallery-item.is-touch-hover').forEach((item) => {
+        item.classList.remove('is-touch-hover');
+    });
 }
 
 function initGallery() {
@@ -204,18 +206,44 @@ function initGallery() {
     if (!grid) return;
 
     grid.innerHTML = '';
+    if (!galleryImages.length) {
+        grid.innerHTML =
+            '<p class="gallery-empty">Photos appear for active hotels on the website that have images in their hotel folder root (1–4 or add_image).</p>';
+        return;
+    }
+
     const rotations = [-15, -10, -5, 0, 5, 10, 15, -12, 8, -8, 12, -6];
 
     galleryImages.forEach((src, index) => {
         const item = document.createElement('div');
         item.className = 'gallery-item';
         item.style.setProperty('--rotation', `${rotations[index % rotations.length]}deg`);
-        item.onclick = () => openGalleryImage(index);
+        item.dataset.galleryIndex = String(index);
         item.innerHTML = `
-            <img src="${src}" alt="Gallery Image ${index + 1}">
+            <img src="${src}" alt="Gallery Image ${index + 1}" draggable="false">
             <div class="gallery-overlay"></div>
         `;
+        bindGalleryItemOpen(item, index);
         grid.appendChild(item);
+    });
+}
+
+function bindGalleryItemOpen(item, index) {
+    const open = () => openGalleryImage(index);
+
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            open();
+        }
+    });
+
+    item.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        open();
     });
 }
 
@@ -319,6 +347,16 @@ function collapseGallery() {
     }, items.length * 40 + 200);
 }
 
+function initGalleryStack() {
+    const cards = document.querySelectorAll('#photoStack .stack-card');
+    cards.forEach((card, index) => {
+        const src = GALLERY_STACK_IMAGES[index];
+        if (!src) return;
+        card.style.backgroundImage = `url("${src}")`;
+    });
+    preloadJanaImages(GALLERY_STACK_IMAGES);
+}
+
 function initGalleryTouch() {
     const photoStack = document.getElementById('photoStack');
     if (!photoStack) return;
@@ -332,44 +370,50 @@ function initGalleryTouch() {
     });
 }
 
-function initLightboxSwipe() {
-    const swipeContainer = document.getElementById('lightboxSwipeContainer');
-    if (!swipeContainer) return;
+function initGalleryGridTouch() {
+    const grid = document.getElementById('galleryGrid');
+    if (!grid) return;
 
-    let touchStartX = 0;
-    let touchCurrentX = 0;
-    let isSwiping = false;
-    const swipeThreshold = 50;
+    grid.addEventListener(
+        'touchstart',
+        (e) => {
+            const item = e.target.closest('.gallery-item');
+            clearGalleryItemHover();
+            if (item) item.classList.add('is-touch-hover');
+        },
+        { passive: true }
+    );
 
-    swipeContainer.addEventListener('touchstart', (e) => {
-        if (!lightboxOpen) return;
-        touchStartX = e.touches[0].clientX;
-        touchCurrentX = touchStartX;
-        isSwiping = true;
-        swipeContainer.classList.add('swiping');
-        updateAdjacentImages();
-    }, { passive: true });
+    grid.addEventListener(
+        'touchend',
+        (e) => {
+            const item = e.target.closest('.gallery-item');
+            if (item) item.classList.remove('is-touch-hover');
+        },
+        { passive: true }
+    );
 
-    swipeContainer.addEventListener('touchmove', (e) => {
-        if (!isSwiping) return;
-        touchCurrentX = e.touches[0].clientX;
-        const diff = touchCurrentX - touchStartX;
-        document.getElementById('lightboxContainer').style.transform = `translateX(${diff}px)`;
-        document.getElementById('lightboxPrevContainer').style.transform = `translateX(calc(-100% + ${diff}px))`;
-        document.getElementById('lightboxNextContainer').style.transform = `translateX(calc(100% + ${diff}px))`;
-    }, { passive: true });
+    grid.addEventListener('touchcancel', clearGalleryItemHover);
 
-    swipeContainer.addEventListener('touchend', async () => {
-        if (!isSwiping) return;
-        isSwiping = false;
-        swipeContainer.classList.remove('swiping');
-        const diff = touchCurrentX - touchStartX;
-        if (Math.abs(diff) > swipeThreshold) {
-            await animateLightboxSwipe(diff > 0 ? 'right' : 'left');
-        } else {
-            await resetSwipePositions();
-        }
-    }, { passive: true });
+    document.addEventListener(
+        'touchstart',
+        (e) => {
+            if (lightboxOpen) return;
+            if (!e.target.closest('.gallery-item')) clearGalleryItemHover();
+        },
+        { passive: true }
+    );
+}
+
+function initLightboxOverlayHandlers() {
+    const overlay = document.getElementById('lightboxOverlay');
+    if (!overlay) return;
+
+    overlay.addEventListener('click', (e) => {
+        if (Date.now() < lightboxSuppressCloseUntil) return;
+        if (e.target.closest('.lightbox-close, .lightbox-btn, .lightbox-counter')) return;
+        closeLightbox();
+    });
 }
 
 document.addEventListener('keydown', (e) => {
@@ -379,10 +423,41 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') changeSlide(1);
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+let galleryUiInitialized = false;
+
+async function bootstrapGallery() {
+    galleryImages = await loadAllHotelRootGalleryImages();
+    currentImages = galleryImages;
+    currentSlide = 0;
+
     initGallery();
-    initGalleryTouch();
-    initLightboxSwipe();
+    if (!galleryUiInitialized) {
+        initGalleryTouch();
+        initGalleryGridTouch();
+        initLightboxMagnifyListeners();
+        initLightboxOverlayHandlers();
+        galleryUiInitialized = true;
+    }
+
+    if (galleryImages.length) {
+        preloadJanaImages(galleryImages);
+    }
+
+    if (galleryLightboxSwiper) {
+        rebuildGalleryLightbox();
+        if (!lightboxOpen) {
+            galleryLightboxSwiper.slideTo(0, 0);
+        }
+    } else {
+        await ensureGalleryLightboxReady();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initGalleryStack();
+    bootstrapGallery().catch((error) => {
+        console.error('Failed to initialize gallery:', error);
+    });
 });
 
 window.expandGallery = expandGallery;

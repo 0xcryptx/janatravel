@@ -22,7 +22,7 @@ function showFieldError(field, message) {
     field.classList.add('is-error');
     const errorEl = ensureFieldErrorEl(field);
     if (!errorEl) return;
-    errorEl.style.top = `${field.offsetTop + (field.offsetHeight / 2)}px`;
+    errorEl.style.top = `${field.offsetTop + field.offsetHeight / 2}px`;
     errorEl.style.transform = 'translateY(-50%)';
     const tooltip = errorEl.querySelector('.field-error__tooltip');
     if (tooltip) tooltip.textContent = message || 'Please check this field.';
@@ -82,8 +82,8 @@ function validatePhoneField() {
     }
 
     if (window.janaPhoneIti && window.intlTelInput && window.intlTelInput.utils) {
-            const valid = window.janaPhoneIti.isValidNumber();
-            if (valid === false) {
+        const valid = window.janaPhoneIti.isValidNumber();
+        if (valid === false) {
             showFieldError(phoneEl, 'Enter a valid phone number for the selected country.');
             return false;
         }
@@ -93,7 +93,6 @@ function validatePhoneField() {
     return true;
 }
 
-// Form submission handler
 function handleSubmit(e) {
     e.preventDefault();
     const formEl = e.target;
@@ -113,8 +112,8 @@ function handleSubmit(e) {
 
     if (firstInvalid) {
         firstInvalid.focus();
-                return;
-            }
+        return;
+    }
 
     const formData = new FormData(formEl);
     const data = Object.fromEntries(formData);
@@ -122,8 +121,8 @@ function handleSubmit(e) {
         const digits = String(phoneEl.value || '').trim();
         if (digits) {
             const utils = window.intlTelInput.utils;
-                const e164 = window.janaPhoneIti.getNumber(utils.numberFormat.E164);
-                if (e164) data.phone = e164;
+            const e164 = window.janaPhoneIti.getNumber(utils.numberFormat.E164);
+            if (e164) data.phone = e164;
         }
     }
 
@@ -136,173 +135,95 @@ function handleSubmit(e) {
     }
 }
 
-const contactFormEl = document.querySelector('.contact-form');
-const emailFieldEl = document.getElementById('email');
-const phoneFieldEl = document.getElementById('contact-phone');
-
-contactFormEl?.addEventListener('input', function (event) {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) return;
-    if (target.classList.contains('is-error')) {
-        clearFieldError(target);
-    }
-});
-
-emailFieldEl?.addEventListener('blur', function () {
-    const value = String(this.value || '').trim();
-    this.value = value;
-    if (!value) {
-        clearFieldError(this);
-        return;
-    }
-    validateContactField(this);
-});
-
-phoneFieldEl?.addEventListener('blur', function () {
-    validatePhoneField();
-});
-
-phoneFieldEl?.addEventListener('input', function () {
-    const value = String(this.value || '').trim();
-    if (!value) {
-        clearFieldError(this);
-        return;
-    }
-    if (this.classList.contains('is-error')) {
-        validatePhoneField();
-    }
-});
-
-// Scroll animations
-
-
-async function applyHotelJsonDataToContactPage() {
-    const grid = document.getElementById('hotelsGrid');
-    const loadingStateId = 'packagesLoadingState';
-    const formatLoading = (message, percent) => {
-        if (window.JanaLoadingProgress && typeof window.JanaLoadingProgress.formatLoadingText === 'function') {
-            return window.JanaLoadingProgress.formatLoadingText(message, percent);
-        }
-        return `${String(message || 'Loading').replace(/\s*\.{3}\s*$/, '').trim()} ${Math.round(percent)}%`;
-    };
-
-    let packagesProgress = null;
-    if (grid && window.JanaLoadingProgress) {
-        grid.innerHTML = `<p class="packages-loading-state" id="${loadingStateId}">${formatLoading('Loading packages', 0)}</p>`;
-        packagesProgress = window.JanaLoadingProgress.createLoadingProgress({
-            baseMessage: 'Loading packages',
-            estimateMs: 16000,
-            onUpdate: (text) => {
-                const el = document.getElementById(loadingStateId);
-                if (el) el.textContent = text;
-            }
-        });
-        packagesProgress.start();
-        packagesProgress.setProgress(3);
-    }
-
-    try {
-        const sourceUrl = (window.JANA_HOTELS_SHEET_URL || '').trim() || '/data/hotels.json';
-        if (packagesProgress) packagesProgress.setProgress(10);
-        const response = await fetch(sourceUrl, { cache: 'no-store' });
-        if (!response.ok) {
-            if (packagesProgress) packagesProgress.stop();
-            return;
-        }
-        if (packagesProgress) packagesProgress.setProgress(28);
-        const rawHotels = await response.json();
-        if (!Array.isArray(rawHotels)) {
-            if (packagesProgress) packagesProgress.stop();
-            return;
-        }
-        const hotels = rawHotels.map(row => {
-            if (row && (row.slug || row.name || row.description)) return row;
-            return normalizeSheetHotel(row || {});
-        });
-        if (packagesProgress) packagesProgress.setProgress(38);
-        const hotelTotal = hotels.length || 1;
-        let hotelsPrepared = 0;
-        const preparedHotels = await Promise.all(hotels.map(async (hotel) => {
-            if (!hotel) return null;
-            const slug = slugifyHotelName(hotel.slug || hotel.name || '');
-            if (!slug || !String(hotel.name || '').trim() || !isHotelActive(hotel.active)) return null;
-            const imageSet = await resolveHotelImageSet(slug);
-            hotelsPrepared += 1;
-            if (packagesProgress) {
-                packagesProgress.setProgress(38 + Math.round((hotelsPrepared / hotelTotal) * 52));
-            }
-            if (!imageSet) return null;
-            return {
-                ...hotel,
-                slug,
-                imageBasePath: imageSet.basePath,
-                imageUrl: String(hotel.imageUrl || '').trim() || imageSet.images[0],
-                galleryImages: Array.isArray(hotel.galleryImages) && hotel.galleryImages.length
-                    ? hotel.galleryImages
-                    : [imageSet.images[0]]
-            };
-        }));
-        if (packagesProgress) packagesProgress.setProgress(94);
-        const validHotels = preparedHotels.filter(Boolean);
-        const noResultsEl = document.getElementById('noResults');
-        if (!validHotels.length) {
-            const grid = document.getElementById('hotelsGrid');
-            if (grid) grid.innerHTML = '';
-            if (packagesProgress) packagesProgress.stop();
-            updateContactInterestOptions([]);
-            if (noResultsEl) {
-                noResultsEl.style.display = 'block';
-                const p = noResultsEl.querySelector('p');
-                if (p) p.textContent = 'No hotel packages available yet. Add one from your form to display it here.';
-            }
-            return;
-        }
-        updateContactInterestOptions(validHotels);
-        renderHotelCardsFromData(validHotels);
-        if (packagesProgress) packagesProgress.complete();
-        if (noResultsEl) noResultsEl.style.display = 'none';
-
-        validHotels.forEach(hotel => {
-            const key = HOTEL_SLUG_TO_DESTINATION_KEY[hotel.slug];
-            if (!key) return;
-            const gallery = Array.isArray(hotel.galleryImages) ? hotel.galleryImages.filter(Boolean) : [];
-            const features = [
-                hotel.mealPlan,
-                hotel.reefType,
-                hotel.islandSize,
-                hotel.experience
-            ].filter(Boolean);
-            destinationOverrides[key] = {
-                title: hotel.name || '',
-                description: hotel.description || '',
-                images: gallery.length ? gallery : [hotel.imageUrl || HOTEL_PLACEHOLDER_IMAGE],
-                duration: hotel.experience || '',
-                accommodation: hotel.rooms || '',
-                transport: hotel.transferType || '',
-                features
-            };
-        });
-
-        syncDestinationOverridesIntoDestinations();
-        if (typeof applyPackagesCatalogView === 'function') {
-            applyPackagesCatalogView(false);
-        }
-        if (typeof filterHotels === 'function') {
-            filterHotels();
-        }
-    } catch (error) {
-        if (packagesProgress) packagesProgress.stop();
-        console.error('Failed to load hotel JSON data for index:', error);
-    }
+function isHotelActive(value) {
+    if (value === false) return false;
+    const normalized = String(value ?? '').toLowerCase().trim();
+    if (!normalized) return true;
+    return normalized !== 'false' && normalized !== 'no' && normalized !== '0';
 }
 
-syncDestinationOverridesIntoDestinations();
-applyHotelJsonDataToContactPage();
+function slugifyHotelName(value) {
+    return String(value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
 
-// Ensure modal carousel images always load (avoid unreliable source.unsplash.com redirects).
+function getCaseInsensitiveField(row, keys) {
+    const keyMap = Object.keys(row || {}).reduce((acc, key) => {
+        acc[key.toLowerCase().trim()] = key;
+        return acc;
+    }, {});
+    for (const key of keys) {
+        const normalized = key.toLowerCase().trim();
+        if (keyMap[normalized]) return row[keyMap[normalized]];
+    }
+    return '';
+}
 
-applyHotelJsonDataToContactPage();
+function normalizeContactHotelRow(row) {
+    if (row && row.slug && row.name) return row;
+    const name = String(getCaseInsensitiveField(row, ['name', 'Name']) || '').trim();
+    const rawSlug = String(getCaseInsensitiveField(row, ['slug', 'Slug']) || '').trim();
+    return {
+        ...row,
+        name,
+        slug: slugifyHotelName(rawSlug || name),
+        active: getCaseInsensitiveField(row, ['active', 'Active'])
+    };
+}
 
+function updateContactInterestOptions(hotels) {
+    const interestSelect = document.getElementById('interest');
+    if (!interestSelect) return;
+
+    const dynamicHotels = Array.from(
+        new Map(
+            (Array.isArray(hotels) ? hotels : [])
+                .filter((hotel) => hotel && isHotelActive(hotel.active) && String(hotel.name || '').trim())
+                .map((hotel) => {
+                    const name = String(hotel.name || '').trim();
+                    const slug = String(hotel.slug || '').trim();
+                    return [slug || name.toLowerCase(), { slug, name }];
+                })
+        ).values()
+    ).sort((a, b) => a.name.localeCompare(b.name));
+
+    interestSelect.innerHTML = '';
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = 'Select a hotel';
+    interestSelect.appendChild(placeholderOption);
+
+    const anyHotelOption = document.createElement('option');
+    anyHotelOption.value = 'any-hotel';
+    anyHotelOption.textContent = 'Any hotel';
+    interestSelect.appendChild(anyHotelOption);
+
+    dynamicHotels.forEach((hotel) => {
+        const option = document.createElement('option');
+        option.value = hotel.slug || hotel.name;
+        option.textContent = hotel.name;
+        interestSelect.appendChild(option);
+    });
+}
+
+async function loadContactInterestOptions() {
+    try {
+        const sourceUrl = (window.JANA_HOTELS_SHEET_URL || '').trim() || '/data/hotels.json';
+        const response = await fetch(sourceUrl, { cache: 'no-store' });
+        if (!response.ok) return;
+        const rawHotels = await response.json();
+        if (!Array.isArray(rawHotels)) return;
+        const hotels = rawHotels.map((row) => normalizeContactHotelRow(row || {}));
+        updateContactInterestOptions(hotels);
+    } catch (error) {
+        console.error('Failed to load hotel options for contact form:', error);
+    }
+}
 
 (function initJanaContactIntlPhone() {
     const phoneInput = document.getElementById('contact-phone');
@@ -312,7 +233,7 @@ applyHotelJsonDataToContactPage();
     const narrowPopup = () => window.matchMedia('(max-width: 600px)').matches;
     const instance = window.intlTelInput(phoneInput, {
         initialCountry: 'ae',
-        countryOrder: ['ae'],
+        preferredCountries: ['ae', 'gb', 'us', 'sa', 'in'],
         separateDialCode: true,
         nationalMode: true,
         loadUtils: () => import(intlTelUtilsCdn),
@@ -321,8 +242,8 @@ applyHotelJsonDataToContactPage();
         formatAsYouType: true,
         formatOnDisplay: true,
         strictMode: true,
-        countrySearch: false,
-        ...(narrowPopup() ? { useFullscreenPopup: false } : {}),
+        countrySearch: true,
+        ...(narrowPopup() ? { useFullscreenPopup: false } : {})
     });
     window.janaPhoneIti = instance;
 
@@ -336,86 +257,83 @@ applyHotelJsonDataToContactPage();
     }
 
     function pinUaeToTop() {
-        const listEl = phoneInput.closest('.iti') && phoneInput.closest('.iti').querySelector('.iti__country-list');
+        const listEl = phoneInput.closest('.iti')?.querySelector('.iti__country-list');
         if (!listEl) return;
         const uae = listEl.querySelector('.iti__country[data-country-code="ae"]');
         if (!uae) return;
-        const divider = listEl.querySelector('.iti__divider');
-        if (divider) divider.remove();
+        listEl.querySelector('.iti__divider')?.remove();
         if (listEl.firstElementChild !== uae) listEl.insertBefore(uae, listEl.firstElementChild);
     }
 
     function syncDropdownHighlight() {
         if (!instance || !phoneInput) return;
-        const iso2 = instance.getSelectedCountryData() && instance.getSelectedCountryData().iso2;
+        const iso2 = instance.getSelectedCountryData()?.iso2;
         const itiWrap = phoneInput.closest('.iti');
-        const listEl = itiWrap && itiWrap.querySelector('.iti__country-list');
-        const selectedBtn = itiWrap && itiWrap.querySelector('.iti__selected-country');
+        const listEl = itiWrap?.querySelector('.iti__country-list');
+        const selectedBtn = itiWrap?.querySelector('.iti__selected-country');
         if (!iso2 || !listEl || !selectedBtn) return;
         const target = listEl.querySelector('.iti__country[data-country-code="' + iso2 + '"]');
         if (!target) return;
-        listEl.querySelectorAll('.iti__country.iti__highlight').forEach(function (li) {
+        listEl.querySelectorAll('.iti__country.iti__highlight').forEach((li) => {
             li.classList.remove('iti__highlight');
             li.setAttribute('aria-selected', 'false');
         });
         target.classList.add('iti__highlight');
         target.setAttribute('aria-selected', 'true');
-        const activeId = target.getAttribute('id') || '';
-        selectedBtn.setAttribute('aria-activedescendant', activeId);
+        selectedBtn.setAttribute('aria-activedescendant', target.getAttribute('id') || '');
         target.scrollIntoView({ block: 'nearest', behavior: 'auto' });
     }
 
     function removeItiNativeHoverTooltips() {
         const itiWrap = phoneInput.closest('.iti');
         if (!itiWrap) return;
-        itiWrap.querySelectorAll('[title]').forEach(function (el) {
-            el.removeAttribute('title');
-        });
+        itiWrap.querySelectorAll('[title]').forEach((el) => el.removeAttribute('title'));
     }
 
     if (instance.promise && typeof instance.promise.then === 'function') {
-        instance.promise.then(function () {
+        instance.promise.then(() => {
             updatePhoneInputOffset();
             pinUaeToTop();
             removeItiNativeHoverTooltips();
         });
     }
-    setTimeout(function () {
+    setTimeout(() => {
         updatePhoneInputOffset();
         pinUaeToTop();
         removeItiNativeHoverTooltips();
     }, 0);
 
-    phoneInput.addEventListener('countrychange', function () {
-        window.requestAnimationFrame(function () {
+    phoneInput.addEventListener('countrychange', () => {
+        window.requestAnimationFrame(() => {
             updatePhoneInputOffset();
             pinUaeToTop();
             removeItiNativeHoverTooltips();
+            if (phoneInput.classList.contains('is-error')) validatePhoneField();
         });
     });
     window.addEventListener('resize', updatePhoneInputOffset);
 
-    var selCountry = phoneInput.closest('.iti') && phoneInput.closest('.iti').querySelector('.iti__selected-country');
+    const selCountry = phoneInput.closest('.iti')?.querySelector('.iti__selected-country');
     if (selCountry) {
-        selCountry.addEventListener('click', function () {
-            setTimeout(function () {
+        selCountry.addEventListener('click', () => {
+            setTimeout(() => {
                 pinUaeToTop();
                 removeItiNativeHoverTooltips();
             }, 0);
         });
     }
 
-    phoneInput.addEventListener('open:countrydropdown', function () {
-        window.requestAnimationFrame(function () {
+    phoneInput.addEventListener('open:countrydropdown', () => {
+        window.requestAnimationFrame(() => {
             syncDropdownHighlight();
             removeItiNativeHoverTooltips();
         });
     });
 
-    var contactFormEl = phoneInput.closest('form');
+    const contactFormEl = phoneInput.closest('form');
     if (contactFormEl) {
-        contactFormEl.addEventListener('reset', function () {
-            setTimeout(function () {
+        contactFormEl.addEventListener('reset', () => {
+            setTimeout(() => {
                 instance.setNumber('');
                 instance.setCountry('ae');
                 updatePhoneInputOffset();
@@ -423,3 +341,38 @@ applyHotelJsonDataToContactPage();
         });
     }
 })();
+
+const contactFormEl = document.querySelector('.contact-form');
+const emailFieldEl = document.getElementById('email');
+const phoneFieldEl = document.getElementById('contact-phone');
+
+contactFormEl?.addEventListener('input', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) {
+        return;
+    }
+    if (target.classList.contains('is-error')) clearFieldError(target);
+});
+
+emailFieldEl?.addEventListener('blur', function () {
+    const value = String(this.value || '').trim();
+    this.value = value;
+    if (!value) {
+        clearFieldError(this);
+        return;
+    }
+    validateContactField(this);
+});
+
+phoneFieldEl?.addEventListener('blur', () => validatePhoneField());
+
+phoneFieldEl?.addEventListener('input', function () {
+    const value = String(this.value || '').trim();
+    if (!value) {
+        clearFieldError(this);
+        return;
+    }
+    if (this.classList.contains('is-error')) validatePhoneField();
+});
+
+loadContactInterestOptions();
