@@ -806,18 +806,6 @@ function initFilterCustomSelects() {
             if (cue) cue.classList.remove('is-visible');
         };
 
-        const ensureScrollCue = (menuEl) => {
-            let cue = menuEl.querySelector('.filter-select__scroll-cue');
-            if (!cue) {
-                cue = document.createElement('span');
-                cue.className = 'filter-select__scroll-cue';
-                cue.setAttribute('aria-hidden', 'true');
-                cue.textContent = '⌄';
-                menuEl.appendChild(cue);
-            }
-            return cue;
-        };
-
         const showScrollbarHint = (menuEl) => {
             if (!menuEl || menuEl.scrollHeight <= menuEl.clientHeight) return;
             clearScrollbarHint(menuEl);
@@ -827,17 +815,9 @@ function initFilterCustomSelects() {
             const wrapper = menuEl.closest('[data-filter-select]');
             const touchLike = isTouchLikeDevice();
             if (wrapper) wrapper.classList.add('is-scrollbar-hint-active');
-            if (touchLike) ensureScrollCue(menuEl).classList.add('is-visible');
 
-            const scrollTop = menuEl.scrollTop;
-            if (touchLike) {
-                const maxScroll = menuEl.scrollHeight - menuEl.clientHeight;
-                menuEl.scrollTop = Math.min(scrollTop + 40, maxScroll);
-                menuEl._scrollbarBounceTimer = setTimeout(() => {
-                    menuEl.scrollTo({ top: scrollTop, behavior: 'smooth' });
-                    menuEl._scrollbarBounceTimer = null;
-                }, 140);
-            } else {
+            if (!touchLike) {
+                const scrollTop = menuEl.scrollTop;
                 menuEl.scrollTop = scrollTop + 1;
                 menuEl.scrollTop = scrollTop;
             }
@@ -869,6 +849,7 @@ function initFilterCustomSelects() {
             menu.hidden = false;
             wrapper.classList.add('is-open');
             trigger.setAttribute('aria-expanded', 'true');
+            if (isTouchLikeDevice()) menu.scrollTop = 0;
             requestAnimationFrame(() => showScrollbarHint(menu));
         };
 
