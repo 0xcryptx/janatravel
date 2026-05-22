@@ -626,6 +626,17 @@
     .page-state.empty { background:#fff9e8; color:#8a6a11; border:1px solid #f4df9e; }
     .page-state.error { background:#ffeef0; color:#9b1d2b; border:1px solid #f3bcc5; }
     @media (max-width:780px){
+      .topbar {
+        padding:clamp(0.45rem, 1.6vw, 0.8rem) clamp(0.55rem, 3.2vw, 1.25rem);
+      }
+      .back-link {
+        font-size:clamp(0.62rem, 2.85vw, 0.88rem);
+        padding:clamp(0.26rem, 1.05vw, 0.45rem) clamp(0.42rem, 2.1vw, 0.9rem);
+        margin-left:0;
+        gap:clamp(0.15rem, 0.6vw, 0.35rem);
+        line-height:1.15;
+        max-width:min(46vw, 8.5rem);
+      }
       .wrap { padding:1.6rem 1rem 2.4rem; }
       .info-sections { max-width:100%; margin-top:1.2rem; }
       .info-sections h2 { font-size:1.4rem; }
