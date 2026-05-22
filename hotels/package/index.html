@@ -546,19 +546,28 @@
       line-height:1.2;
       opacity:0;
       pointer-events:none;
+      z-index:2;
+    }
+    .room-expand-hint {
+      position:absolute;
+      right:.45rem;
+      bottom:.45rem;
+      font-size:.62rem;
+      font-weight:600;
+      padding:.18rem .42rem;
+      border-radius:999px;
+      line-height:1.2;
+      letter-spacing:.01em;
+      z-index:3;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity .2s ease;
     }
     .room-image-viewer:hover .room-image-counter,
-    .room-image-viewer:focus-within .room-image-counter {
+    .room-image-viewer:focus-within .room-image-counter,
+    .room-image-viewer:hover .room-expand-hint,
+    .room-image-viewer:focus-within .room-expand-hint {
       opacity:1;
-    }
-    @media (hover:none) {
-      .room-image-nav {
-        opacity:1;
-        pointer-events:auto;
-      }
-      .room-image-counter {
-        opacity:1;
-      }
     }
     .section-inquire-link {
       display:inline-block;
@@ -621,20 +630,23 @@
       .info-sections { max-width:100%; margin-top:1.2rem; }
       .info-sections h2 { font-size:1.4rem; }
       .info-tabs {
-        justify-content:center;
-        flex-wrap:nowrap;
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
         gap:.45rem;
-        padding:.9rem .55rem;
+        padding:.5rem 0;
         margin:1.1rem 0 1.25rem;
-        border-radius:14px;
-        overflow-x:auto;
+        overflow:visible;
       }
       .info-tab {
-        min-width:auto;
-        font-size:.8rem;
-        padding:.36rem .62rem;
-        white-space:nowrap;
-        flex:0 0 auto;
+        width:100%;
+        min-width:0;
+        font-size:.78rem;
+        padding:.45rem .5rem;
+        line-height:1.25;
+        text-align:center;
+        white-space:normal;
+        border-width:1.5px;
+        border-radius:8px;
       }
       .section-room-grid {
         grid-template-columns:minmax(0, 1fr);
@@ -675,10 +687,20 @@
       }
       .thumb-btn { flex:0 0 64px; }
       .thumb-btn img { height:44px; }
-      .hero-nav { width:34px; height:34px; font-size:1.05rem; }
+      .hero-nav,
+      .room-image-nav,
+      .lightbox-nav {
+        display:none !important;
+      }
+      .hero--interactive .hero-counter,
+      .hero--interactive .maximize-btn,
+      .room-image-viewer .room-image-counter,
+      .room-image-viewer .room-expand-hint {
+        opacity:1 !important;
+        visibility:visible !important;
+      }
       .hero-counter { font-size:.75rem; padding:.22rem .56rem; }
       .maximize-btn { font-size:.85rem; padding:.35rem .7rem; }
-      .lightbox-nav { width:40px; height:40px; }
       .image-lightbox {
         padding:3rem 1rem 4.75rem;
       }

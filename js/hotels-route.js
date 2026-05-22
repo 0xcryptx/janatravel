@@ -1095,6 +1095,7 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
                   <img class="room-image-main" src="${escapeHtml(item.images[0])}" data-fallbacks="${serializeImageFallbacks((item.imageCandidates && item.imageCandidates[0]) || item.images)}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(item.label)} image 1">
                   <button type="button" class="room-image-nav room-image-nav--next" data-room-nav="next" aria-label="Next image">&#10095;</button>
                   <span class="room-image-counter">1 / ${item.images.length}</span>
+                  <span class="room-expand-hint" aria-hidden="true">Click to expand</span>
                 </div>`
               : `<div class="section-item__thumbs">
                   ${item.images

@@ -42,6 +42,7 @@
 .hero-counter,
 .lightbox-counter,
 .room-image-counter,
+.room-expand-hint,
 .maximize-btn,
 .expand-hint {
     border: 1px solid rgba(255, 255, 255, 0.42);
@@ -69,4 +70,25 @@
         0 6px 18px rgba(0, 206, 209, 0.38),
         inset 0 1px 0 rgba(255, 255, 255, 0.35);
     color: #fff;
+}
+
+/* Phone: swipe only — no prev/next arrow buttons (inline or fullscreen). */
+@media (max-width: 780px) {
+    .hero-nav,
+    .carousel-btn,
+    .lightbox-btn,
+    .lightbox-nav,
+    .room-image-nav {
+        display: none !important;
+    }
+
+    /* Android often reports hover:hover — always show counters + expand on touch widths. */
+    .hero--interactive .hero-counter,
+    .hero--interactive .maximize-btn,
+    .room-image-viewer .room-image-counter,
+    .room-image-viewer .room-expand-hint,
+    .carousel-container .expand-hint {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
 }

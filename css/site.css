@@ -1564,10 +1564,6 @@ section {
 }
 
 @media (max-width: 768px) {
-    .lightbox-btn {
-        display: none;
-    }
-
     .lightbox-overlay.active {
         flex-direction: column;
         padding: 3.25rem 1rem 4.5rem;
@@ -1603,16 +1599,14 @@ section {
         backface-visibility: hidden;
     }
 
-    .carousel-btn {
-        display: none;
-    }
-
     .carousel-slide {
         cursor: default;
     }
 
-    .expand-hint {
-        display: none;
+    .carousel-container .expand-hint {
+        display: block;
+        opacity: 1 !important;
+        visibility: visible !important;
     }
 }
 
