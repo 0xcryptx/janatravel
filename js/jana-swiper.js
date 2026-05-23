@@ -312,10 +312,8 @@ export async function bindJanaSwiperCarousel({
         slideChange(instance) {
           index = getSwiperLogicalIndex(instance);
           markCurrentSlide(index);
-          if (!isLightboxViewport) {
-            const activeImg = getSlideImage(instance.slides[instance.activeIndex]) || mainImageEl;
-            applySlideToImage(activeImg, index);
-          }
+          const activeImg = getSlideImage(instance.slides[instance.activeIndex]) || mainImageEl;
+          applySlideToImage(activeImg, index);
           if (onIndexChange) onIndexChange(index);
         },
         sliderFirstMove() {

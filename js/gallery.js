@@ -247,13 +247,28 @@ function bindGalleryItemOpen(item, index) {
     });
 }
 
-function expandGallery() {
+async function expandGallery() {
+    if (isGalleryExpanded) return;
+
     galleryScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
     isGalleryExpanded = true;
 
     const stack = document.getElementById('photoStack');
     const expanded = document.getElementById('galleryExpanded');
+    const grid = document.getElementById('galleryGrid');
     if (!stack || !expanded) return;
+
+    if (grid && !galleryImages.length) {
+        grid.innerHTML = '<p class="gallery-loading">Loading photos…</p>';
+    }
+
+    try {
+        await ensureGalleryBootstrap();
+    } catch (error) {
+        console.error('Gallery bootstrap failed:', error);
+    }
+
+    initGallery();
 
     const stackCards = document.querySelectorAll('.stack-card');
 
@@ -424,6 +439,17 @@ document.addEventListener('keydown', (e) => {
 });
 
 let galleryUiInitialized = false;
+let galleryBootstrapPromise = null;
+
+function ensureGalleryBootstrap() {
+    if (!galleryBootstrapPromise) {
+        galleryBootstrapPromise = bootstrapGallery().catch((error) => {
+            galleryBootstrapPromise = null;
+            throw error;
+        });
+    }
+    return galleryBootstrapPromise;
+}
 
 async function bootstrapGallery() {
     galleryImages = await loadAllHotelRootGalleryImages();
@@ -455,7 +481,7 @@ async function bootstrapGallery() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initGalleryStack();
-    bootstrapGallery().catch((error) => {
+    ensureGalleryBootstrap().catch((error) => {
         console.error('Failed to initialize gallery:', error);
     });
 });

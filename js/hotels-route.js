@@ -4,33 +4,31 @@ import {
   preloadJanaImages,
   preloadJanaSlideNeighbors
 } from "./jana-swiper.js";
+import {
+  HOTEL_IMAGE_ROOT,
+  HOTEL_IMAGE_SLOTS,
+  buildCandidateUrls,
+  buildOptimisticMainGallery,
+  findFirstExistingImage,
+  resolveMainGalleryForSlug
+} from "./hotel-image-probe.js";
 
 const LOCAL_JSON_URL = "/data/hotels.json";
 const WHATSAPP_NUMBER = "971501771927";
 const HOTEL_PLACEHOLDER_IMAGE = "/assets/images/add_image.webp";
 const GOOGLE_SHEETS_HOTELS_URL = "";
-const HOTEL_IMAGE_BASE_PATHS = ["/assets/hotel_images"];
-const IMAGE_INDEXES = [1, 2, 3, 4];
-const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif"];
+const HOTEL_IMAGE_BASE_PATHS = [HOTEL_IMAGE_ROOT];
+const IMAGE_INDEXES = HOTEL_IMAGE_SLOTS;
 const HOTEL_VIEW_STATE_PREFIX = "jana:hotelViewState:";
 const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
-const IMAGE_OK_CACHE = new Set();
-const IMAGE_PROBE_INFLIGHT = new Map();
-const IMAGE_PROBE_TIMEOUT_MS = 3000;
-const MAX_CONCURRENT_IMAGE_PROBES = 8;
-const MAIN_GALLERY_PROBE_BUDGET_MS = 10000;
-const HOTEL_MEDIA_CACHE_VERSION = 5;
-/** Prefer common hotel asset extensions first (browser tries fallbacks on error). */
-const IMAGE_EXT_PRIORITY = ["jpg", "avif", "webp", "jpeg", "png"];
-let activeImageProbes = 0;
-const imageProbeWaitQueue = [];
+const HOTEL_MEDIA_CACHE_VERSION = 6;
 let hotelDataCacheCleanupTimerId = null;
 
 function loadJsonData(url) {
-  return fetch(url, { cache: "no-store" }).then((res) => {
+  return fetch(url).then((res) => {
     if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
     return res.json();
   });
@@ -50,42 +48,10 @@ function resolveImagePath(path) {
   return path;
 }
 
-function getHotelImageFolderPaths(slug) {
-  const normalizedSlug = String(slug || "").trim();
-  if (!normalizedSlug) return [];
-  const orderedBases = [...HOTEL_IMAGE_BASE_PATHS].sort((a, b) => {
-    const aHasAssets = a.includes("assets");
-    const bHasAssets = b.includes("assets");
-    if (aHasAssets === bHasAssets) return 0;
-    return aHasAssets ? -1 : 1;
-  });
-  return orderedBases.map((basePath) => `${basePath}/${normalizedSlug}`);
+function buildImageCandidatesForSlot(folderPath, index) {
+  return buildCandidateUrls(folderPath, String(index));
 }
 
-function buildImageCandidatesForSlot(folderPaths, index) {
-  const folders = Array.isArray(folderPaths) ? folderPaths : [folderPaths].filter(Boolean);
-  const candidates = [];
-  for (const folder of folders) {
-    for (const ext of IMAGE_EXT_PRIORITY) {
-      candidates.push(`${folder}/${index}.${ext}`);
-    }
-    for (const ext of IMAGE_EXTENSIONS) {
-      if (!IMAGE_EXT_PRIORITY.includes(ext)) {
-        candidates.push(`${folder}/${index}.${ext}`);
-      }
-    }
-  }
-  return [...new Set(candidates)];
-}
-
-function buildOptimisticGallerySlots(slug) {
-  const folderPaths = getHotelImageFolderPaths(slug);
-  return IMAGE_INDEXES.map((index) => buildImageCandidatesForSlot(folderPaths, index));
-}
-
-function buildOptimisticImagesForFolder(folderPath) {
-  return IMAGE_INDEXES.map((index) => buildImageCandidatesForSlot(folderPath, index)[0]).filter(Boolean);
-}
 
 function serializeImageFallbacks(candidates) {
   return escapeHtml(JSON.stringify(Array.isArray(candidates) ? candidates.slice(1) : []));
@@ -384,130 +350,6 @@ function saveCachedHotelData(slug, signature, hotelData) {
   }
 }
 
-function runWithImageProbeLimit(task) {
-  if (activeImageProbes < MAX_CONCURRENT_IMAGE_PROBES) {
-    activeImageProbes += 1;
-    return Promise.resolve()
-      .then(task)
-      .finally(() => {
-        activeImageProbes -= 1;
-        const next = imageProbeWaitQueue.shift();
-        if (next) next();
-      });
-  }
-
-  return new Promise((resolve, reject) => {
-    imageProbeWaitQueue.push(() => {
-      runWithImageProbeLimit(task).then(resolve, reject);
-    });
-  });
-}
-
-async function doesImageExist(url) {
-  if (IMAGE_OK_CACHE.has(url)) return true;
-  if (IMAGE_PROBE_INFLIGHT.has(url)) return IMAGE_PROBE_INFLIGHT.get(url);
-
-  const pendingCheck = runWithImageProbeLimit(async () => {
-    const withTimeout = async (requestUrl, options = {}) => {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), IMAGE_PROBE_TIMEOUT_MS);
-      try {
-        return await fetch(requestUrl, { ...options, signal: controller.signal });
-      } finally {
-        window.clearTimeout(timeoutId);
-      }
-    };
-
-    try {
-      const headResponse = await withTimeout(url, { method: "HEAD", cache: "no-store" });
-      if (headResponse.ok) {
-        IMAGE_OK_CACHE.add(url);
-        return true;
-      }
-      if (headResponse.status !== 405) return false;
-    } catch (error) {
-      // Try a tiny ranged GET next.
-    }
-
-    try {
-      const rangeResponse = await withTimeout(url, {
-        method: "GET",
-        cache: "no-store",
-        headers: { Range: "bytes=0-0" }
-      });
-      if (rangeResponse.ok) {
-        IMAGE_OK_CACHE.add(url);
-        return true;
-      }
-    } catch (error) {
-      return false;
-    }
-
-    return false;
-  });
-
-  IMAGE_PROBE_INFLIGHT.set(url, pendingCheck);
-  try {
-    return await pendingCheck;
-  } finally {
-    IMAGE_PROBE_INFLIGHT.delete(url);
-  }
-}
-
-async function resolveHotelImageBasePath(slug) {
-  const normalizedSlug = String(slug || "").trim();
-  if (!normalizedSlug) return null;
-  for (const basePath of HOTEL_IMAGE_BASE_PATHS) {
-    const folderPath = `${basePath}/${normalizedSlug}`;
-    const firstImage = await findFirstExistingImage(folderPath, "1");
-    if (firstImage) {
-      return { basePath, firstImage };
-    }
-    const fallbackImage = await findFirstExistingImage(folderPath, "add_image");
-    if (fallbackImage) {
-      return { basePath, firstImage: fallbackImage };
-    }
-  }
-  return null;
-}
-
-async function findFirstExistingImage(folderPath, baseName) {
-  const candidates = IMAGE_EXTENSIONS.map((ext) => `${folderPath}/${baseName}.${ext}`);
-  const checks = await Promise.all(candidates.map((candidate) => doesImageExist(candidate)));
-  const matchedIndex = checks.findIndex(Boolean);
-  return matchedIndex >= 0 ? candidates[matchedIndex] : "";
-}
-
-async function collectNumberedImages(folderPath) {
-  const resolved = await Promise.all(
-    IMAGE_INDEXES.map((index) => findFirstExistingImage(folderPath, String(index)))
-  );
-  const imageUrls = resolved.filter(Boolean);
-  if (imageUrls.length) return imageUrls;
-
-  const fallbackImage = await findFirstExistingImage(folderPath, "add_image");
-  return fallbackImage ? [fallbackImage] : [];
-}
-
-async function collectMainGalleryImages(basePath, slug, firstImage) {
-  const folderPath = `${basePath}/${slug}`;
-  const quickFallback = firstImage ? [firstImage] : [];
-
-  try {
-    const images = await Promise.race([
-      collectNumberedImages(folderPath),
-      new Promise((resolve) => {
-        window.setTimeout(() => resolve(quickFallback), MAIN_GALLERY_PROBE_BUDGET_MS);
-      })
-    ]);
-    if (images.length) return images;
-  } catch (error) {
-    console.warn("Gallery probe failed, using first image only:", error);
-  }
-
-  return quickFallback;
-}
-
 function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, entries) {
   return entries.map((entry, index) => {
     const folderPath = `${basePath}/${slug}/${sectionFolder}/${itemPrefix}${index + 1}`;
@@ -520,7 +362,7 @@ function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, ent
       folderPath,
       imageCandidates,
       images: imageCandidates.map((candidates) => candidates[0]).filter(Boolean),
-      loaded: true
+      loaded: false
     };
   });
 }
@@ -661,7 +503,7 @@ function prepareHotelMedia(hotel, onProgress) {
 
   if (typeof onProgress === "function") onProgress(72);
   const imageBasePath = HOTEL_IMAGE_BASE_PATHS.find((path) => path.includes("assets")) || HOTEL_IMAGE_BASE_PATHS[0];
-  const mainImageCandidates = buildOptimisticGallerySlots(slug);
+  const mainImageCandidates = buildOptimisticMainGallery(slug);
   const mainImages = mainImageCandidates
     .map((candidates) => candidates[0])
     .filter(Boolean);
@@ -755,6 +597,13 @@ async function loadHotelBySlug(slug, onProgress) {
     }
   });
   if (preparedHotel) {
+    const resolvedGallery = await resolveMainGalleryForSlug(normalizedSlug);
+    if (resolvedGallery.images.length) {
+      preparedHotel.mainImages = resolvedGallery.images;
+      preparedHotel.mainImageCandidates = resolvedGallery.imageCandidates;
+      preparedHotel.galleryImages = resolvedGallery.images;
+      preparedHotel.imageUrl = resolvedGallery.images[0];
+    }
     saveCachedHotelData(normalizedSlug, hotelSignature, preparedHotel);
   }
   if (typeof onProgress === "function") onProgress(96);
@@ -1267,6 +1116,9 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
   const setActiveTab = async (key) => {
     const section = sectionData[key];
     if (!section) return;
+    if (!section.itemsLoaded) {
+      await hydrateSectionItems(section);
+    }
     tabs.forEach((tab) => {
       const isActive = tab.dataset.infoSection === key;
       tab.classList.toggle("is-active", isActive);
@@ -1488,14 +1340,25 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
 
   if (onPrimaryReady) onPrimaryReady();
 
+  let setActiveTab = null;
   try {
-    await setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
-    initialTab: String(persistedState.activeTab || "rooms"),
-    hotelName,
-    onTabChange: (tabKey) => saveHotelViewState(hotel.slug, { activeTab: tabKey })
+    setActiveTab = await setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
+      initialTab: String(persistedState.activeTab || "rooms"),
+      hotelName,
+      onTabChange: (tabKey) => saveHotelViewState(hotel.slug, { activeTab: tabKey })
     });
   } catch (tabsError) {
     console.error("Failed to initialize hotel info tabs:", tabsError);
+  }
+
+  if (setActiveTab) {
+    hydrateAllHotelSections(Object.values(infoSections))
+      .then(async () => {
+        const activeKey =
+          document.querySelector(".info-tab.is-active")?.dataset.infoSection || "rooms";
+        await setActiveTab(activeKey);
+      })
+      .catch((error) => console.warn("Hotel section image hydration failed:", error));
   }
 }
 

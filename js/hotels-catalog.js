@@ -1,3 +1,5 @@
+import { HOTEL_IMAGE_ROOT, resolveMainGalleryForSlug } from './hotel-image-probe.js';
+
 const destinations = {
     male: {
         title: 'Malé Atoll',
@@ -330,10 +332,6 @@ function slugifyHotelName(value) {
         .replace(/^-+|-+$/g, '');
 }
 
-const HOTEL_IMAGE_BASE_PATHS = ['/assets/hotel_images'];
-const MAIN_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
-const IMAGE_EXISTS_CACHE = new Map();
-
 function isHotelActive(value) {
     if (value === false) return false;
     const normalized = String(value ?? '').toLowerCase().trim();
@@ -341,61 +339,12 @@ function isHotelActive(value) {
     return normalized !== 'false' && normalized !== 'no' && normalized !== '0';
 }
 
-async function doesImageExist(url) {
-    if (IMAGE_EXISTS_CACHE.has(url)) return IMAGE_EXISTS_CACHE.get(url);
-    const pendingCheck = (async () => {
-    try {
-        const headResponse = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-        if (headResponse.ok) return true;
-        if (headResponse.status !== 405) return false;
-    } catch (error) {
-        // Ignore and try GET fallback.
-    }
-    try {
-        const getResponse = await fetch(url, { cache: 'no-store' });
-        return getResponse.ok;
-    } catch (error) {
-        return false;
-    }
-    })();
-    IMAGE_EXISTS_CACHE.set(url, pendingCheck);
-    return pendingCheck;
-}
-
-async function findFirstExistingImage(baseFolderPath, baseName) {
-    const candidates = MAIN_IMAGE_EXTENSIONS.map(ext => `${baseFolderPath}/${baseName}.${ext}`);
-    const checks = await Promise.all(candidates.map(url => doesImageExist(url)));
-    const matchedIndex = checks.findIndex(Boolean);
-    return matchedIndex >= 0 ? candidates[matchedIndex] : '';
-}
-
-async function collectMainImages(baseFolderPath) {
-    const images = [];
-    const firstImage = await findFirstExistingImage(baseFolderPath, '1');
-    if (firstImage) {
-        images.push(firstImage);
-        return images;
-    }
-    const fallbackImage = await findFirstExistingImage(baseFolderPath, 'add_image');
-    if (fallbackImage) images.push(fallbackImage);
-    return images;
-}
-
 async function resolveHotelImageSet(slug) {
     const normalizedSlug = String(slug || '').trim();
     if (!normalizedSlug) return null;
-    for (const basePath of HOTEL_IMAGE_BASE_PATHS) {
-        const folderPath = `${basePath}/${normalizedSlug}`;
-        const numberedImages = await collectMainImages(folderPath);
-        if (numberedImages.length) {
-            return { basePath, images: numberedImages };
-        }
-        const fallbackImage = `${folderPath}/add_image.webp`;
-        if (await doesImageExist(fallbackImage)) {
-            return { basePath, images: [fallbackImage] };
-        }
-    }
-    return null;
+    const resolved = await resolveMainGalleryForSlug(normalizedSlug);
+    if (!resolved.images.length) return null;
+    return { basePath: HOTEL_IMAGE_ROOT, images: resolved.images };
 }
 
 function normalizeSheetHotel(row) {
@@ -627,7 +576,7 @@ async function applyHotelJsonDataToHotelsPage() {
     try {
         const sourceUrl = (window.JANA_HOTELS_SHEET_URL || '').trim() || '/data/hotels.json';
         if (packagesProgress) packagesProgress.setProgress(10);
-        const response = await fetch(sourceUrl, { cache: 'no-store' });
+        const response = await fetch(sourceUrl);
         if (!response.ok) {
             if (packagesProgress) packagesProgress.stop();
             return;
@@ -645,26 +594,35 @@ async function applyHotelJsonDataToHotelsPage() {
         if (packagesProgress) packagesProgress.setProgress(38);
         const hotelTotal = hotels.length || 1;
         let hotelsPrepared = 0;
-        const preparedHotels = await Promise.all(hotels.map(async (hotel) => {
-            if (!hotel) return null;
-            const slug = slugifyHotelName(hotel.slug || hotel.name || '');
-            if (!slug || !String(hotel.name || '').trim() || !isHotelActive(hotel.active)) return null;
-            const imageSet = await resolveHotelImageSet(slug);
-            hotelsPrepared += 1;
-            if (packagesProgress) {
-                packagesProgress.setProgress(38 + Math.round((hotelsPrepared / hotelTotal) * 52));
-            }
-            if (!imageSet) return null;
-            return {
-                ...hotel,
-                slug,
-                imageBasePath: imageSet.basePath,
-                imageUrl: String(hotel.imageUrl || '').trim() || imageSet.images[0],
-                galleryImages: Array.isArray(hotel.galleryImages) && hotel.galleryImages.length
-                    ? hotel.galleryImages
-                    : [imageSet.images[0]]
-            };
-        }));
+        const preparedHotels = [];
+        const batchSize = 4;
+
+        for (let offset = 0; offset < hotels.length; offset += batchSize) {
+            const batch = hotels.slice(offset, offset + batchSize);
+            const batchResults = await Promise.all(
+                batch.map(async (hotel) => {
+                    if (!hotel) return null;
+                    const slug = slugifyHotelName(hotel.slug || hotel.name || '');
+                    if (!slug || !String(hotel.name || '').trim() || !isHotelActive(hotel.active)) return null;
+                    const imageSet = await resolveHotelImageSet(slug);
+                    hotelsPrepared += 1;
+                    if (packagesProgress) {
+                        packagesProgress.setProgress(38 + Math.round((hotelsPrepared / hotelTotal) * 52));
+                    }
+                    if (!imageSet) return null;
+                    return {
+                        ...hotel,
+                        slug,
+                        imageBasePath: imageSet.basePath,
+                        imageUrl: String(hotel.imageUrl || '').trim() || imageSet.images[0],
+                        galleryImages: Array.isArray(hotel.galleryImages) && hotel.galleryImages.length
+                            ? hotel.galleryImages
+                            : [imageSet.images[0]]
+                    };
+                })
+            );
+            preparedHotels.push(...batchResults);
+        }
         if (packagesProgress) packagesProgress.setProgress(94);
         const validHotels = preparedHotels.filter(Boolean);
         const noResultsEl = document.getElementById('noResults');

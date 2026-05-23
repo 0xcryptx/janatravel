@@ -1164,6 +1164,7 @@ section {
     gap: 1.5rem;
 }
 
+.gallery-loading,
 .gallery-empty {
     grid-column: 1 / -1;
     text-align: center;
