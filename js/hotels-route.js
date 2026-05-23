@@ -9,7 +9,7 @@ import {
   HOTEL_IMAGE_SLOTS,
   buildCandidateUrls,
   buildOptimisticMainGallery,
-  findFirstExistingImage,
+  resolveFolderGalleryImages,
   resolveMainGalleryForSlug
 } from "./hotel-image-probe.js";
 
@@ -390,17 +390,7 @@ async function hydrateSectionItems(section, onProgress) {
         }
         return item;
       }
-      const resolved = await Promise.all(
-        IMAGE_INDEXES.map((slotIndex) => findFirstExistingImage(item.folderPath, String(slotIndex)))
-      );
-      const images = [];
-      const imageCandidates = [];
-      resolved.forEach((url, slotIndex) => {
-        if (!url) return;
-        images.push(url);
-        const slotCandidates = item.imageCandidates?.[slotIndex] || [url];
-        imageCandidates.push([url, ...slotCandidates.filter((candidate) => candidate !== url)]);
-      });
+      const { images, imageCandidates } = await resolveFolderGalleryImages(item.folderPath);
       if (typeof onProgress === "function") {
         onProgress(Math.round(((index + 1) / total) * 100));
       }
@@ -412,14 +402,38 @@ async function hydrateSectionItems(section, onProgress) {
   section.itemsLoaded = true;
 }
 
+function ensureSectionHydrated(section, onHydrated) {
+  if (!section || section.itemsLoaded) {
+    if (typeof onHydrated === "function") onHydrated();
+    return Promise.resolve();
+  }
+  if (section._hydratePromise) {
+    return section._hydratePromise.then(() => {
+      if (typeof onHydrated === "function") onHydrated();
+    });
+  }
+  section._hydratePromise = hydrateSectionItems(section)
+    .then(() => {
+      if (typeof onHydrated === "function") onHydrated();
+    })
+    .finally(() => {
+      section._hydratePromise = null;
+    });
+  return section._hydratePromise;
+}
+
+function prewarmHotelSections(sectionData) {
+  Object.values(sectionData).forEach((section) => {
+    ensureSectionHydrated(section);
+  });
+}
+
 async function hydrateAllHotelSections(sections) {
   const pending = sections.filter(
     (section) => section && Array.isArray(section.items) && section.items.length && !section.itemsLoaded
   );
   if (!pending.length) return;
-  for (const section of pending) {
-    await hydrateSectionItems(section);
-  }
+  await Promise.all(pending.map((section) => hydrateSectionItems(section)));
 }
 
 function normalizeSheetHotel(row) {
@@ -990,7 +1004,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
   const tabs = Array.from(contentEl.querySelectorAll(".info-tab"));
   const panelTitle = contentEl.querySelector("#hotelInfoPanelTitle");
   const panelBody = contentEl.querySelector("#hotelInfoPanelBody");
-  if (!tabs.length || !panelTitle || !panelBody) return Promise.resolve();
+  if (!tabs.length || !panelTitle || !panelBody) return null;
 
   const bindSectionThumbs = () => {
     panelBody.querySelectorAll(".section-thumb-btn").forEach((btn) => {
@@ -1013,9 +1027,12 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
     });
   };
 
-  const bindCardImageViewers = async () => {
+  let activeTabKey = initialTab;
+
+  const bindCardImageViewers = () => {
     const viewers = panelBody.querySelectorAll(".room-image-viewer");
-    for (const viewer of viewers) {
+    return Promise.all(
+      Array.from(viewers).map(async (viewer) => {
       const sectionKey = viewer.dataset.sectionKey || "rooms";
       const itemIndex = Number(viewer.dataset.itemIndex || 0);
       const section = sectionData[sectionKey];
@@ -1110,24 +1127,33 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         prevBtn.style.display = "none";
         nextBtn.style.display = "none";
       }
-    }
+      })
+    );
   };
 
-  const setActiveTab = async (key) => {
+  const renderActivePanel = (key) => {
     const section = sectionData[key];
     if (!section) return;
-    if (!section.itemsLoaded) {
-      await hydrateSectionItems(section);
-    }
+    panelTitle.textContent = section.title;
+    panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName });
+    panelBody.classList.toggle("info-panel__body--hydrating", !section.itemsLoaded);
+    bindSectionThumbs();
+    void bindCardImageViewers();
+  };
+
+  const setActiveTab = (key) => {
+    const section = sectionData[key];
+    if (!section) return;
+    activeTabKey = key;
     tabs.forEach((tab) => {
       const isActive = tab.dataset.infoSection === key;
       tab.classList.toggle("is-active", isActive);
       tab.setAttribute("aria-selected", isActive ? "true" : "false");
     });
-    panelTitle.textContent = section.title;
-    panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName });
-    bindSectionThumbs();
-    await bindCardImageViewers();
+    renderActivePanel(key);
+    ensureSectionHydrated(section, () => {
+      if (activeTabKey === key) renderActivePanel(key);
+    });
     if (onTabChange) onTabChange(key);
   };
 
@@ -1137,7 +1163,11 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
     });
   });
 
-  return setActiveTab(sectionData[initialTab] ? initialTab : "rooms");
+  prewarmHotelSections(sectionData);
+
+  const firstTab = sectionData[initialTab] ? initialTab : "rooms";
+  setActiveTab(firstTab);
+  return (key) => setActiveTab(key);
 }
 
 function animateNumericDetailValues(contentEl) {
@@ -1342,7 +1372,7 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
 
   let setActiveTab = null;
   try {
-    setActiveTab = await setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
+    setActiveTab = setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
       initialTab: String(persistedState.activeTab || "rooms"),
       hotelName,
       onTabChange: (tabKey) => saveHotelViewState(hotel.slug, { activeTab: tabKey })
@@ -1351,15 +1381,7 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
     console.error("Failed to initialize hotel info tabs:", tabsError);
   }
 
-  if (setActiveTab) {
-    hydrateAllHotelSections(Object.values(infoSections))
-      .then(async () => {
-        const activeKey =
-          document.querySelector(".info-tab.is-active")?.dataset.infoSection || "rooms";
-        await setActiveTab(activeKey);
-      })
-      .catch((error) => console.warn("Hotel section image hydration failed:", error));
-  }
+
 }
 
 async function initHotelsRoutePage() {

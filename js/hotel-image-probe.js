@@ -11,7 +11,7 @@ export const HOTEL_IMAGE_EXT_PRIORITY = ['jpg', 'avif', 'webp', 'jpeg', 'png'];
 const IMAGE_OK_CACHE = new Map();
 const IMAGE_FAIL_CACHE = new Set();
 const IMAGE_PROBE_INFLIGHT = new Map();
-const MAX_CONCURRENT_PROBES = 10;
+const MAX_CONCURRENT_PROBES = 18;
 let activeProbes = 0;
 const probeQueue = [];
 
@@ -74,10 +74,36 @@ export function buildCandidateUrls(folderPath, baseName) {
 
 export async function findFirstExistingImage(folderPath, baseName) {
     const candidates = buildCandidateUrls(folderPath, baseName);
-    for (const url of candidates) {
-        if (await probeImageExists(url)) return url;
-    }
-    return '';
+    if (!candidates.length) return '';
+
+    const results = await Promise.all(
+        candidates.map(async (url) => [url, await probeImageExists(url)])
+    );
+    const match = results.find(([, exists]) => exists);
+    return match ? match[0] : '';
+}
+
+/** Resolve numbered images (1–4) in a hotel subfolder (room, restaurant, etc.). */
+export async function resolveFolderGalleryImages(folderPath) {
+    const folder = String(folderPath || '').replace(/\/$/, '');
+    if (!folder) return { images: [], imageCandidates: [] };
+
+    const candidatesBySlot = HOTEL_IMAGE_SLOTS.map((slotIndex) =>
+        buildCandidateUrls(folder, String(slotIndex))
+    );
+    const resolved = await Promise.all(
+        HOTEL_IMAGE_SLOTS.map((slotIndex) => findFirstExistingImage(folder, String(slotIndex)))
+    );
+
+    const images = [];
+    const imageCandidates = [];
+    resolved.forEach((url, index) => {
+        if (!url) return;
+        images.push(url);
+        imageCandidates.push([url, ...candidatesBySlot[index].filter((candidate) => candidate !== url)]);
+    });
+
+    return { images, imageCandidates };
 }
 
 export function buildMainGallerySlotCandidates(slug, slotIndex) {
