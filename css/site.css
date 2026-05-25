@@ -2074,7 +2074,7 @@ section {
 }
 
 .offer-card-title {
-    margin: 0;
+    margin: 0 0 0 -0.4rem;
     line-height: 1;
 }
 
