@@ -31,8 +31,9 @@ function createWhatsAppLink(message) {
 function formatIslandSizeDisplay(value) {
   const raw = String(value || "").trim();
   if (!raw) return "Not specified";
+  if (/\b(ha|hectares?)\b/i.test(raw)) return raw;
   if (/\bsq\.?\s*km\b/i.test(raw)) return raw;
-  if (/^\d+(\.\d+)?$/.test(raw)) return `${raw} sq km`;
+  if (/^\d+(\.\d+)?$/.test(raw)) return `${raw} ha`;
   return raw;
 }
 
@@ -106,14 +107,19 @@ function renderHotelPage(hotel) {
     <h2>Hotel Details</h2>
     <div class="details-grid">
       ${details
-        .map(
-          ([label, value]) => `
+        .map(([label, value]) => {
+          const displayValue = value || "Not specified";
+          const hintMarkup = (label === "Island Size" && displayValue !== "Not specified")
+            ? `<small class="detail-hint">ha stands for hectares</small>`
+            : "";
+          return `
             <div class="detail-card">
               <span class="label">${escapeHtml(label)}</span>
-              <span class="value">${escapeHtml(value || "Not specified")}</span>
+              <span class="value">${escapeHtml(displayValue)}</span>
+              ${hintMarkup}
             </div>
-          `
-        )
+          `;
+        })
         .join("")}
     </div>
 
