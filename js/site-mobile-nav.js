@@ -20,6 +20,7 @@
     if (path.startsWith("/about")) return "about";
     if (path.startsWith("/destinations")) return "destinations";
     if (path.startsWith("/hotels")) return "hotels";
+    if (path.startsWith("/offers")) return "offers";
     if (path.startsWith("/services")) return "services";
     if (path.startsWith("/contact")) return "contact";
     return "";
@@ -44,6 +45,7 @@
     else if (href.startsWith("/about")) anchor.dataset.navPage = "about";
     else if (href.startsWith("/destinations")) anchor.dataset.navPage = "destinations";
     else if (href.startsWith("/hotels")) anchor.dataset.navPage = "hotels";
+    else if (href.startsWith("/offers")) anchor.dataset.navPage = "offers";
     else if (href.startsWith("/services")) anchor.dataset.navPage = "services";
     else if (href.startsWith("/contact")) anchor.dataset.navPage = "contact";
   });
