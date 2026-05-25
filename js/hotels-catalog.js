@@ -665,7 +665,9 @@ async function applyHotelJsonDataToHotelsPage() {
         });
 
         syncDestinationOverridesIntoDestinations();
-        if (typeof applyPackagesCatalogView === 'function') {
+        if (typeof restorePackagesViewState === 'function') {
+            restorePackagesViewState();
+        } else if (typeof applyPackagesCatalogView === 'function') {
             applyPackagesCatalogView(false);
         }
         if (typeof filterHotels === 'function') {
@@ -701,6 +703,123 @@ let appliedTripType = 'all';
 let appliedCountry = 'all';
 /** 'featured' | 'all' when browsing catalog; null after Search (tabs visually inactive). */
 let packagesNavScope = 'featured';
+
+const PACKAGES_VIEW_STATE_STORAGE_KEY = 'jana:hotelsCatalogView';
+
+// We re-render cards async on every visit, so the browser's native scroll restoration
+// often fires before content height matches and lands in the wrong place. Take over.
+if (typeof history !== 'undefined' && 'scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+}
+
+function savePackagesViewState() {
+    try {
+        const snapshot = {
+            scope: packagesNavScope,
+            countries: Array.from(selectedPackagesCountries || []),
+            tripType: appliedTripType,
+            country: appliedCountry,
+            scrollY: typeof window !== 'undefined' ? Math.round(window.scrollY || window.pageYOffset || 0) : 0
+        };
+        sessionStorage.setItem(PACKAGES_VIEW_STATE_STORAGE_KEY, JSON.stringify(snapshot));
+    } catch (error) {
+        // Storage may be unavailable (private mode, quota); silently ignore.
+    }
+}
+
+if (typeof window !== 'undefined') {
+    // Snapshot scroll on the way out so back-navigation can land in the same spot.
+    const snapshotOnLeave = () => savePackagesViewState();
+    window.addEventListener('pagehide', snapshotOnLeave);
+    window.addEventListener('beforeunload', snapshotOnLeave);
+    document.addEventListener(
+        'click',
+        (event) => {
+            const card = event.target && event.target.closest && event.target.closest('.destination-card[data-hotel-slug]');
+            if (card) snapshotOnLeave();
+        },
+        true
+    );
+}
+
+function loadPackagesViewState() {
+    try {
+        const raw = sessionStorage.getItem(PACKAGES_VIEW_STATE_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function restorePackagesViewState() {
+    const saved = loadPackagesViewState();
+    if (!saved) {
+        applyPackagesCatalogView(false);
+        return;
+    }
+
+    // Restore country chip selection (defaults to all if missing/invalid).
+    if (Array.isArray(saved.countries) && saved.countries.length) {
+        const valid = saved.countries.filter((c) => PACKAGE_COUNTRY_OPTIONS.includes(c));
+        selectedPackagesCountries = valid.length ? new Set(valid) : new Set(PACKAGE_COUNTRY_OPTIONS);
+    } else {
+        selectedPackagesCountries = new Set(PACKAGE_COUNTRY_OPTIONS);
+    }
+    updatePackagesCountryFilterUi();
+
+    // Restore search-form filters and sync the visible custom selects.
+    appliedTripType = typeof saved.tripType === 'string' ? saved.tripType : 'all';
+    appliedCountry = typeof saved.country === 'string' ? saved.country : 'all';
+    const tripTypeEl = document.getElementById('tripType');
+    const countryEl = document.getElementById('countryFilter');
+    if (tripTypeEl) {
+        tripTypeEl.value = appliedTripType;
+        syncFilterSelectUI('tripType');
+    }
+    if (countryEl) {
+        countryEl.value = appliedCountry;
+        syncFilterSelectUI('countryFilter');
+    }
+
+    if (saved.scope === 'all') {
+        packagesNavScope = 'all';
+        updatePackagesNavTabs();
+        applyPackagesCatalogView(true);
+    } else if (saved.scope === null) {
+        // "Filtered packages" mode (after a Search Hotels run).
+        packagesNavScope = null;
+        updatePackagesNavTabs();
+        applyFilteredPackagesHeading();
+        const grid = document.getElementById('hotelsGrid');
+        if (grid) {
+            grid.classList.add('hotels-grid--filtering');
+            grid.classList.remove('show-all');
+        }
+        filterHotels();
+    } else {
+        packagesNavScope = 'featured';
+        updatePackagesNavTabs();
+        applyPackagesCatalogView(false);
+    }
+
+    // Restore scroll position after layout settles. Try a few times to absorb async
+    // image decoding / fade-in transitions that grow the document height incrementally.
+    const targetY = Number(saved.scrollY) || 0;
+    if (targetY > 0 && typeof window !== 'undefined') {
+        const tryScroll = () => {
+            const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+            window.scrollTo(0, Math.min(targetY, maxY));
+        };
+        requestAnimationFrame(() => {
+            tryScroll();
+            requestAnimationFrame(tryScroll);
+            setTimeout(tryScroll, 120);
+            setTimeout(tryScroll, 320);
+        });
+    }
+}
 
 function syncFilterSelectUI(selectId) {
     const select = document.getElementById(selectId);
@@ -944,6 +1063,7 @@ function togglePackagesCountryFilter(country) {
     if (packagesNavScope === 'all') {
         filterHotels();
     }
+    savePackagesViewState();
 }
 
 function applyFilteredPackagesHeading() {
@@ -1034,6 +1154,7 @@ function selectPackagesCatalog(mode) {
     syncDefaultPackageFilters();
     updatePackagesNavTabs();
     applyPackagesCatalogView(mode === 'all');
+    savePackagesViewState();
 }
 
 function runPackagesFilterSearch() {
@@ -1051,6 +1172,7 @@ function runPackagesFilterSearch() {
         grid.classList.remove('show-all');
     }
     filterHotels();
+    savePackagesViewState();
 }
 
 function resetFilters() {
@@ -1058,6 +1180,7 @@ function resetFilters() {
     updatePackagesNavTabs();
     syncDefaultPackageFilters();
     applyPackagesCatalogView(false);
+    savePackagesViewState();
 }
 
 function viewAllPackagesFromEmpty() {
@@ -1067,6 +1190,7 @@ function viewAllPackagesFromEmpty() {
     updatePackagesNavTabs();
     syncDefaultPackageFilters();
     applyPackagesCatalogView(true);
+    savePackagesViewState();
 }
 
 updatePackagesCountryFilterUi();
@@ -1359,6 +1483,19 @@ async function initCatalogSwipers() {
 
     window.preloadCatalogImages = (urls) => preloadJanaImages(urls);
 }
+
+// Expose inline-onclick handlers globally because this script is loaded as an ES module
+// (top-level declarations are otherwise scoped to the module and unreachable from HTML onclick=).
+window.selectPackagesCatalog = selectPackagesCatalog;
+window.togglePackagesCountryFilter = togglePackagesCountryFilter;
+window.runPackagesFilterSearch = runPackagesFilterSearch;
+window.resetFilters = resetFilters;
+window.viewAllPackagesFromEmpty = viewAllPackagesFromEmpty;
+window.closeModal = closeModal;
+window.closeLightbox = closeLightbox;
+window.openLightbox = openLightbox;
+window.changeSlide = changeSlide;
+window.bookCurrentPackageViaWhatsApp = bookCurrentPackageViaWhatsApp;
 
 initCatalogSwipers()
     .then(() => applyHotelJsonDataToHotelsPage())

@@ -223,6 +223,14 @@ async function initOffersPage() {
         return;
     }
 
+    // Hide offers whose hotel row is marked inactive in the hotels sheet.
+    // Offers whose slug has no matching hotel row are left visible (current fallback behavior).
+    offers = offers.filter((offer) => {
+        const hotelInfo = hotelsLookup.get(offer.slug);
+        if (!hotelInfo) return true;
+        return hotelInfo.active !== false;
+    });
+
     progress.setProgress(48);
 
     if (!offers.length) {

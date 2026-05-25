@@ -1323,27 +1323,18 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
     <h2>Hotel Details</h2>
     <div class="details-grid">
       ${details
-        .map(([label, value]) => {
-          const displayValue = value || "Not specified";
-          let valueMarkup;
-          if (label === "Destination" && destinationPageUrl && value) {
-            valueMarkup = `<a class="value value-link" href="${destinationPageUrl}">${escapeHtml(value)}</a>`;
-          } else if (label === "Location" && hasMapUrl) {
-            valueMarkup = `<a class="value value-link" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(displayValue)}</a>`;
-          } else {
-            valueMarkup = `<span class="value">${escapeHtml(displayValue)}</span>`;
-          }
-          const hintMarkup = (label === "Island Size" && displayValue !== "Not specified")
-            ? `<small class="detail-hint">ha stands for hectares</small>`
-            : "";
-          return `
+        .map(([label, value]) => `
           <div class="detail-card${label === "Experience" ? " detail-card--wide" : ""}${fullWidthDetailLabels.has(label) ? " detail-card--full" : ""}">
             <span class="label">${escapeHtml(label)}</span>
-            ${valueMarkup}
-            ${hintMarkup}
+            ${
+              label === "Destination" && destinationPageUrl && value
+                ? `<a class="value value-link" href="${destinationPageUrl}">${escapeHtml(value)}</a>`
+                : label === "Location" && hasMapUrl
+                  ? `<a class="value value-link" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value || "Not specified")}</a>`
+                  : `<span class="value">${escapeHtml(value || "Not specified")}</span>`
+            }
           </div>
-        `;
-        })
+        `)
         .join("")}
     </div>
     <p class="lead">${escapeHtml(hotel.description || "Discover this curated stay with JANA Travel.")}</p>

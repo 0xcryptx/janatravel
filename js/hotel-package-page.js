@@ -107,19 +107,14 @@ function renderHotelPage(hotel) {
     <h2>Hotel Details</h2>
     <div class="details-grid">
       ${details
-        .map(([label, value]) => {
-          const displayValue = value || "Not specified";
-          const hintMarkup = (label === "Island Size" && displayValue !== "Not specified")
-            ? `<small class="detail-hint">ha stands for hectares</small>`
-            : "";
-          return `
+        .map(
+          ([label, value]) => `
             <div class="detail-card">
               <span class="label">${escapeHtml(label)}</span>
-              <span class="value">${escapeHtml(displayValue)}</span>
-              ${hintMarkup}
+              <span class="value">${escapeHtml(value || "Not specified")}</span>
             </div>
-          `;
-        })
+          `
+        )
         .join("")}
     </div>
 
