@@ -11,6 +11,16 @@
  * =============================================================================
  */
 (function initSiteAccessGate() {
+  // ---------------------------------------------------------------------------
+  // TEMPORARY: site-wide PIN gate is disabled. Flip back to `false` to re-enable
+  // the development password overlay without touching any HTML pages.
+  // ---------------------------------------------------------------------------
+  const GATE_DISABLED = true;
+  if (GATE_DISABLED) {
+    document.documentElement.classList.remove("site-gate-pending");
+    return;
+  }
+
   const STORAGE_KEY = "jana:siteAccessUnlocked";
   const COOKIE_NAME = "jana_site_access";
   const COOKIE_MAX_AGE_DAYS = 365;
