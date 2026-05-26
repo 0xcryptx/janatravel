@@ -5,8 +5,27 @@
 export const HOTEL_IMAGE_ROOT = '/assets/hotel_images';
 export const HOTEL_IMAGE_SLOTS = [1, 2, 3, 4];
 export const HOTEL_ROOT_IMAGE_NAMES = ['1', '2', '3', '4', 'add_image'];
-export const HOTEL_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
-export const HOTEL_IMAGE_EXT_PRIORITY = ['jpg', 'avif', 'webp', 'jpeg', 'png'];
+
+/**
+ * All browser-renderable image formats we probe for. Includes uppercase and
+ * common mixed-case variants because most production hosts (GitHub Pages,
+ * Linux/Nginx) serve URLs case-sensitively, so `1.JPG` and `1.jpg` are
+ * distinct files. Browsers cannot decode HEIC/HEIF/TIFF/RAW natively — those
+ * still need to be converted to a web format before upload.
+ */
+const HOTEL_IMAGE_EXT_BASE = [
+    'jpg', 'jpeg', 'png', 'webp', 'avif',
+    'gif', 'bmp', 'svg', 'apng', 'ico'
+];
+const HOTEL_IMAGE_EXT_CASE_VARIANTS = HOTEL_IMAGE_EXT_BASE.flatMap((ext) => {
+    const upper = ext.toUpperCase();
+    const titled = ext.charAt(0).toUpperCase() + ext.slice(1);
+    return [ext, upper, titled];
+});
+export const HOTEL_IMAGE_EXTENSIONS = [...new Set(HOTEL_IMAGE_EXT_CASE_VARIANTS)];
+export const HOTEL_IMAGE_EXT_PRIORITY = [
+    'jpg', 'avif', 'webp', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'apng', 'ico'
+];
 
 const IMAGE_OK_CACHE = new Map();
 const IMAGE_FAIL_CACHE = new Set();
@@ -83,25 +102,51 @@ export async function findFirstExistingImage(folderPath, baseName) {
     return match ? match[0] : '';
 }
 
-/** Resolve numbered images (1–4) in a hotel subfolder (room, restaurant, etc.). */
-export async function resolveFolderGalleryImages(folderPath) {
+/**
+ * Resolve numbered images in a hotel subfolder (room, restaurant, etc.).
+ *
+ * Has no fixed slot cap — discovers as many consecutively-numbered images as
+ * exist (1.jpg, 2.jpg, 3.jpg, ...). Probes a batch of slots in parallel and
+ * stops as soon as a slot is missing, so users only need to drop files in
+ * sequence to grow a gallery. `maxSlots` is a safety upper bound to prevent
+ * runaway probing in case of unexpected naming.
+ */
+export async function resolveFolderGalleryImages(folderPath, options = {}) {
     const folder = String(folderPath || '').replace(/\/$/, '');
     if (!folder) return { images: [], imageCandidates: [] };
 
-    const candidatesBySlot = HOTEL_IMAGE_SLOTS.map((slotIndex) =>
-        buildCandidateUrls(folder, String(slotIndex))
-    );
-    const resolved = await Promise.all(
-        HOTEL_IMAGE_SLOTS.map((slotIndex) => findFirstExistingImage(folder, String(slotIndex)))
-    );
+    const batchSize = Math.max(1, options.batchSize || 4);
+    const maxSlots = Math.max(1, options.maxSlots || 200);
 
     const images = [];
     const imageCandidates = [];
-    resolved.forEach((url, index) => {
-        if (!url) return;
-        images.push(url);
-        imageCandidates.push([url, ...candidatesBySlot[index].filter((candidate) => candidate !== url)]);
-    });
+
+    let nextSlot = 1;
+    let stopped = false;
+    while (!stopped && nextSlot <= maxSlots) {
+        const batchEnd = Math.min(nextSlot + batchSize - 1, maxSlots);
+        const slotsInBatch = [];
+        for (let s = nextSlot; s <= batchEnd; s += 1) slotsInBatch.push(s);
+
+        const batchResults = await Promise.all(
+            slotsInBatch.map(async (slot) => ({
+                slot,
+                url: await findFirstExistingImage(folder, String(slot))
+            }))
+        );
+
+        for (const { slot, url } of batchResults) {
+            if (!url) {
+                stopped = true;
+                break;
+            }
+            const candidates = buildCandidateUrls(folder, String(slot));
+            images.push(url);
+            imageCandidates.push([url, ...candidates.filter((candidate) => candidate !== url)]);
+        }
+
+        nextSlot = batchEnd + 1;
+    }
 
     return { images, imageCandidates };
 }

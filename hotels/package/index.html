@@ -211,18 +211,34 @@
       z-index:10;
     }
     @media (hover:hover) {
-      .hero-nav,
+      /* Arrows stay dimly visible at all times so users always see they exist;
+         the counter and "Click to expand" badge still hide until hover. */
+      .hero-nav {
+        opacity:.55;
+        transition:opacity .2s ease;
+      }
       .hero-counter,
       .maximize-btn {
         opacity:0;
         transition:opacity .2s ease;
       }
+      /* The .is-hover class is toggled in JS via mouseenter/mouseleave on the
+         hero element. Pure CSS :hover proved unreliable once Swiper started
+         capturing pointer events inside the hero viewport (arrows would either
+         fail to appear on hover or get stuck visible after a swipe). The CSS
+         :hover selector is kept as a graceful fallback if JS hasn't run yet.
+         :has(:focus-visible) handles keyboard-only focus; we deliberately avoid
+         :focus-within because that would also match mouse-click focus, which
+         would keep the chrome visible after a click + scroll-away. */
+      .hero--interactive.is-hover .hero-nav,
+      .hero--interactive.is-hover .hero-counter,
+      .hero--interactive.is-hover .maximize-btn,
       .hero--interactive:hover .hero-nav,
       .hero--interactive:hover .hero-counter,
       .hero--interactive:hover .maximize-btn,
-      .hero--interactive:focus-within .hero-nav,
-      .hero--interactive:focus-within .hero-counter,
-      .hero--interactive:focus-within .maximize-btn {
+      .hero--interactive:has(:focus-visible) .hero-nav,
+      .hero--interactive:has(:focus-visible) .hero-counter,
+      .hero--interactive:has(:focus-visible) .maximize-btn {
         opacity:1;
       }
     }
@@ -526,13 +542,20 @@
       align-items:center;
       justify-content:center;
       z-index:2;
-      opacity:0;
-      pointer-events:none;
-    }
-    .room-image-viewer:hover .room-image-nav,
-    .room-image-viewer:focus-within .room-image-nav {
-      opacity:1;
+      /* Stay dimly visible at all times so they're discoverable; brighten on
+         hover. Counter and expand-hint still hide until hover (rules below). */
+      opacity:.55;
       pointer-events:auto;
+      transition:opacity .2s ease, transform .2s ease;
+    }
+    /* JS-managed .is-hover class is the primary trigger; :hover and
+       :has(:focus-visible) are no-JS fallbacks. We deliberately avoid
+       :focus-within so a mouse click on an arrow doesn't leave the chrome
+       stuck visible after the cursor moves away. */
+    .room-image-viewer.is-hover .room-image-nav,
+    .room-image-viewer:hover .room-image-nav,
+    .room-image-viewer:has(:focus-visible) .room-image-nav {
+      opacity:1;
     }
     .room-image-nav:hover {
       transform:translateY(-50%) scale(1.05);
@@ -567,10 +590,12 @@
       opacity:0;
       transition:opacity .2s ease;
     }
+    .room-image-viewer.is-hover .room-image-counter,
+    .room-image-viewer.is-hover .room-expand-hint,
     .room-image-viewer:hover .room-image-counter,
-    .room-image-viewer:focus-within .room-image-counter,
     .room-image-viewer:hover .room-expand-hint,
-    .room-image-viewer:focus-within .room-expand-hint {
+    .room-image-viewer:has(:focus-visible) .room-image-counter,
+    .room-image-viewer:has(:focus-visible) .room-expand-hint {
       opacity:1;
     }
     .section-inquire-link {

@@ -24,7 +24,7 @@ const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
-const HOTEL_MEDIA_CACHE_VERSION = 6;
+const HOTEL_MEDIA_CACHE_VERSION = 7;
 let hotelDataCacheCleanupTimerId = null;
 
 function loadJsonData(url) {
@@ -143,6 +143,142 @@ function buildStarRatingMarkup(starCount) {
     return `<span class="hotel-rating-star${isFilled ? " is-filled" : ""}" aria-hidden="true">&#9733;</span>`;
   }).join("");
   return `<div class="hotel-rating-stars" aria-label="Rated ${starCount} out of 5 stars">${stars}</div>`;
+}
+
+/**
+ * Drop focus from an arrow button after a *mouse* click so that the chrome
+ * doesn't stay visible due to lingering focus on the button when the cursor
+ * later moves/scrolls away. We deliberately keep focus on keyboard clicks
+ * (`event.detail === 0`) so keyboard users can press Enter repeatedly.
+ */
+function blurAfterMouseClick(button, event) {
+  if (!button || typeof button.blur !== "function") return;
+  if (event && typeof event.detail === "number" && event.detail === 0) {
+    return; // keyboard-driven click: leave focus alone
+  }
+  button.blur();
+}
+
+/**
+ * Toggle an `is-hover` class on an image-viewer container based on actual
+ * mouse position. Used because pure CSS `:hover` becomes unreliable when
+ * Swiper captures pointer events on inner elements: arrows could fail to
+ * appear on hover, or get stuck visible after a swipe ends. mouseenter /
+ * mouseleave fire on the bound element's geometric bounds and aren't
+ * affected by descendant pointer-capture, so the chrome state stays in sync.
+ * Also force-clears when the page is hidden or the window loses focus to
+ * recover from a stuck state if a modal opens or the user alt-tabs away
+ * mid-swipe.
+ */
+const HOVER_CHROME_REGISTRY = new Set();
+const HOVER_CHROME_REGISTRY_RESETS = new Set();
+let hoverChromeGlobalListenersBound = false;
+
+function clearAllHoverChrome() {
+  HOVER_CHROME_REGISTRY.forEach((el) => {
+    if (el && el.classList) el.classList.remove("is-hover");
+  });
+  HOVER_CHROME_REGISTRY_RESETS.forEach((reset) => {
+    try {
+      reset();
+    } catch (error) {
+      // Ignore reset failures.
+    }
+  });
+}
+
+function ensureHoverChromeGlobalListeners() {
+  if (hoverChromeGlobalListenersBound) return;
+  hoverChromeGlobalListenersBound = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) clearAllHoverChrome();
+  });
+  window.addEventListener("blur", clearAllHoverChrome);
+}
+
+function bindHoverChromeToggle(el) {
+  if (!el || el.dataset.hoverChromeBound === "1") return;
+  el.dataset.hoverChromeBound = "1";
+  HOVER_CHROME_REGISTRY.add(el);
+  ensureHoverChromeGlobalListeners();
+
+  // Track hover and keyboard-focus state independently so a mouse click on
+  // an arrow (which leaves the button focused) doesn't keep the chrome stuck
+  // visible after the cursor moves away. Only keyboard-driven focus
+  // (matched via :focus-visible) keeps the chrome on; mouse-induced focus is
+  // ignored, matching the CSS fallback that uses :has(:focus-visible).
+  let isHovered = false;
+  let isFocusVisible = false;
+
+  const sync = () => {
+    el.classList.toggle("is-hover", isHovered || isFocusVisible);
+  };
+
+  el.addEventListener(
+    "mouseenter",
+    () => {
+      isHovered = true;
+      sync();
+    },
+    { passive: true }
+  );
+  el.addEventListener(
+    "mouseleave",
+    () => {
+      isHovered = false;
+      sync();
+    },
+    { passive: true }
+  );
+  el.addEventListener(
+    "focusin",
+    (event) => {
+      const target = event.target;
+      if (target && typeof target.matches === "function") {
+        try {
+          if (target.matches(":focus-visible")) {
+            isFocusVisible = true;
+            sync();
+          }
+        } catch (error) {
+          // Older browsers may throw on :focus-visible; fall back to true.
+          isFocusVisible = true;
+          sync();
+        }
+      }
+    },
+    { passive: true }
+  );
+  el.addEventListener("focusout", (event) => {
+    if (!el.contains(event.relatedTarget)) {
+      isFocusVisible = false;
+      sync();
+    }
+  });
+  el.addEventListener(
+    "pointercancel",
+    () => {
+      isHovered = false;
+      sync();
+    },
+    { passive: true }
+  );
+  el.addEventListener(
+    "touchend",
+    () => {
+      isHovered = false;
+      sync();
+    },
+    { passive: true }
+  );
+
+  // Force-reset hooks: registry's clearAllHoverChrome() removes the class on
+  // visibilitychange/blur. Make sure our internal flags reset too so a later
+  // mouseenter/focusin can re-light the chrome.
+  HOVER_CHROME_REGISTRY_RESETS.add(() => {
+    isHovered = false;
+    isFocusVisible = false;
+  });
 }
 
 const DESTINATION_COUNTRY_PAGES = {
@@ -602,15 +738,17 @@ async function loadHotelBySlug(slug, onProgress) {
   if (typeof onProgress === "function") onProgress(52);
   const hotelSignature = JSON.stringify(matchedHotel);
   const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
-  if (cachedHotel) {
-    if (typeof onProgress === "function") onProgress(96);
-    return cachedHotel;
-  }
-  const preparedHotel = prepareHotelMedia(matchedHotel, (mediaProgress) => {
+
+  // Reuse cached sheet-derived data when available (skips re-parsing + section URL building),
+  // but ALWAYS re-resolve the main gallery from disk. The filesystem can change independently
+  // of the sheet row (e.g. dropping a new 3.jpg into a hotel folder), and the cached gallery
+  // arrays would otherwise hide newly added images until the cache TTL expires.
+  const preparedHotel = cachedHotel || prepareHotelMedia(matchedHotel, (mediaProgress) => {
     if (typeof onProgress === "function") {
       onProgress(55 + Math.round(mediaProgress * 0.4));
     }
   });
+
   if (preparedHotel) {
     const resolvedGallery = await resolveMainGalleryForSlug(normalizedSlug);
     if (resolvedGallery.images.length) {
@@ -911,8 +1049,18 @@ async function setupHotelGallery(contentEl, images, hotelName, lightboxApi, opti
       resolvedSrc: activeImg.currentSrc || activeImg.src
     });
   };
-  if (prevBtn) prevBtn.addEventListener("click", () => setActiveImage(currentIndex - 1));
-  if (nextBtn) nextBtn.addEventListener("click", () => setActiveImage(currentIndex + 1));
+  if (prevBtn) {
+    prevBtn.addEventListener("click", (event) => {
+      setActiveImage(currentIndex - 1);
+      blurAfterMouseClick(prevBtn, event);
+    });
+  }
+  if (nextBtn) {
+    nextBtn.addEventListener("click", (event) => {
+      setActiveImage(currentIndex + 1);
+      blurAfterMouseClick(nextBtn, event);
+    });
+  }
   if (maximizeBtn) maximizeBtn.addEventListener("click", openMainLightbox);
   const heroEl = contentEl.querySelector(".hero--interactive");
   if (heroEl) {
@@ -921,6 +1069,7 @@ async function setupHotelGallery(contentEl, images, hotelName, lightboxApi, opti
       if (gallerySwipe?.didDrag?.()) return;
       openMainLightbox();
     });
+    bindHoverChromeToggle(heroEl);
   }
 
   document.addEventListener("keydown", (event) => {
@@ -1102,10 +1251,12 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       prevBtn.addEventListener("click", (event) => {
         event.stopPropagation();
         setActiveImage(currentIndex - 1);
+        blurAfterMouseClick(prevBtn, event);
       });
       nextBtn.addEventListener("click", (event) => {
         event.stopPropagation();
         setActiveImage(currentIndex + 1);
+        blurAfterMouseClick(nextBtn, event);
       });
       viewer.addEventListener("click", (event) => {
         if (event.target.closest(".room-image-nav")) return;
@@ -1128,6 +1279,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         prevBtn.style.display = "none";
         nextBtn.style.display = "none";
       }
+      bindHoverChromeToggle(viewer);
       })
     );
   };
