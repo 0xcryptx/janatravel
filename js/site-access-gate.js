@@ -15,7 +15,7 @@
   // TEMPORARY: site-wide PIN gate is disabled. Flip back to `false` to re-enable
   // the development password overlay without touching any HTML pages.
   // ---------------------------------------------------------------------------
-  const GATE_DISABLED = true;
+  const GATE_DISABLED = false;
   if (GATE_DISABLED) {
     document.documentElement.classList.remove("site-gate-pending");
     return;
