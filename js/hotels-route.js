@@ -1,8 +1,11 @@
 import { createLoadingProgress, formatLoadingText } from "./loading-progress.js";
 import {
+  bindJanaImageCarousel,
+  bindJanaSwipeCarousel,
   bindJanaSwiperCarousel,
   preloadJanaImages,
-  preloadJanaSlideNeighbors
+  preloadJanaSlideNeighbors,
+  shouldUseJanaSwiperCarousel
 } from "./jana-swiper.js";
 import {
   HOTEL_IMAGE_ROOT,
@@ -952,7 +955,15 @@ async function setupImageLightbox(contentEl) {
     applyImageWithFallbacks(imgEl, candidates, { transformKey: "default" });
   };
 
-  const lightboxSwipe = await bindJanaSwiperCarousel({
+  let lightboxSwipe = null;
+  let lightboxSwipeKind = null;
+
+  const getLightboxCarouselKind = (count) => {
+    if (count <= 1) return "none";
+    return shouldUseJanaSwiperCarousel(count) ? "swiper" : "track";
+  };
+
+  const lightboxCarouselOptions = {
     mountBefore: lightboxImage,
     mainImageEl: lightboxImage,
     viewportClass: "lightbox-swipe-viewport",
@@ -963,7 +974,25 @@ async function setupImageLightbox(contentEl) {
       updateLightboxCounter();
       cacheResolvedLightboxSrc(slideIndex, lightboxSwipe?.getActiveImage?.());
     }
-  });
+  };
+
+  const mountLightboxCarousel = async () => {
+    const count = currentImages.length;
+    const kind = getLightboxCarouselKind(count);
+    if (kind === lightboxSwipeKind && lightboxSwipe) {
+      lightboxSwipe.refresh?.();
+      return lightboxSwipe;
+    }
+    lightboxSwipe?.destroy?.();
+    lightboxSwipe = null;
+    lightboxSwipeKind = kind;
+    if (kind === "none") return null;
+    lightboxSwipe =
+      kind === "swiper"
+        ? await bindJanaSwiperCarousel(lightboxCarouselOptions)
+        : bindJanaSwipeCarousel(lightboxCarouselOptions);
+    return lightboxSwipe;
+  };
 
   const setLightboxImage = (nextIndex) => {
     if (!currentImages.length) return;
@@ -988,7 +1017,7 @@ async function setupImageLightbox(contentEl) {
     }
   };
 
-  const openLightbox = (payload, startIndex = 0) => {
+  const openLightbox = async (payload, startIndex = 0) => {
     const normalizedPayload = normalizeLightboxPayload(payload, startIndex);
     if (!normalizedPayload.images.length) return;
 
@@ -1005,7 +1034,13 @@ async function setupImageLightbox(contentEl) {
       lightboxContext.resolvedAtIndex.set(normalizedStart, normalizedPayload.resolvedSrc);
     }
 
-    if (lightboxSwipe) lightboxSwipe.refresh();
+    if (prevBtn && nextBtn) {
+      const showNav = currentImages.length > 1;
+      prevBtn.hidden = !showNav;
+      nextBtn.hidden = !showNav;
+    }
+
+    await mountLightboxCarousel();
     setLightboxImage(normalizedStart);
     const deliveryImages = currentImages.map((src) => resolveImagePath(src, "default"));
     preloadJanaImages(deliveryImages);
@@ -1111,7 +1146,7 @@ async function setupHotelGallery(contentEl, images, hotelName, lightboxApi, opti
     });
   };
 
-  const gallerySwipe = await bindJanaSwiperCarousel({
+  const gallerySwipe = await bindJanaImageCarousel({
     mountBefore: mainImageEl,
     mainImageEl,
     viewportClass: "hero-swipe-viewport",
@@ -1327,7 +1362,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
 
       let cardSwipe = null;
       try {
-        cardSwipe = await bindJanaSwiperCarousel({
+        cardSwipe = await bindJanaImageCarousel({
           mountBefore: mainImageEl,
           mainImageEl,
           viewportClass: "room-swipe-viewport",

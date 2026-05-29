@@ -122,17 +122,13 @@ export function refreshSwiperLoop(swiperInstance) {
  * Mobile: infinite loop (last → first slides in from the right).
  * Desktop: rewind for arrow buttons; touch disabled via breakpoints.
  *
- * Swiper loop mis-indexes on exactly 3 slides (realIndex sticks on the last slide
- * after wrap). Use rewind there instead; 4+ slides loop normally.
+ * Galleries with 3 or fewer images use bindJanaSwipeCarousel instead of Swiper.
  */
 export function getJanaTouchCarouselOptions(slideCount = 0) {
   if (slideCount <= 1) {
     return { loop: false, rewind: false };
   }
   if (isJanaMobile()) {
-    if (slideCount === 3) {
-      return { loop: false, rewind: true };
-    }
     return {
       loop: true,
       rewind: false,
@@ -144,6 +140,10 @@ export function getJanaTouchCarouselOptions(slideCount = 0) {
     loop: false,
     rewind: true
   };
+}
+
+export function shouldUseJanaSwiperCarousel(slideCount = 0) {
+  return slideCount > 3;
 }
 
 /**
@@ -234,7 +234,336 @@ export function preloadJanaSlideNeighbors(urls, centerIndex) {
 }
 
 /**
- * Hotel hero / room / lightbox carousels (replaces bindSwipeCarousel).
+ * Touch carousel for 2–3 images (prev / current / next track). No Swiper dependency.
+ */
+export function bindJanaSwipeCarousel({
+  mountBefore,
+  mainImageEl,
+  getSlideCount,
+  applySlideToImage,
+  onIndexChange,
+  initialIndex = 0,
+  viewportClass = "swipe-viewport",
+  swipeThreshold = 48
+}) {
+  if (!mountBefore?.parentNode || !mainImageEl || typeof applySlideToImage !== "function") {
+    return null;
+  }
+
+  const countAtBuild = getSlideCount();
+  if (countAtBuild <= 1) return null;
+
+  const viewport = document.createElement("div");
+  viewport.className = viewportClass;
+  const track = document.createElement("div");
+  track.className = "swipe-track";
+
+  const prevSlide = document.createElement("div");
+  const currentSlide = document.createElement("div");
+  const nextSlide = document.createElement("div");
+  prevSlide.className = "swipe-slide";
+  currentSlide.className = "swipe-slide swipe-slide--current";
+  nextSlide.className = "swipe-slide";
+
+  const prevImg = document.createElement("img");
+  const nextImg = document.createElement("img");
+  prevImg.draggable = false;
+  nextImg.draggable = false;
+  prevImg.decoding = "async";
+  nextImg.decoding = "async";
+  mainImageEl.draggable = false;
+
+  const parent = mountBefore.parentNode;
+  parent.insertBefore(viewport, mountBefore);
+  prevSlide.appendChild(prevImg);
+  currentSlide.appendChild(mainImageEl);
+  nextSlide.appendChild(nextImg);
+  track.append(prevSlide, currentSlide, nextSlide);
+  viewport.appendChild(track);
+
+  let index =
+    countAtBuild > 0 ? ((initialIndex % countAtBuild) + countAtBuild) % countAtBuild : 0;
+  let touchStartX = 0;
+  let touchCurrentX = 0;
+  let prevTouchX = 0;
+  let prevTouchTime = 0;
+  let releaseVelocity = 0;
+  let isDragging = false;
+  let isAnimating = false;
+  let viewportWidth = 0;
+  let trackOffsetPx = 0;
+  let dragMoved = false;
+  let moveRaf = 0;
+
+  const SWIPE_SETTLE_MS = 440;
+  const SWIPE_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+  const applySlideImage = (imgEl, slideIndex) => {
+    const count = getSlideCount();
+    if (!count) return;
+    const normalized = ((slideIndex % count) + count) % count;
+    applySlideToImage(imgEl, normalized);
+  };
+
+  const syncAdjacent = () => {
+    const count = getSlideCount();
+    const hideAdjacent = count <= 1;
+    prevSlide.hidden = hideAdjacent;
+    nextSlide.hidden = hideAdjacent;
+    if (hideAdjacent) return;
+    applySlideImage(prevImg, index - 1);
+    applySlideImage(nextImg, index + 1);
+  };
+
+  const measureViewport = () => {
+    viewportWidth = viewport.offsetWidth || parent.offsetWidth || window.innerWidth;
+    return viewportWidth;
+  };
+
+  const centerOffset = () => -viewportWidth;
+
+  const setTrackOffset = (px, { animate = false, durationMs = SWIPE_SETTLE_MS } = {}) => {
+    trackOffsetPx = px;
+    if (animate) {
+      track.classList.remove("is-dragging");
+      track.style.transition = `transform ${durationMs}ms ${SWIPE_EASING}`;
+    } else {
+      track.classList.add("is-dragging");
+      track.style.transition = "none";
+    }
+    track.style.transform = `translate3d(${px}px, 0, 0)`;
+  };
+
+  const snapToCenter = (animate = true) => {
+    measureViewport();
+    setTrackOffset(centerOffset(), { animate, durationMs: SWIPE_SETTLE_MS });
+  };
+
+  const waitForTrackTransition = (durationMs) =>
+    new Promise((resolve) => {
+      let settled = false;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        track.removeEventListener("transitionend", onTransitionEnd);
+        resolve();
+      };
+      const onTransitionEnd = (event) => {
+        if (event.target !== track || event.propertyName !== "transform") return;
+        settle();
+      };
+      track.addEventListener("transitionend", onTransitionEnd);
+      window.setTimeout(settle, durationMs + 60);
+    });
+
+  const animateTrackTo = (targetPx) => {
+    measureViewport();
+    const distance = Math.abs(targetPx - trackOffsetPx);
+    const durationMs = Math.min(
+      SWIPE_SETTLE_MS,
+      Math.max(220, Math.round((distance / Math.max(viewportWidth, 1)) * SWIPE_SETTLE_MS))
+    );
+    setTrackOffset(targetPx, { animate: true, durationMs });
+    return waitForTrackTransition(durationMs);
+  };
+
+  const resetTrackInstant = (px) => {
+    track.classList.add("is-dragging");
+    track.style.transition = "none";
+    track.style.transform = `translate3d(${px}px, 0, 0)`;
+    trackOffsetPx = px;
+    void track.offsetHeight;
+  };
+
+  const commitIndex = (nextIndex, visibleImg) => {
+    const count = getSlideCount();
+    if (!count) return;
+    index = ((nextIndex % count) + count) % count;
+
+    viewport.style.visibility = "hidden";
+    void viewport.offsetHeight;
+    if (visibleImg?.currentSrc || visibleImg?.src) {
+      applySlideToImage(mainImageEl, index);
+    } else {
+      applySlideImage(mainImageEl, index);
+    }
+    resetTrackInstant(centerOffset());
+    syncAdjacent();
+    void viewport.offsetHeight;
+
+    requestAnimationFrame(() => {
+      viewport.style.visibility = "visible";
+      if (onIndexChange) onIndexChange(index);
+    });
+  };
+
+  const finishDrag = async () => {
+    if (!isDragging || isAnimating) return;
+    isDragging = false;
+    if (moveRaf) {
+      cancelAnimationFrame(moveRaf);
+      moveRaf = 0;
+    }
+    measureViewport();
+
+    const diff = touchCurrentX - touchStartX;
+    const progress = diff / Math.max(viewportWidth, 1);
+    const flickThreshold = 0.35;
+    const count = getSlideCount();
+
+    if (count <= 1) {
+      snapToCenter(true);
+      window.setTimeout(() => {
+        dragMoved = false;
+      }, 80);
+      return;
+    }
+
+    let goNext =
+      diff < -swipeThreshold || releaseVelocity < -flickThreshold || progress < -0.18;
+    let goPrev =
+      diff > swipeThreshold || releaseVelocity > flickThreshold || progress > 0.18;
+    if (goNext && goPrev) {
+      goNext = diff < 0;
+      goPrev = diff > 0;
+    }
+
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+
+    isAnimating = true;
+    try {
+      if (!goNext && !goPrev) {
+        await animateTrackTo(centerOffset());
+        return;
+      }
+
+      const targetPx = goNext ? centerOffset() - viewportWidth : centerOffset() + viewportWidth;
+      const nextIndex = goNext ? index + 1 : index - 1;
+      const visibleImg = goNext ? nextImg : prevImg;
+      await animateTrackTo(targetPx);
+      commitIndex(nextIndex, visibleImg);
+    } finally {
+      isAnimating = false;
+      window.setTimeout(() => {
+        dragMoved = false;
+      }, 80);
+    }
+  };
+
+  viewport.addEventListener(
+    "touchstart",
+    (event) => {
+      if (getSlideCount() <= 1 || isAnimating) return;
+      isDragging = true;
+      dragMoved = false;
+      const now = performance.now();
+      touchStartX = event.touches[0].clientX;
+      touchCurrentX = touchStartX;
+      prevTouchX = touchStartX;
+      prevTouchTime = now;
+      releaseVelocity = 0;
+      measureViewport();
+      track.classList.add("is-dragging");
+      syncAdjacent();
+    },
+    { passive: true }
+  );
+
+  viewport.addEventListener(
+    "touchmove",
+    (event) => {
+      if (!isDragging) return;
+      const now = performance.now();
+      touchCurrentX = event.touches[0].clientX;
+      const dt = Math.max(now - prevTouchTime, 16);
+      releaseVelocity = (touchCurrentX - prevTouchX) / dt;
+      prevTouchX = touchCurrentX;
+      prevTouchTime = now;
+      if (Math.abs(touchCurrentX - touchStartX) > 8) dragMoved = true;
+      if (moveRaf) return;
+      moveRaf = requestAnimationFrame(() => {
+        moveRaf = 0;
+        const moveDiff = touchCurrentX - touchStartX;
+        setTrackOffset(centerOffset() + moveDiff, false);
+      });
+    },
+    { passive: true }
+  );
+
+  viewport.addEventListener("touchend", finishDrag);
+  viewport.addEventListener("touchcancel", finishDrag);
+
+  applySlideImage(mainImageEl, index);
+  syncAdjacent();
+  requestAnimationFrame(() => {
+    measureViewport();
+    resetTrackInstant(centerOffset());
+  });
+
+  let resizeObserver = null;
+  if (typeof ResizeObserver === "function") {
+    resizeObserver = new ResizeObserver(() => snapToCenter(false));
+    resizeObserver.observe(viewport);
+  }
+
+  return {
+    setIndex(nextIndex, options = {}) {
+      const count = getSlideCount();
+      if (!count) return;
+      index = ((nextIndex % count) + count) % count;
+      applySlideImage(mainImageEl, index);
+      syncAdjacent();
+      measureViewport();
+      resetTrackInstant(centerOffset());
+      if (!options.silent && onIndexChange) onIndexChange(index);
+    },
+    refresh() {
+      syncAdjacent();
+      measureViewport();
+      resetTrackInstant(centerOffset());
+    },
+    getActiveImage() {
+      return mainImageEl;
+    },
+    didDrag() {
+      const moved = dragMoved;
+      dragMoved = false;
+      return moved;
+    },
+    destroy() {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+      if (mainImageEl.parentNode === currentSlide && parent.contains(viewport)) {
+        parent.insertBefore(mainImageEl, viewport);
+      }
+      viewport.remove();
+    }
+  };
+}
+
+/**
+ * Pick Swiper (4+ images) or touch-track carousel (2–3). Single image: no carousel.
+ */
+export async function bindJanaImageCarousel(options) {
+  const count = typeof options.getSlideCount === "function" ? options.getSlideCount() : 0;
+  if (count <= 1) {
+    if (count === 0) {
+      return bindJanaSwiperCarousel(options);
+    }
+    return null;
+  }
+  if (shouldUseJanaSwiperCarousel(count)) {
+    return bindJanaSwiperCarousel(options);
+  }
+  return bindJanaSwipeCarousel(options);
+}
+
+/**
+ * Hotel hero / room / lightbox carousels (Swiper; use bindJanaImageCarousel to auto-pick).
  */
 export async function bindJanaSwiperCarousel({
   mountBefore,
@@ -427,6 +756,10 @@ export async function bindJanaSwiperCarousel({
       if (swiper) {
         swiper.destroy(true, true);
         swiper = null;
+      }
+      if (mainImageEl && parent.contains(viewport)) {
+        parent.insertBefore(mainImageEl, viewport);
+        viewport.remove();
       }
     }
   };
