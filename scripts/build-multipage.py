@@ -48,7 +48,7 @@ GATE_HEAD = """    <!-- JANA_DEV_SITE_PASSWORD_GATE START — delete this block 
     <script>
         (function () {
             if (/(?:^|;\\s*)jana_site_access=1(?:;|$)/.test(document.cookie)) return;
-            try { if (sessionStorage.getItem('jana:siteAccessUnlocked') === '1') return; } catch (e) {}
+            try { sessionStorage.removeItem('jana:siteAccessUnlocked'); } catch (e) {}
             document.documentElement.classList.add('site-gate-pending');
         })();
     </script>

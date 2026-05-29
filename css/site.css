@@ -3080,6 +3080,50 @@ body:has(main.destinations-page) {
     background: linear-gradient(180deg, #f6ffff 0%, #eff9f8 100%);
 }
 
+/* Destinations hub: solid fixed nav (matches hotel package topbar). */
+body:has(main.destinations-page) .nav-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+body:has(main.destinations-page) .nav-wrapper nav {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(0, 206, 209, 0.2);
+    box-shadow: none;
+}
+
+body:has(main.destinations-page) .logo-text {
+    color: var(--aqua-dark);
+    text-shadow: none;
+}
+
+body:has(main.destinations-page) .logo-text span {
+    color: var(--aqua-light);
+    text-shadow: none;
+}
+
+body:has(main.destinations-page) .nav-links a {
+    color: var(--aqua-dark);
+    text-shadow: none;
+}
+
+body:has(main.destinations-page) .nav-links a:hover {
+    color: var(--aqua-dark);
+    background: rgba(0, 206, 209, 0.14);
+    text-shadow: none;
+}
+
+body:has(main.destinations-page) .nav-links a.active {
+    color: var(--aqua-dark);
+    background: rgba(0, 206, 209, 0.2);
+    text-shadow: none;
+}
+
 .destinations-page {
     background: transparent;
     padding-left: clamp(1rem, 4vw, 4rem);

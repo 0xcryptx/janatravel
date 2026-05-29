@@ -7,7 +7,7 @@
     <script>
         (function () {
             if (/(?:^|;\s*)jana_site_access=1(?:;|$)/.test(document.cookie)) return;
-            try { if (sessionStorage.getItem('jana:siteAccessUnlocked') === '1') return; } catch (e) {}
+            try { sessionStorage.removeItem('jana:siteAccessUnlocked'); } catch (e) {}
             document.documentElement.classList.add('site-gate-pending');
         })();
     </script>
@@ -15,6 +15,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Hotels | JANA Travel</title>
     <link rel="icon" href="/public/JanaTravelLogo.webp" type="image/webp">
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/site.css">
     <meta name="description" content="Browse and filter luxury hotel packages across the Indian Ocean.">
@@ -120,7 +122,7 @@
             <!-- Dynamic hotel cards are injected from form/sheet data. -->
         </div>
         <div class="no-results" id="noResults" style="display: none;">
-            <p>No packages match your criteria. Try adjusting your filters or <a href="#" onclick="viewAllPackagesFromEmpty(); return false;">view all packages</a>.</p>
+            <p>No hotels match your criteria. Try adjusting your filters or <a href="#" onclick="viewAllPackagesFromEmpty(); return false;">view all hotels</a>.</p>
         </div>
     </section>
     </main>

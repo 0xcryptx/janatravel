@@ -11,6 +11,10 @@ const fadeObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll(".fade-in").forEach((el) => fadeObserver.observe(el));
 
+if (typeof window !== "undefined") {
+  window.janaFadeObserver = fadeObserver;
+}
+
 (function initMultiPageNav() {
   const raw = window.location.pathname.replace(/\/index\.html$/, "");
   const path = raw.endsWith("/") ? raw.slice(0, -1) : raw;

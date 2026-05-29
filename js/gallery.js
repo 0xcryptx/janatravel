@@ -5,6 +5,7 @@ import {
     preloadJanaSlideNeighbors
 } from './jana-swiper.js';
 import { loadAllHotelRootGalleryImages } from './hotel-root-images.js';
+import { resolveHotelImageUrl } from './hotel-cloudinary.js';
 
 /** Collapsed stack preview: 3 Maldives + 2 Seychelles (center card = Maldives hero). */
 const GALLERY_STACK_IMAGES = [
@@ -220,7 +221,7 @@ function initGallery() {
         item.style.setProperty('--rotation', `${rotations[index % rotations.length]}deg`);
         item.dataset.galleryIndex = String(index);
         item.innerHTML = `
-            <img src="${src}" alt="Gallery Image ${index + 1}" draggable="false">
+            <img src="${src}" alt="Gallery Image ${index + 1}" draggable="false" loading="lazy" decoding="async">
             <div class="gallery-overlay"></div>
         `;
         bindGalleryItemOpen(item, index);
@@ -452,7 +453,8 @@ function ensureGalleryBootstrap() {
 }
 
 async function bootstrapGallery() {
-    galleryImages = await loadAllHotelRootGalleryImages();
+    const logicalImages = await loadAllHotelRootGalleryImages();
+    galleryImages = logicalImages.map((src) => resolveHotelImageUrl(src, 'default'));
     currentImages = galleryImages;
     currentSlide = 0;
 

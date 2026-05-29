@@ -3,6 +3,9 @@
  * JANA_DEV_SITE_PASSWORD_GATE
  * Temporary development PIN overlay — remove when the website goes live.
  *
+ * Unlock is stored in a cookie (`jana_site_access=1`). Clearing site data /
+ * cookies requires the PIN again. sessionStorage is only a same-tab mirror.
+ *
  * To delete fully:
  *   1. Delete this file: js/site-access-gate.js
  *   2. In every HTML page, remove blocks between
@@ -11,10 +14,6 @@
  * =============================================================================
  */
 (function initSiteAccessGate() {
-  // ---------------------------------------------------------------------------
-  // TEMPORARY: site-wide PIN gate is disabled. Flip back to `false` to re-enable
-  // the development password overlay without touching any HTML pages.
-  // ---------------------------------------------------------------------------
   const GATE_DISABLED = false;
   if (GATE_DISABLED) {
     document.documentElement.classList.remove("site-gate-pending");
@@ -24,6 +23,7 @@
   const STORAGE_KEY = "jana:siteAccessUnlocked";
   const COOKIE_NAME = "jana_site_access";
   const COOKIE_MAX_AGE_DAYS = 365;
+  const PIN_FETCH_TIMEOUT_MS = 10000;
   const DEFAULT_SHEET_URL =
     "https://opensheet.elk.sh/1v3F_YYEJl1mhoN9Hs2F6ee8SzXjsbJdGvXqczB9LKL4/Form%20Responses%201";
 
@@ -41,22 +41,42 @@
     document.cookie = cookie;
   }
 
-  function isSiteAccessUnlocked() {
+  function clearAccessCookie() {
+    let cookie = `${COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
+    if (location.protocol === "https:") cookie += "; Secure";
+    document.cookie = cookie;
+  }
+
+  function clearUnlockSession() {
     try {
-      if (sessionStorage.getItem(STORAGE_KEY) === "1") return true;
+      sessionStorage.removeItem(STORAGE_KEY);
     } catch (error) {
       // Ignore storage failures.
     }
-    return getAccessCookie() === "1";
   }
 
-  function persistSiteAccessUnlock() {
+  /** Cookie is the source of truth for whether the site is unlocked. */
+  function isSiteAccessUnlocked() {
+    const cookieOk = getAccessCookie() === "1";
+    if (!cookieOk) {
+      clearUnlockSession();
+      return false;
+    }
     try {
       sessionStorage.setItem(STORAGE_KEY, "1");
     } catch (error) {
       // Ignore storage failures.
     }
+    return true;
+  }
+
+  function persistSiteAccessUnlock() {
     setAccessCookie("1");
+    try {
+      sessionStorage.setItem(STORAGE_KEY, "1");
+    } catch (error) {
+      // Ignore storage failures.
+    }
   }
 
   if (isSiteAccessUnlocked()) {
@@ -81,11 +101,17 @@
   }
 
   async function loadAllowedPins() {
-    const response = await fetch(getSheetUrl(), { cache: "no-store" });
-    if (!response.ok) throw new Error(`Failed to load PIN (${response.status})`);
-    const rows = await response.json();
-    if (!Array.isArray(rows)) return [];
-    return [...new Set(rows.map(getPinFromRow).filter(Boolean))];
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), PIN_FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(getSheetUrl(), { cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new Error(`Failed to load PIN (${response.status})`);
+      const rows = await response.json();
+      if (!Array.isArray(rows)) return [];
+      return [...new Set(rows.map(getPinFromRow).filter(Boolean))];
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
   }
 
   function injectStyles() {
@@ -274,21 +300,21 @@
     if (gate) gate.remove();
   }
 
-  function buildGate(allowedPins) {
+  function buildGate(pinState) {
     injectStyles();
 
     const logoPath =
       window.JANA_SITE_GATE_LOGO ||
       (document.querySelector('link[rel="icon"]')?.getAttribute("href") || "public/JanaTravelLogo.webp");
 
-    const gate = document.createElement('div');
+    const gate = document.createElement("div");
     gate.id = "janaSiteAccessGate";
     gate.setAttribute("data-dev-gate", "JANA_DEV_SITE_PASSWORD_GATE");
     gate.setAttribute("role", "dialog");
     gate.setAttribute("aria-modal", "true");
     gate.setAttribute("aria-labelledby", "janaSiteAccessGateTitle");
 
-    const card = document.createElement('div');
+    const card = document.createElement("div");
     card.className = "gate-card";
 
     card.innerHTML = `
@@ -302,47 +328,68 @@
       <form id="janaSiteAccessForm" autocomplete="off">
         <label for="janaSiteAccessPin">Admin PIN</label>
         <input id="janaSiteAccessPin" name="pin" type="password" autocomplete="off" placeholder="PIN" required>
-        <button type="submit">Enter site</button>
+        <button type="submit" disabled>Enter site</button>
       </form>
     `;
 
     gate.appendChild(card);
-    document.body.appendChild(gate);
+
+    const mountTarget = document.body || document.documentElement;
+    mountTarget.appendChild(gate);
 
     const form = card.querySelector("#janaSiteAccessForm");
     const input = card.querySelector("#janaSiteAccessPin");
     const submitBtn = card.querySelector("button[type='submit']");
 
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
+    const tryUnlockWithEnteredPin = (options = {}) => {
+      const showErrors = options.showErrors !== false;
       const entered = String(input.value || "").trim();
       if (!entered) {
-        showCardError(card, "PIN required", "Please enter your admin PIN to continue.");
-        input.focus();
-        return;
+        if (showErrors) {
+          showCardError(card, "PIN required", "Please enter your admin PIN to continue.");
+          input.focus();
+        }
+        return false;
       }
-      if (!allowedPins.length) {
+      if (!pinState.ready) {
+        if (showErrors) {
+          showCardError(card, "Please wait", "Still loading PIN verification. Try again in a moment.");
+        }
+        return false;
+      }
+      if (!pinState.pins.length) {
+        if (showErrors) {
+          showCardError(
+            card,
+            "PIN unavailable",
+            "No admin PIN was found. Check the spreadsheet Pin column and try again."
+          );
+        }
+        return false;
+      }
+      if (pinState.pins.includes(entered)) {
+        unlockSite();
+        return true;
+      }
+      if (showErrors) {
         showCardError(
           card,
-          "PIN unavailable",
-          "No admin PIN was found. Check the spreadsheet Pin column and try again."
+          "Incorrect PIN",
+          "The PIN you entered is not valid. Please try again."
         );
-        return;
+        input.select();
       }
-      if (allowedPins.includes(entered)) {
-        unlockSite();
-        return;
-      }
-      showCardError(
-        card,
-        "Incorrect PIN",
-        "The PIN you entered is not valid. Please try again."
-      );
-      input.select();
+      return false;
+    };
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      tryUnlockWithEnteredPin({ showErrors: true });
     });
 
     input.addEventListener("input", () => {
       clearCardError(card);
+      tryUnlockWithEnteredPin({ showErrors: false });
     });
 
     window.setTimeout(() => input.focus(), 80);
@@ -351,34 +398,41 @@
   }
 
   async function run() {
-    let allowedPins = [];
-    let loadFailed = false;
-    let gateControls = null;
+    if (document.getElementById("janaSiteAccessGate")) return;
+
+    const pinState = { pins: [], ready: false };
+    const gateControls = buildGate(pinState);
 
     try {
-      allowedPins = await loadAllowedPins();
+      pinState.pins = await loadAllowedPins();
+      pinState.ready = true;
+      if (!pinState.pins.length) {
+        showCardError(
+          gateControls.card,
+          "PIN not configured",
+          "No admin PIN found. Add a value in the Pin column on your hotel sheet."
+        );
+      } else {
+        gateControls.submitBtn.disabled = false;
+      }
     } catch (error) {
-      loadFailed = true;
+      pinState.ready = true;
       console.error("Site access gate:", error);
-    }
-
-    gateControls = buildGate(allowedPins);
-
-    if (!allowedPins.length && gateControls) {
       showCardError(
         gateControls.card,
-        loadFailed ? "Connection error" : "PIN not configured",
-        loadFailed
-          ? "Unable to load PIN from the spreadsheet. Check your connection and sheet sharing."
-          : "No admin PIN found. Add a value in the Pin column on your hotel sheet."
+        "Connection error",
+        "Unable to load PIN from the spreadsheet. Check your connection and sheet sharing."
       );
-      gateControls.submitBtn.disabled = true;
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", run);
-  } else {
+  function start() {
+    if (!document.body) {
+      document.addEventListener("DOMContentLoaded", start, { once: true });
+      return;
+    }
     run();
   }
+
+  start();
 })();

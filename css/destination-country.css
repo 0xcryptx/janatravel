@@ -2,6 +2,23 @@
  * Country destination pages (maldives, seychelles, mauritius).
  */
 
+:root {
+    --jana-destination-topbar-height: 4.75rem;
+}
+
+/* Fixed topbar — sticky breaks when html/body use overflow-x (see @media below). */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+body:has(> header.topbar) {
+    padding-top: var(--jana-destination-topbar-height);
+}
+
 /* Weather table: fixed labels + scrollable months (reliable on mobile) */
 .weather-guide-card {
     overflow: visible;
@@ -98,6 +115,10 @@
 
 /* Mobile layout — keeps images and tables within the phone viewport */
 @media (max-width: 980px) {
+    :root {
+        --jana-destination-topbar-height: 4.15rem;
+    }
+
     html {
         overflow-x: hidden;
         width: 100%;

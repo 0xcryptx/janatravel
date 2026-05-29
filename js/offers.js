@@ -4,7 +4,8 @@
  * Hotel name + image are looked up from the main hotels sheet / image folder.
  */
 
-import { resolveMainGalleryForSlug } from "./hotel-image-probe.js";
+import { getListingImageLogicalPath } from "./hotel-image-probe.js";
+import { getAddImageLogicalPath, resolveHotelImageUrl } from "./hotel-cloudinary.js";
 import { preloadJanaImages } from "./jana-swiper.js";
 import { createLoadingProgress, formatLoadingText } from "./loading-progress.js";
 
@@ -138,12 +139,13 @@ async function loadHotelsLookup() {
     }
 }
 
-async function resolveOfferImage(slug) {
-    try {
-        const resolved = await resolveMainGalleryForSlug(slug);
-        if (resolved.images?.length) return resolved.images[0];
-    } catch (error) {
-        console.warn(`Offers: failed to resolve image for "${slug}".`, error);
+function resolveOfferImage(slug) {
+    const logical = getListingImageLogicalPath(slug);
+    if (logical) {
+        const primary = resolveHotelImageUrl(logical, "card");
+        if (primary) return primary;
+        const addImage = resolveHotelImageUrl(getAddImageLogicalPath(slug), "card");
+        if (addImage) return addImage;
     }
     return OFFER_FALLBACK_IMAGE;
 }

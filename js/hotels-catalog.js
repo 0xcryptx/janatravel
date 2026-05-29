@@ -1,4 +1,12 @@
-import { HOTEL_IMAGE_ROOT, resolveMainGalleryForSlug } from './hotel-image-probe.js';
+import {
+    HOTEL_IMAGE_ROOT,
+    getListingImageLogicalPath,
+    resolveListingImageSet
+} from './hotel-image-probe.js';
+import {
+    getAddImageLogicalPath,
+    resolveHotelImageUrl
+} from './hotel-cloudinary.js';
 
 const destinations = {
     male: {
@@ -339,12 +347,37 @@ function isHotelActive(value) {
     return normalized !== 'false' && normalized !== 'no' && normalized !== '0';
 }
 
-async function resolveHotelImageSet(slug) {
-    const normalizedSlug = String(slug || '').trim();
-    if (!normalizedSlug) return null;
-    const resolved = await resolveMainGalleryForSlug(normalizedSlug);
-    if (!resolved.images.length) return null;
-    return { basePath: HOTEL_IMAGE_ROOT, images: resolved.images };
+function resolveHotelImageSet(slug) {
+    return resolveListingImageSet(slug);
+}
+
+function escapeAttr(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('<', '&lt;');
+}
+
+function hotelCardImageFallback(img) {
+    if (!img) return;
+    let fallbacks = [];
+    try {
+        fallbacks = JSON.parse(img.dataset.fallbacks || '[]');
+    } catch (error) {
+        fallbacks = [];
+    }
+    const next = fallbacks.shift();
+    if (next) {
+        img.dataset.fallbacks = JSON.stringify(fallbacks);
+        img.src = next;
+        return;
+    }
+    img.onerror = null;
+    img.src = HOTEL_PLACEHOLDER_IMAGE;
+}
+
+if (typeof window !== 'undefined') {
+    window.janaHotelCardImageFallback = hotelCardImageFallback;
 }
 
 function normalizeSheetHotel(row) {
@@ -482,8 +515,15 @@ function renderHotelCardsFromData(hotels) {
         const primaryTag = experienceTags[0] || 'luxury-beach-holidays';
         const kidsAllowed = inferKidsAllowed(hotel);
         const maxTravelers = inferMaxTravelers(hotel, experienceTags);
-        const imgSrc = hotel.imageUrl || HOTEL_PLACEHOLDER_IMAGE;
+        const logicalImage = hotel.imageUrl || getListingImageLogicalPath(slug);
+        const imgSrc = resolveHotelImageUrl(logicalImage, 'card') || HOTEL_PLACEHOLDER_IMAGE;
+        const cardFallbacks = [
+            resolveHotelImageUrl(getAddImageLogicalPath(slug), 'card')
+        ].filter((url) => url && url !== imgSrc);
         const isFeatured = Boolean(hotel.featured);
+        const isPriority = index < 4;
+        const loadingAttr = isPriority ? 'eager' : 'lazy';
+        const priorityAttr = isPriority ? ' fetchpriority="high"' : '';
 
         const card = document.createElement('div');
         card.className = `destination-card fade-in${isFeatured ? '' : ' extra-destination'}`;
@@ -496,7 +536,7 @@ function renderHotelCardsFromData(hotels) {
         card.dataset.country = String(hotel.destination || '').toLowerCase();
         card.setAttribute('onclick', `window.location.href='/hotels/package/?id=${encodeURIComponent(slug)}'`);
         card.innerHTML = `
-            <img src="${imgSrc}" alt="${hotel.name || 'Hotel package'}">
+            <img src="${imgSrc}" alt="${hotel.name || 'Hotel package'}" loading="${loadingAttr}" decoding="async"${priorityAttr} sizes="(max-width: 768px) 100vw, 480px" data-fallbacks="${escapeAttr(JSON.stringify(cardFallbacks))}" onerror="window.janaHotelCardImageFallback&&window.janaHotelCardImageFallback(this)">
             <div class="destination-info">
                 <h4>${hotel.name || 'Hotel package'}</h4>
                 <p>${cardDescription}</p>
@@ -506,8 +546,8 @@ function renderHotelCardsFromData(hotels) {
             </div>
         `;
         card.classList.add('visible');
-        if (typeof observer !== 'undefined' && observer && typeof observer.observe === 'function') {
-            observer.observe(card);
+        if (window.janaFadeObserver && typeof window.janaFadeObserver.observe === 'function') {
+            window.janaFadeObserver.observe(card);
         }
         grid.appendChild(card);
     });
@@ -548,9 +588,198 @@ function updateContactInterestOptions(hotels) {
     });
 }
 
-async function applyHotelJsonDataToHotelsPage() {
+const HOTELS_LOADING_STATE_ID = 'hotelsLoadingState';
+const HOTELS_JSON_FALLBACK_URL = '/data/hotels.json';
+const HOTELS_SHEET_FETCH_TIMEOUT_MS = 8000;
+const HOTELS_FETCH_MAX_ATTEMPTS = 3;
+const HOTELS_LIST_CACHE_KEY = 'jana:hotelsListCache';
+const HOTELS_LIST_CACHE_TTL_MS = 5 * 60 * 1000;
+let hotelsPageLoadPromise = null;
+
+function isHotelsGridLoading() {
+    return Boolean(document.getElementById(HOTELS_LOADING_STATE_ID));
+}
+
+function setHotelsGridLoading(isLoading) {
     const grid = document.getElementById('hotelsGrid');
-    const loadingStateId = 'packagesLoadingState';
+    const noResultsEl = document.getElementById('noResults');
+    if (grid) grid.classList.toggle('hotels-grid--loading', Boolean(isLoading));
+    if (isLoading && noResultsEl) noResultsEl.style.display = 'none';
+}
+
+function readHotelsListCache() {
+    try {
+        const raw = sessionStorage.getItem(HOTELS_LIST_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.hotels) || Number(parsed.expiresAt) < Date.now()) {
+            sessionStorage.removeItem(HOTELS_LIST_CACHE_KEY);
+            return null;
+        }
+        return parsed.hotels;
+    } catch (error) {
+        return null;
+    }
+}
+
+function writeHotelsListCache(hotels) {
+    try {
+        sessionStorage.setItem(
+            HOTELS_LIST_CACHE_KEY,
+            JSON.stringify({
+                hotels,
+                expiresAt: Date.now() + HOTELS_LIST_CACHE_TTL_MS
+            })
+        );
+    } catch (error) {
+        // Ignore storage failures.
+    }
+}
+
+async function fetchHotelsJsonOnce(url) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), HOTELS_SHEET_FETCH_TIMEOUT_MS);
+    try {
+        const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error('Invalid hotels payload');
+        return data;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
+
+async function fetchHotelsJsonWithFallback() {
+    const sheetUrl = (window.JANA_HOTELS_SHEET_URL || '').trim();
+    const sources = [];
+    if (sheetUrl) sources.push(sheetUrl);
+    if (!sources.includes(HOTELS_JSON_FALLBACK_URL)) sources.push(HOTELS_JSON_FALLBACK_URL);
+
+    let lastError = null;
+    for (const url of sources) {
+        for (let attempt = 0; attempt < HOTELS_FETCH_MAX_ATTEMPTS; attempt += 1) {
+            try {
+                const data = await fetchHotelsJsonOnce(url);
+                if (data.length || url === sheetUrl) return data;
+                if (url === HOTELS_JSON_FALLBACK_URL) return data;
+            } catch (error) {
+                lastError = error;
+                if (attempt < HOTELS_FETCH_MAX_ATTEMPTS - 1) {
+                    await new Promise((resolve) => window.setTimeout(resolve, 450 * (attempt + 1)));
+                }
+            }
+        }
+    }
+    throw lastError || new Error('Failed to load hotels');
+}
+
+function prepareHotelsFromRows(rawHotels) {
+    const hotels = rawHotels.map((row) => {
+        if (row && (row.slug || row.name || row.description)) return row;
+        return normalizeSheetHotel(row || {});
+    });
+    return hotels
+        .map((hotel) => {
+            if (!hotel) return null;
+            const slug = slugifyHotelName(hotel.slug || hotel.name || '');
+            if (!slug || !String(hotel.name || '').trim() || !isHotelActive(hotel.active)) return null;
+            const imageSet = resolveHotelImageSet(slug);
+            if (!imageSet) return null;
+            return {
+                ...hotel,
+                slug,
+                imageBasePath: imageSet.basePath,
+                imageUrl: String(hotel.imageUrl || '').trim() || imageSet.images[0],
+                galleryImages: Array.isArray(hotel.galleryImages) && hotel.galleryImages.length
+                    ? hotel.galleryImages
+                    : [imageSet.images[0]]
+            };
+        })
+        .filter(Boolean);
+}
+
+function countDisplayedHotelCards() {
+    return Array.from(document.querySelectorAll('.destination-card')).filter((card) => {
+        if (card.classList.contains('hidden')) return false;
+        return window.getComputedStyle(card).display !== 'none';
+    }).length;
+}
+
+function ensureCatalogHasVisibleCards() {
+    const totalCards = document.querySelectorAll('.destination-card').length;
+    if (!totalCards) return;
+    if (countDisplayedHotelCards() > 0) return;
+
+    packagesNavScope = 'all';
+    setAllPackagesCountriesSelected();
+    updatePackagesCountryFilterUi();
+    updatePackagesNavTabs();
+    applyPackagesCatalogView(true);
+}
+
+function applyDestinationOverrides(validHotels) {
+    validHotels.forEach((hotel) => {
+        const key = HOTEL_SLUG_TO_DESTINATION_KEY[hotel.slug];
+        if (!key) return;
+        const gallery = Array.isArray(hotel.galleryImages) ? hotel.galleryImages.filter(Boolean) : [];
+        const features = [hotel.mealPlan, hotel.reefType, hotel.islandSize, hotel.experience].filter(Boolean);
+        destinationOverrides[key] = {
+            title: hotel.name || '',
+            description: hotel.description || '',
+            images: gallery.length
+                ? gallery.map((src) => resolveHotelImageUrl(src, 'default'))
+                : [resolveHotelImageUrl(hotel.imageUrl, 'default') || HOTEL_PLACEHOLDER_IMAGE],
+            duration: hotel.experience || '',
+            accommodation: hotel.rooms || '',
+            transport: hotel.transferType || '',
+            features
+        };
+    });
+    syncDestinationOverridesIntoDestinations();
+}
+
+function finishHotelsCatalogView() {
+    if (typeof restorePackagesViewState === 'function') {
+        restorePackagesViewState();
+    } else if (typeof applyPackagesCatalogView === 'function') {
+        applyPackagesCatalogView(false);
+    } else if (typeof filterHotels === 'function') {
+        filterHotels();
+    }
+    ensureCatalogHasVisibleCards();
+}
+
+function publishHotelsToGrid(validHotels, options = {}) {
+    const grid = document.getElementById('hotelsGrid');
+    const noResultsEl = document.getElementById('noResults');
+    if (!validHotels.length) {
+        if (grid) grid.innerHTML = '';
+        setHotelsGridLoading(false);
+        updateContactInterestOptions([]);
+        if (noResultsEl) {
+            noResultsEl.style.display = 'block';
+            const p = noResultsEl.querySelector('p');
+            if (p) p.textContent = 'No hotels available yet. Add one from your form to display it here.';
+        }
+        return false;
+    }
+
+    updateContactInterestOptions(validHotels);
+    renderHotelCardsFromData(validHotels);
+    setHotelsGridLoading(false);
+    if (noResultsEl) noResultsEl.style.display = 'none';
+    applyDestinationOverrides(validHotels);
+    if (!options.deferViewRestore) {
+        finishHotelsCatalogView();
+    }
+    return true;
+}
+
+function showHotelsGridLoadingUi() {
+    const grid = document.getElementById('hotelsGrid');
+    if (!grid) return null;
+
     const formatLoading = (message, percent) => {
         if (window.JanaLoadingProgress && typeof window.JanaLoadingProgress.formatLoadingText === 'function') {
             return window.JanaLoadingProgress.formatLoadingText(message, percent);
@@ -558,129 +787,104 @@ async function applyHotelJsonDataToHotelsPage() {
         return `${String(message || 'Loading').replace(/\s*\.{3}\s*$/, '').trim()} ${Math.round(percent)}%`;
     };
 
-    let packagesProgress = null;
-    if (grid && window.JanaLoadingProgress) {
-        grid.innerHTML = `<p class="packages-loading-state" id="${loadingStateId}">${formatLoading('Loading packages', 0)}</p>`;
-        packagesProgress = window.JanaLoadingProgress.createLoadingProgress({
-            baseMessage: 'Loading packages',
-            estimateMs: 16000,
-            onUpdate: (text) => {
-                const el = document.getElementById(loadingStateId);
-                if (el) el.textContent = text;
-            }
-        });
-        packagesProgress.start();
-        packagesProgress.setProgress(3);
+    setHotelsGridLoading(true);
+    const showLoadingText = (text) => {
+        const el = document.getElementById(HOTELS_LOADING_STATE_ID);
+        if (el) el.textContent = text;
+    };
+
+    if (!window.JanaLoadingProgress) {
+        grid.innerHTML = `<p class="packages-loading-state" id="${HOTELS_LOADING_STATE_ID}">Loading hotels…</p>`;
+        return null;
+    }
+
+    grid.innerHTML = `<p class="packages-loading-state" id="${HOTELS_LOADING_STATE_ID}">${formatLoading('Loading hotels', 0)}</p>`;
+    const hotelsProgress = window.JanaLoadingProgress.createLoadingProgress({
+        baseMessage: 'Loading hotels',
+        estimateMs: 6000,
+        onUpdate: (text) => showLoadingText(text)
+    });
+    hotelsProgress.start();
+    hotelsProgress.setProgress(5);
+    return hotelsProgress;
+}
+
+async function loadHotelsPageData() {
+    const grid = document.getElementById('hotelsGrid');
+    if (!grid) return;
+
+    const cachedRows = readHotelsListCache();
+    let hotelsProgress = null;
+    let showedCards = false;
+
+    if (cachedRows && cachedRows.length) {
+        const cachedHotels = prepareHotelsFromRows(cachedRows);
+        if (cachedHotels.length) {
+            publishHotelsToGrid(cachedHotels, { deferViewRestore: true });
+            showedCards = true;
+        }
+    }
+
+    if (!showedCards) {
+        hotelsProgress = showHotelsGridLoadingUi();
     }
 
     try {
-        const sourceUrl = (window.JANA_HOTELS_SHEET_URL || '').trim() || '/data/hotels.json';
-        if (packagesProgress) packagesProgress.setProgress(10);
-        const response = await fetch(sourceUrl);
-        if (!response.ok) {
-            if (packagesProgress) packagesProgress.stop();
-            return;
-        }
-        if (packagesProgress) packagesProgress.setProgress(28);
-        const rawHotels = await response.json();
-        if (!Array.isArray(rawHotels)) {
-            if (packagesProgress) packagesProgress.stop();
-            return;
-        }
-        const hotels = rawHotels.map(row => {
-            if (row && (row.slug || row.name || row.description)) return row;
-            return normalizeSheetHotel(row || {});
-        });
-        if (packagesProgress) packagesProgress.setProgress(38);
-        const hotelTotal = hotels.length || 1;
-        let hotelsPrepared = 0;
-        const preparedHotels = [];
-        const batchSize = 4;
+        if (hotelsProgress) hotelsProgress.setProgress(15);
+        const rawHotels = await fetchHotelsJsonWithFallback();
+        if (hotelsProgress) hotelsProgress.setProgress(70);
+        writeHotelsListCache(rawHotels);
+        const validHotels = prepareHotelsFromRows(rawHotels);
+        if (hotelsProgress) hotelsProgress.setProgress(92);
 
-        for (let offset = 0; offset < hotels.length; offset += batchSize) {
-            const batch = hotels.slice(offset, offset + batchSize);
-            const batchResults = await Promise.all(
-                batch.map(async (hotel) => {
-                    if (!hotel) return null;
-                    const slug = slugifyHotelName(hotel.slug || hotel.name || '');
-                    if (!slug || !String(hotel.name || '').trim() || !isHotelActive(hotel.active)) return null;
-                    const imageSet = await resolveHotelImageSet(slug);
-                    hotelsPrepared += 1;
-                    if (packagesProgress) {
-                        packagesProgress.setProgress(38 + Math.round((hotelsPrepared / hotelTotal) * 52));
-                    }
-                    if (!imageSet) return null;
-                    return {
-                        ...hotel,
-                        slug,
-                        imageBasePath: imageSet.basePath,
-                        imageUrl: String(hotel.imageUrl || '').trim() || imageSet.images[0],
-                        galleryImages: Array.isArray(hotel.galleryImages) && hotel.galleryImages.length
-                            ? hotel.galleryImages
-                            : [imageSet.images[0]]
-                    };
-                })
-            );
-            preparedHotels.push(...batchResults);
-        }
-        if (packagesProgress) packagesProgress.setProgress(94);
-        const validHotels = preparedHotels.filter(Boolean);
-        const noResultsEl = document.getElementById('noResults');
         if (!validHotels.length) {
-            const grid = document.getElementById('hotelsGrid');
-            if (grid) grid.innerHTML = '';
-            if (packagesProgress) packagesProgress.stop();
-            updateContactInterestOptions([]);
-            if (noResultsEl) {
-                noResultsEl.style.display = 'block';
-                const p = noResultsEl.querySelector('p');
-                if (p) p.textContent = 'No hotel packages available yet. Add one from your form to display it here.';
-            }
+            publishHotelsToGrid([], {});
             return;
         }
-        updateContactInterestOptions(validHotels);
-        renderHotelCardsFromData(validHotels);
-        if (packagesProgress) packagesProgress.complete();
-        if (noResultsEl) noResultsEl.style.display = 'none';
 
-        validHotels.forEach(hotel => {
-            const key = HOTEL_SLUG_TO_DESTINATION_KEY[hotel.slug];
-            if (!key) return;
-            const gallery = Array.isArray(hotel.galleryImages) ? hotel.galleryImages.filter(Boolean) : [];
-            const features = [
-                hotel.mealPlan,
-                hotel.reefType,
-                hotel.islandSize,
-                hotel.experience
-            ].filter(Boolean);
-            destinationOverrides[key] = {
-                title: hotel.name || '',
-                description: hotel.description || '',
-                images: gallery.length ? gallery : [hotel.imageUrl || HOTEL_PLACEHOLDER_IMAGE],
-                duration: hotel.experience || '',
-                accommodation: hotel.rooms || '',
-                transport: hotel.transferType || '',
-                features
-            };
-        });
-
-        syncDestinationOverridesIntoDestinations();
-        if (typeof restorePackagesViewState === 'function') {
-            restorePackagesViewState();
-        } else if (typeof applyPackagesCatalogView === 'function') {
-            applyPackagesCatalogView(false);
-        }
-        if (typeof filterHotels === 'function') {
-            filterHotels();
-        }
+        publishHotelsToGrid(validHotels, { deferViewRestore: true });
+        showedCards = true;
     } catch (error) {
-        if (packagesProgress) packagesProgress.stop();
-        console.error('Failed to load hotel JSON data for index:', error);
+        console.error('Failed to load hotel JSON data for hotels page:', error);
+        if (!showedCards) {
+            setHotelsGridLoading(false);
+            grid.innerHTML = `<p class="packages-loading-state">Unable to load hotels. <button type="button" class="filter-btn secondary" onclick="window.retryHotelsCatalogLoad&&window.retryHotelsCatalogLoad()">Try again</button></p>`;
+            const noResultsEl = document.getElementById('noResults');
+            if (noResultsEl) noResultsEl.style.display = 'none';
+        }
+    } finally {
+        if (hotelsProgress) {
+            hotelsProgress.complete();
+            hotelsProgress.stop();
+        }
+        if (showedCards) {
+            finishHotelsCatalogView();
+        }
     }
 }
 
+function applyHotelJsonDataToHotelsPage() {
+    if (!hotelsPageLoadPromise) {
+        hotelsPageLoadPromise = loadHotelsPageData();
+    }
+    return hotelsPageLoadPromise;
+}
+
+function retryHotelsCatalogLoad() {
+    hotelsPageLoadPromise = null;
+    try {
+        sessionStorage.removeItem(HOTELS_LIST_CACHE_KEY);
+    } catch (error) {
+        // Ignore storage failures.
+    }
+    return applyHotelJsonDataToHotelsPage();
+}
+
+if (typeof window !== 'undefined') {
+    window.retryHotelsCatalogLoad = retryHotelsCatalogLoad;
+}
+
 syncDestinationOverridesIntoDestinations();
-applyHotelJsonDataToHotelsPage();
 
 // Ensure modal carousel images always load (avoid unreliable source.unsplash.com redirects).
 const destinationFallbackImages = [
@@ -1074,6 +1278,12 @@ function applyFilteredPackagesHeading() {
 }
 
 function filterHotels() {
+    if (isHotelsGridLoading()) {
+        const noResultsEl = document.getElementById('noResults');
+        if (noResultsEl) noResultsEl.style.display = 'none';
+        return;
+    }
+
     const tripType = appliedTripType;
     const cards = document.querySelectorAll('.destination-card');
     const grid = document.getElementById('hotelsGrid');
@@ -1497,9 +1707,21 @@ window.openLightbox = openLightbox;
 window.changeSlide = changeSlide;
 window.bookCurrentPackageViaWhatsApp = bookCurrentPackageViaWhatsApp;
 
-initCatalogSwipers()
-    .then(() => applyHotelJsonDataToHotelsPage())
-    .catch((error) => {
+function bootHotelsCatalogPage() {
+    applyHotelJsonDataToHotelsPage();
+    initCatalogSwipers().catch((error) => {
         console.error('Failed to initialize Swiper carousels:', error);
-        applyHotelJsonDataToHotelsPage();
     });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootHotelsCatalogPage);
+} else {
+    bootHotelsCatalogPage();
+}
+
+window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    hotelsPageLoadPromise = null;
+    applyHotelJsonDataToHotelsPage();
+});

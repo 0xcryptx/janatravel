@@ -9,9 +9,15 @@ import {
   HOTEL_IMAGE_SLOTS,
   buildCandidateUrls,
   buildOptimisticMainGallery,
+  getOptimisticSlotPathsFromCandidates,
   resolveFolderGalleryImages,
   resolveMainGalleryForSlug
 } from "./hotel-image-probe.js";
+import {
+  getAddImageLogicalPath,
+  resolveHotelImageCandidates,
+  resolveHotelImageUrl
+} from "./hotel-cloudinary.js";
 
 const LOCAL_JSON_URL = "/data/hotels.json";
 const WHATSAPP_NUMBER = "971501771927";
@@ -24,7 +30,7 @@ const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
-const HOTEL_MEDIA_CACHE_VERSION = 7;
+const HOTEL_MEDIA_CACHE_VERSION = 10;
 let hotelDataCacheCleanupTimerId = null;
 
 function loadJsonData(url) {
@@ -43,9 +49,8 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function resolveImagePath(path) {
-  if (!path) return "";
-  return path;
+function resolveImagePath(path, transformKey = "default") {
+  return resolveHotelImageUrl(path, transformKey);
 }
 
 function buildImageCandidatesForSlot(folderPath, index) {
@@ -53,8 +58,12 @@ function buildImageCandidatesForSlot(folderPath, index) {
 }
 
 
-function serializeImageFallbacks(candidates) {
-  return escapeHtml(JSON.stringify(Array.isArray(candidates) ? candidates.slice(1) : []));
+function serializeImageFallbacks(candidates, transformKey = "default") {
+  const fallbacks = resolveHotelImageCandidates(
+    Array.isArray(candidates) ? candidates.slice(1) : [],
+    transformKey
+  );
+  return escapeHtml(JSON.stringify(fallbacks));
 }
 
 function imageFallbackOnErrorAttr() {
@@ -81,8 +90,20 @@ function janaHotelImageFallback(img) {
     thumbButton.remove();
     return;
   }
+  if (img.classList.contains("room-image-main")) {
+    const folderPath = String(img.dataset.folderPath || "").trim();
+    if (folderPath) {
+      const folderAdd = resolveHotelImageUrl(`${folderPath.replace(/\/$/, "")}/add_image`, "default");
+      if (folderAdd) {
+        img.src = folderAdd;
+        return;
+      }
+    }
+  }
   if (img.classList.contains("room-image-main") || img.id === "hotelMainImage" || img.id === "hotelLightboxImage") {
-    img.src = HOTEL_PLACEHOLDER_IMAGE;
+    const slug = String(img.dataset.hotelSlug || "").trim();
+    const addImage = slug ? resolveHotelImageUrl(getAddImageLogicalPath(slug), "hero") : "";
+    img.src = addImage || HOTEL_PLACEHOLDER_IMAGE;
   }
 }
 
@@ -504,14 +525,66 @@ function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, ent
   });
 }
 
+function getSectionItemDisplayImages(item) {
+  if (!item) return [];
+  const resolved = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
+  if (resolved.length) return resolved;
+  return getOptimisticSlotPathsFromCandidates(item.imageCandidates);
+}
+
+function getSectionItemImageCandidates(item, slideIndex) {
+  if (!item) return [];
+  const images = getSectionItemDisplayImages(item);
+  const logical = images[slideIndex];
+  if (!logical) return [];
+
+  const fromResolved = item.imageCandidates?.[slideIndex];
+  if (Array.isArray(fromResolved) && fromResolved.length) {
+    const list = fromResolved.filter(Boolean);
+    if (list[0] === logical) return list;
+    return [logical, ...list.filter((candidate) => candidate !== logical)];
+  }
+
+  const slotName = String(logical).split("/").pop();
+  if (item.folderPath && /^\d+$/.test(slotName)) {
+    return buildCandidateUrls(item.folderPath, slotName);
+  }
+  return [logical];
+}
+
+function destroyPanelCardSwipers(container) {
+  if (!container) return;
+  container.querySelectorAll(".room-image-viewer").forEach((viewer) => {
+    try {
+      viewer._janaCardSwipe?.destroy?.();
+    } catch (error) {
+      // Ignore teardown failures on replaced nodes.
+    }
+    viewer._janaCardSwipe = null;
+  });
+}
+
 function areSectionItemsHydrated(items) {
   if (!Array.isArray(items) || !items.length) return true;
-  return items.every((item) => item.loaded);
+  return items.every((item) => item.loaded && getSectionItemDisplayImages(item).length > 0);
+}
+
+function mergeHydratedSectionItem(item, resolved) {
+  const optimisticImages = getOptimisticSlotPathsFromCandidates(item.imageCandidates);
+  const images = resolved.images.length ? resolved.images : optimisticImages;
+  const imageCandidates = resolved.images.length
+    ? resolved.imageCandidates
+    : item.imageCandidates;
+  return { ...item, images, imageCandidates, loaded: true };
 }
 
 async function hydrateSectionItems(section, onProgress) {
-  if (!section || !Array.isArray(section.items) || section.itemsLoaded) return;
+  if (!section || !Array.isArray(section.items)) return;
   const items = section.items;
+  if (section.itemsLoaded && areSectionItemsHydrated(items)) return;
+  if (section.itemsLoaded && !areSectionItemsHydrated(items)) {
+    section.itemsLoaded = false;
+  }
   if (areSectionItemsHydrated(items)) {
     section.itemsLoaded = true;
     return;
@@ -521,17 +594,17 @@ async function hydrateSectionItems(section, onProgress) {
 
   const hydratedItems = await Promise.all(
     items.map(async (item, index) => {
-      if (item.loaded) {
+      if (item.loaded && getSectionItemDisplayImages(item).length) {
         if (typeof onProgress === "function") {
           onProgress(Math.round(((index + 1) / total) * 100));
         }
         return item;
       }
-      const { images, imageCandidates } = await resolveFolderGalleryImages(item.folderPath);
+      const resolved = await resolveFolderGalleryImages(item.folderPath);
       if (typeof onProgress === "function") {
         onProgress(Math.round(((index + 1) / total) * 100));
       }
-      return { ...item, images, imageCandidates, loaded: true };
+      return mergeHydratedSectionItem(item, resolved);
     })
   );
 
@@ -540,9 +613,16 @@ async function hydrateSectionItems(section, onProgress) {
 }
 
 function ensureSectionHydrated(section, onHydrated) {
-  if (!section || section.itemsLoaded) {
+  if (!section) {
     if (typeof onHydrated === "function") onHydrated();
     return Promise.resolve();
+  }
+  if (section.itemsLoaded && areSectionItemsHydrated(section.items)) {
+    if (typeof onHydrated === "function") onHydrated();
+    return Promise.resolve();
+  }
+  if (section.itemsLoaded && !areSectionItemsHydrated(section.items)) {
+    section.itemsLoaded = false;
   }
   if (section._hydratePromise) {
     return section._hydratePromise.then(() => {
@@ -560,9 +640,14 @@ function ensureSectionHydrated(section, onHydrated) {
 }
 
 function prewarmHotelSections(sectionData) {
-  Object.values(sectionData).forEach((section) => {
-    ensureSectionHydrated(section);
+  const sections = Object.values(sectionData).filter(
+    (section) => section && Array.isArray(section.items) && section.items.length
+  );
+  let chain = Promise.resolve();
+  sections.forEach((section) => {
+    chain = chain.then(() => ensureSectionHydrated(section));
   });
+  return chain;
 }
 
 async function hydrateAllHotelSections(sections) {
@@ -740,9 +825,8 @@ async function loadHotelBySlug(slug, onProgress) {
   const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
 
   // Reuse cached sheet-derived data when available (skips re-parsing + section URL building),
-  // but ALWAYS re-resolve the main gallery from disk. The filesystem can change independently
-  // of the sheet row (e.g. dropping a new 3.jpg into a hotel folder), and the cached gallery
-  // arrays would otherwise hide newly added images until the cache TTL expires.
+  // but ALWAYS re-resolve the main gallery from Cloudinary. New uploads can appear without
+  // waiting for the session cache TTL to expire.
   const preparedHotel = cachedHotel || prepareHotelMedia(matchedHotel, (mediaProgress) => {
     if (typeof onProgress === "function") {
       onProgress(55 + Math.round(mediaProgress * 0.4));
@@ -840,12 +924,20 @@ async function setupImageLightbox(contentEl) {
     const resolved = lightboxContext.resolvedAtIndex.get(normalized);
     const slotCandidates = lightboxContext.imageCandidatesByIndex[normalized];
     if (Array.isArray(slotCandidates) && slotCandidates.length) {
-      const candidates = resolved
-        ? [resolved, ...slotCandidates.filter((candidate) => candidate !== resolved)]
-        : [...slotCandidates];
-      return { candidates };
+      const resolvedList = resolveHotelImageCandidates(slotCandidates, "default");
+      if (resolved) {
+        return {
+          candidates: [
+            resolved,
+            ...resolvedList.filter((candidate) => candidate !== resolved)
+          ]
+        };
+      }
+      return { candidates: resolvedList };
     }
-    const fallback = resolveImagePath(lightboxContext.images[normalized]) || HOTEL_PLACEHOLDER_IMAGE;
+    const fallback =
+      resolveImagePath(lightboxContext.images[normalized], "default") ||
+      HOTEL_PLACEHOLDER_IMAGE;
     return { candidates: [fallback] };
   };
 
@@ -856,7 +948,8 @@ async function setupImageLightbox(contentEl) {
   };
 
   const applyLightboxSlide = (imgEl, slideIndex) => {
-    applyImageWithFallbacks(imgEl, getLightboxSlideSources(slideIndex).candidates);
+    const { candidates } = getLightboxSlideSources(slideIndex);
+    applyImageWithFallbacks(imgEl, candidates, { transformKey: "default" });
   };
 
   const lightboxSwipe = await bindJanaSwiperCarousel({
@@ -879,7 +972,9 @@ async function setupImageLightbox(contentEl) {
     if (lightboxSwipe) {
       lightboxSwipe.setIndex(normalizedIndex, { silent: true });
     } else {
-      applyImageWithFallbacks(lightboxImage, getLightboxSlideSources(normalizedIndex).candidates);
+      applyImageWithFallbacks(lightboxImage, getLightboxSlideSources(normalizedIndex).candidates, {
+        transformKey: "default"
+      });
     }
     updateLightboxCounter();
     cacheResolvedLightboxSrc(normalizedIndex, lightboxSwipe?.getActiveImage?.() || lightboxImage);
@@ -912,8 +1007,9 @@ async function setupImageLightbox(contentEl) {
 
     if (lightboxSwipe) lightboxSwipe.refresh();
     setLightboxImage(normalizedStart);
-    preloadJanaImages(currentImages);
-    preloadJanaSlideNeighbors(currentImages, normalizedStart);
+    const deliveryImages = currentImages.map((src) => resolveImagePath(src, "default"));
+    preloadJanaImages(deliveryImages);
+    preloadJanaSlideNeighbors(deliveryImages, normalizedStart);
     lightbox.removeAttribute("hidden");
     document.body.classList.add("lightbox-open");
   };
@@ -948,7 +1044,11 @@ async function setupImageLightbox(contentEl) {
 
 function applyImageWithFallbacks(imgEl, candidates, options = {}) {
   if (!imgEl) return;
-  const list = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+  const transformKey = options.transformKey || "default";
+  const list = resolveHotelImageCandidates(
+    Array.isArray(candidates) ? candidates.filter(Boolean) : [],
+    transformKey
+  );
   if (!list.length) {
     imgEl.removeAttribute("data-fallbacks");
     if (!options.preserveVisibleSrc) {
@@ -1001,12 +1101,14 @@ async function setupHotelGallery(contentEl, images, hotelName, lightboxApi, opti
     const fallbackCandidates =
       Array.isArray(slotCandidates) && slotCandidates.length
         ? slotCandidates
-        : [resolveImagePath(galleryImages[slideIndex]) || HOTEL_PLACEHOLDER_IMAGE];
+        : [galleryImages[slideIndex] || ""].filter(Boolean);
     return { candidates: fallbackCandidates };
   };
 
   const applyGallerySlide = (imgEl, slideIndex) => {
-    applyImageWithFallbacks(imgEl, getGallerySlideSources(slideIndex).candidates);
+    applyImageWithFallbacks(imgEl, getGallerySlideSources(slideIndex).candidates, {
+      transformKey: "hero"
+    });
   };
 
   const gallerySwipe = await bindJanaSwiperCarousel({
@@ -1029,7 +1131,7 @@ async function setupHotelGallery(contentEl, images, hotelName, lightboxApi, opti
     }
     updateGalleryUi(normalizedIndex);
     const fallbackCandidates = getGallerySlideSources(normalizedIndex).candidates;
-    applyImageWithFallbacks(mainImageEl, fallbackCandidates);
+    applyImageWithFallbacks(mainImageEl, fallbackCandidates, { transformKey: "hero" });
   };
 
   thumbButtons.forEach((btn) => {
@@ -1092,26 +1194,29 @@ function isInfoCardSection(sectionKey) {
 
 function renderSectionItemsHtml(items, sectionKey, options = {}) {
   const hotelName = String(options.hotelName || "").trim();
+  const hotelSlug = String(options.hotelSlug || "").trim();
   const useCardLayout = isInfoCardSection(sectionKey);
   if (!items.length) {
     return `<p class="info-empty">Not specified.</p>`;
   }
   const renderedItems = items
-    .map((item, itemIndex) => `
+    .map((item, itemIndex) => {
+      const displayImages = getSectionItemDisplayImages(item);
+      return `
       <article class="section-item${useCardLayout ? " section-item--room" : ""}">
         <h4 class="section-item__title">${escapeHtml(item.label)}</h4>
         ${
-          item.images.length
+          displayImages.length
             ? useCardLayout
-              ? `<div class="room-image-viewer" data-section-key="${sectionKey}" data-item-index="${itemIndex}">
+              ? `<div class="room-image-viewer" data-section-key="${sectionKey}" data-item-index="${itemIndex}" data-folder-path="${escapeHtml(item.folderPath || "")}">
                   <button type="button" class="room-image-nav room-image-nav--prev" data-room-nav="prev" aria-label="Previous image">&#10094;</button>
-                  <img class="room-image-main" src="${escapeHtml(item.images[0])}" data-fallbacks="${serializeImageFallbacks((item.imageCandidates && item.imageCandidates[0]) || item.images)}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(item.label)} image 1">
+                  <img class="room-image-main" src="${escapeHtml(resolveImagePath(displayImages[0], "default"))}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-folder-path="${escapeHtml(item.folderPath || "")}" data-fallbacks="${serializeImageFallbacks(getSectionItemImageCandidates(item, 0).slice(1), "default")}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(item.label)} image 1" loading="eager" decoding="async" fetchpriority="high">
                   <button type="button" class="room-image-nav room-image-nav--next" data-room-nav="next" aria-label="Next image">&#10095;</button>
-                  <span class="room-image-counter">1 / ${item.images.length}</span>
+                  <span class="room-image-counter">1 / ${displayImages.length}</span>
                   <span class="room-expand-hint" aria-hidden="true">Click to expand</span>
                 </div>`
               : `<div class="section-item__thumbs">
-                  ${item.images
+                  ${displayImages
                     .map((imageUrl, imageIndex) => `
                       <button
                         type="button"
@@ -1121,7 +1226,7 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
                         data-image-index="${imageIndex}"
                         aria-label="Open image ${imageIndex + 1}"
                       >
-                        <img src="${escapeHtml(imageUrl)}" data-fallbacks="${serializeImageFallbacks((item.imageCandidates && item.imageCandidates[imageIndex]) || [imageUrl])}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}" loading="lazy" ${imageFallbackOnErrorAttr()}>
+                        <img src="${escapeHtml(resolveImagePath(imageUrl, "thumb"))}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-folder-path="${escapeHtml(item.folderPath || "")}" data-fallbacks="${serializeImageFallbacks(getSectionItemImageCandidates(item, imageIndex).slice(1), "thumb")}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}" loading="lazy" decoding="async" ${imageFallbackOnErrorAttr()}>
                       </button>
                     `)
                     .join("")}
@@ -1137,7 +1242,8 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
             : ""
         }
       </article>
-    `)
+    `;
+    })
     .join("");
 
   if (useCardLayout) {
@@ -1164,11 +1270,14 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         const imageIndex = Number(btn.dataset.imageIndex || 0);
         const section = sectionData[sectionKey];
         const item = section?.items?.[itemIndex];
-        if (!item || !Array.isArray(item.images) || !item.images.length) return;
+        const itemImages = item ? getSectionItemDisplayImages(item) : [];
+        if (!itemImages.length) return;
         const thumbImg = btn.querySelector("img");
         lightboxApi.open({
-          images: item.images,
-          imageCandidatesByIndex: item.imageCandidates || item.images.map((src) => [src]),
+          images: itemImages,
+          imageCandidatesByIndex: itemImages.map((_, slideIndex) =>
+            getSectionItemImageCandidates(item, slideIndex)
+          ),
           startIndex: imageIndex,
           resolvedSrc: thumbImg?.currentSrc || thumbImg?.src
         });
@@ -1179,34 +1288,41 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
 
   let activeTabKey = initialTab;
 
-  const bindCardImageViewers = () => {
+  const bindCardImageViewers = (bindGenerationId) => {
     const viewers = panelBody.querySelectorAll(".room-image-viewer");
+    const isStaleBind = () =>
+      String(panelBody.dataset.cardBindGeneration || "") !== String(bindGenerationId);
+
     return Promise.all(
       Array.from(viewers).map(async (viewer) => {
       const sectionKey = viewer.dataset.sectionKey || "rooms";
       const itemIndex = Number(viewer.dataset.itemIndex || 0);
-      const section = sectionData[sectionKey];
-      const sectionItem =
-        section && Array.isArray(section.items) ? section.items[itemIndex] : null;
-      const images =
-        sectionItem && Array.isArray(sectionItem.images) ? sectionItem.images.filter(Boolean) : [];
+      const getLiveItem = () => {
+        const section = sectionData[sectionKey];
+        return section && Array.isArray(section.items) ? section.items[itemIndex] : null;
+      };
+      const getLiveImages = () => getSectionItemDisplayImages(getLiveItem());
+
       const mainImageEl = viewer.querySelector(".room-image-main");
       const counterEl = viewer.querySelector(".room-image-counter");
       const prevBtn = viewer.querySelector('[data-room-nav="prev"]');
       const nextBtn = viewer.querySelector('[data-room-nav="next"]');
+      const images = getLiveImages();
       if (!mainImageEl || !counterEl || !prevBtn || !nextBtn || !images.length) return;
+      if (isStaleBind()) return;
 
       let currentIndex = 0;
       const updateViewerUi = (normalizedIndex) => {
         currentIndex = normalizedIndex;
-        mainImageEl.alt = `${sectionItem?.label || "Image"} ${currentIndex + 1}`;
-        counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
+        const item = getLiveItem();
+        const liveImages = getLiveImages();
+        mainImageEl.alt = `${item?.label || "Image"} ${currentIndex + 1}`;
+        counterEl.textContent = `${currentIndex + 1} / ${liveImages.length}`;
       };
 
       const applyCardSlide = (imgEl, slideIndex) => {
-        const slotCandidates =
-          sectionItem?.imageCandidates?.[slideIndex] || [resolveImagePath(images[slideIndex])];
-        applyImageWithFallbacks(imgEl, slotCandidates);
+        const candidates = getSectionItemImageCandidates(getLiveItem(), slideIndex);
+        applyImageWithFallbacks(imgEl, candidates, { transformKey: "default" });
       };
 
       let cardSwipe = null;
@@ -1215,7 +1331,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
           mountBefore: mainImageEl,
           mainImageEl,
           viewportClass: "room-swipe-viewport",
-          getSlideCount: () => images.length,
+          getSlideCount: () => getLiveImages().length,
           applySlideToImage: applyCardSlide,
           onIndexChange: updateViewerUi
         });
@@ -1223,26 +1339,39 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         console.error("Room image carousel failed to initialize:", cardSwipeError);
       }
 
+      if (isStaleBind()) {
+        cardSwipe?.destroy?.();
+        return;
+      }
+      viewer._janaCardSwipe = cardSwipe;
+
       const setActiveImage = (nextIndex) => {
-        const normalizedIndex = ((nextIndex % images.length) + images.length) % images.length;
+        const liveImages = getLiveImages();
+        if (!liveImages.length) return;
+        const normalizedIndex = ((nextIndex % liveImages.length) + liveImages.length) % liveImages.length;
         if (cardSwipe) {
           cardSwipe.setIndex(normalizedIndex, { silent: true });
           updateViewerUi(normalizedIndex);
           return;
         }
         updateViewerUi(normalizedIndex);
-        const slotCandidates =
-          sectionItem?.imageCandidates?.[normalizedIndex] ||
-          [resolveImagePath(images[normalizedIndex])];
-        applyImageWithFallbacks(mainImageEl, slotCandidates);
+        applyImageWithFallbacks(
+          mainImageEl,
+          getSectionItemImageCandidates(getLiveItem(), normalizedIndex),
+          { transformKey: "default" }
+        );
       };
 
       const openCardLightbox = () => {
         if (cardSwipe?.didDrag?.()) return;
+        const item = getLiveItem();
+        const liveImages = getLiveImages();
         const activeImg = cardSwipe?.getActiveImage?.() || mainImageEl;
         lightboxApi.open({
-          images,
-          imageCandidatesByIndex: sectionItem?.imageCandidates || images.map((src) => [src]),
+          images: liveImages,
+          imageCandidatesByIndex: liveImages.map((_, slideIndex) =>
+            getSectionItemImageCandidates(item, slideIndex)
+          ),
           startIndex: currentIndex,
           resolvedSrc: activeImg.currentSrc || activeImg.src
         });
@@ -1275,7 +1404,8 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       });
 
       if (!cardSwipe) setActiveImage(0);
-      if (images.length <= 1) {
+      const liveCount = getLiveImages().length;
+      if (liveCount <= 1) {
         prevBtn.style.display = "none";
         nextBtn.style.display = "none";
       }
@@ -1287,11 +1417,14 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
   const renderActivePanel = (key) => {
     const section = sectionData[key];
     if (!section) return;
+    destroyPanelCardSwipers(panelBody);
+    const bindGenerationId = String(Number(panelBody.dataset.cardBindGeneration || 0) + 1);
+    panelBody.dataset.cardBindGeneration = bindGenerationId;
     panelTitle.textContent = section.title;
-    panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName });
+    panelBody.innerHTML = renderSectionItemsHtml(section.items, key, { hotelName, hotelSlug: options.hotelSlug });
     panelBody.classList.toggle("info-panel__body--hydrating", !section.itemsLoaded);
     bindSectionThumbs();
-    void bindCardImageViewers();
+    void bindCardImageViewers(bindGenerationId);
   };
 
   const setActiveTab = (key) => {
@@ -1372,11 +1505,16 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
   if (titleEl) titleEl.textContent = hotelName;
   document.title = `${hotelName} | JANA Travel`;
 
+  const hotelSlug = String(hotel.slug || "").trim();
   const mainImageCandidates = Array.isArray(hotel.mainImageCandidates) ? hotel.mainImageCandidates : [];
   const galleryImages = Array.isArray(hotel.mainImages) && hotel.mainImages.length ? hotel.mainImages : [HOTEL_PLACEHOLDER_IMAGE];
   const heroCandidates = mainImageCandidates[0]?.length ? mainImageCandidates[0] : galleryImages;
-  const mainImage = (Array.isArray(heroCandidates) ? heroCandidates[0] : heroCandidates) || HOTEL_PLACEHOLDER_IMAGE;
-  const heroFallbacksAttr = serializeImageFallbacks(Array.isArray(heroCandidates) ? heroCandidates : [mainImage]);
+  const mainImageLogical = (Array.isArray(heroCandidates) ? heroCandidates[0] : heroCandidates) || HOTEL_PLACEHOLDER_IMAGE;
+  const mainImage = resolveImagePath(mainImageLogical, "hero");
+  const heroFallbacksAttr = serializeImageFallbacks(
+    Array.isArray(heroCandidates) ? heroCandidates : [mainImageLogical],
+    "hero"
+  );
   const ratingLabel = formatRating(hotel.rating);
   const starCount = parseStarRating(hotel.rating);
   const destinationValue = String(hotel.destination || "").trim();
@@ -1445,7 +1583,7 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
     <div class="media-gallery">
       <div class="hero hero--interactive">
         <button type="button" class="hero-nav hero-nav--prev" id="hotelGalleryPrev" aria-label="Previous image">&#10094;</button>
-        <img id="hotelMainImage" src="${escapeHtml(mainImage)}" data-fallbacks="${heroFallbacksAttr}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(hotelName)} view 1">
+        <img id="hotelMainImage" src="${escapeHtml(mainImage)}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-fallbacks="${heroFallbacksAttr}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(hotelName)} view 1" loading="eager" decoding="async" fetchpriority="high">
         <button type="button" class="hero-nav hero-nav--next" id="hotelGalleryNext" aria-label="Next image">&#10095;</button>
         <span class="hero-counter" id="hotelGalleryCounter">1 / ${galleryImages.length}</span>
         <button type="button" class="maximize-btn" id="hotelMaximizeBtn">Click to expand</button>
@@ -1455,11 +1593,12 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
         .map((img, index) => {
           const thumbCandidates = mainImageCandidates[index]?.length
             ? mainImageCandidates[index]
-            : [resolveImagePath(img)];
-          const thumbSrc = thumbCandidates[0] || HOTEL_PLACEHOLDER_IMAGE;
+            : [img];
+          const thumbLogical = thumbCandidates[0] || HOTEL_PLACEHOLDER_IMAGE;
+          const thumbSrc = resolveImagePath(thumbLogical, "thumb");
           return `
           <button type="button" class="thumb-btn${index === 0 ? " is-active" : ""}" data-index="${index}" role="listitem" aria-label="Show image ${index + 1}">
-            <img src="${escapeHtml(thumbSrc)}" data-fallbacks="${serializeImageFallbacks(thumbCandidates)}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(hotelName)} thumbnail ${index + 1}">
+            <img src="${escapeHtml(thumbSrc)}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-fallbacks="${serializeImageFallbacks(thumbCandidates, "thumb")}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(hotelName)} thumbnail ${index + 1}" loading="lazy" decoding="async">
           </button>`;
         })
         .join("")}
@@ -1469,7 +1608,7 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
       <button type="button" class="lightbox-close" id="hotelLightboxClose" aria-label="Close image viewer">&times;</button>
       <button type="button" class="lightbox-nav lightbox-nav--prev" id="hotelLightboxPrev" aria-label="Previous image">&#10094;</button>
       <span class="lightbox-counter" id="hotelLightboxCounter">1 / ${galleryImages.length}</span>
-      <img id="hotelLightboxImage" src="${escapeHtml(mainImage)}" alt="${escapeHtml(hotelName)} preview">
+      <img id="hotelLightboxImage" src="${escapeHtml(resolveImagePath(mainImageLogical, "default"))}" data-hotel-slug="${escapeHtml(hotelSlug)}" alt="${escapeHtml(hotelName)} preview" loading="eager" decoding="async">
       <button type="button" class="lightbox-nav lightbox-nav--next" id="hotelLightboxNext" aria-label="Next image">&#10095;</button>
     </div>
     <h2>Hotel Details</h2>
@@ -1528,6 +1667,7 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
     setActiveTab = setupHotelInfoTabs(contentEl, infoSections, lightboxApi, {
       initialTab: String(persistedState.activeTab || "rooms"),
       hotelName,
+      hotelSlug: String(hotel.slug || "").trim(),
       onTabChange: (tabKey) => saveHotelViewState(hotel.slug, { activeTab: tabKey })
     });
   } catch (tabsError) {

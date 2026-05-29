@@ -3,7 +3,10 @@
  */
 
 import {
-    HOTEL_IMAGE_ROOT,
+    HOTEL_IMAGE_LOGICAL_ROOT,
+    HOTEL_IMAGE_ROOT
+} from './hotel-cloudinary.js';
+import {
     HOTEL_ROOT_IMAGE_NAMES,
     collectRootGalleryImagesForSlug,
     hotelHasListingImage
@@ -64,17 +67,35 @@ export function normalizeHotelFromSheetRow(row) {
     };
 }
 
-export function isHotelRootImageUrl(url) {
+function isRootImageStem(stem) {
+    return HOTEL_ROOT_IMAGE_NAMES.includes(String(stem || '').toLowerCase().replace(/\.[^.]+$/, ''));
+}
+
+export function isHotelRootImageUrl(urlOrPath) {
+    const value = String(urlOrPath || '').trim();
+    if (!value) return false;
+
+    if (value.startsWith(`${HOTEL_IMAGE_LOGICAL_ROOT}/`)) {
+        const remainder = value.slice(HOTEL_IMAGE_LOGICAL_ROOT.length + 1);
+        const segments = remainder.split('/').filter(Boolean);
+        if (segments.length !== 2) return false;
+        if (HOTEL_MEDIA_SUBFOLDERS.has(segments[0].toLowerCase())) return false;
+        return isRootImageStem(segments[1]);
+    }
+
     try {
-        const pathname = new URL(url, window.location.origin).pathname;
+        const pathname = new URL(value, window.location.origin).pathname;
+        const cloudMatch = pathname.match(/\/hotel_images\/([^/]+)\/([^/]+)$/);
+        if (cloudMatch) {
+            return isRootImageStem(cloudMatch[2]);
+        }
         const prefix = `${HOTEL_IMAGE_ROOT}/`;
         if (!pathname.startsWith(prefix)) return false;
         const remainder = pathname.slice(prefix.length);
         const segments = remainder.split('/').filter(Boolean);
         if (segments.length !== 2) return false;
         if (HOTEL_MEDIA_SUBFOLDERS.has(segments[0].toLowerCase())) return false;
-        const stem = segments[1].toLowerCase().replace(/\.[^.]+$/, '');
-        return HOTEL_ROOT_IMAGE_NAMES.includes(stem);
+        return isRootImageStem(segments[1]);
     } catch {
         return false;
     }

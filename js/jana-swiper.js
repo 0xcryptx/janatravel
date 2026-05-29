@@ -120,7 +120,7 @@ export function refreshSwiperLoop(swiperInstance) {
 
 /**
  * Mobile: infinite loop (last → first slides in from the right).
- * Desktop: rewind for arrow buttons, touch disabled via breakpoints.
+ * Desktop: rewind for arrow buttons; touch disabled via breakpoints.
  */
 export function getJanaTouchCarouselOptions(slideCount = 0) {
   if (slideCount <= 1) {
@@ -316,6 +316,22 @@ export async function bindJanaSwiperCarousel({
           applySlideToImage(activeImg, index);
           if (onIndexChange) onIndexChange(index);
         },
+        slideChangeTransitionEnd(instance) {
+          if (!instance.params.loop) return;
+          const count = getSlideCount();
+          if (count <= 1) return;
+          const activeSlide = instance.slides?.[instance.activeIndex];
+          const attr = activeSlide?.getAttribute?.("data-swiper-slide-index");
+          if (attr === null || attr === "") return;
+          const domLogical = Number(attr);
+          if (!Number.isFinite(domLogical) || domLogical < 0 || domLogical >= count) return;
+          if (domLogical === index) return;
+          index = domLogical;
+          markCurrentSlide(index);
+          const activeImg = getSlideImage(activeSlide) || mainImageEl;
+          applySlideToImage(activeImg, index);
+          if (onIndexChange) onIndexChange(index);
+        },
         sliderFirstMove() {
           dragMoved = true;
         },
@@ -331,8 +347,12 @@ export async function bindJanaSwiperCarousel({
       moveSwiperTo(swiper, index, 0);
     }
     if (isLightboxViewport) {
-      attachJanaLightboxEdgeWrap(swiper, getSlideCount, (index) => {
-        if (onIndexChange) onIndexChange(index);
+      attachJanaLightboxEdgeWrap(swiper, getSlideCount, (wrapIndex) => {
+        index = wrapIndex;
+        markCurrentSlide(index);
+        const activeImg = getSlideImage(swiper.slides[swiper.activeIndex]) || mainImageEl;
+        applySlideToImage(activeImg, wrapIndex);
+        if (onIndexChange) onIndexChange(wrapIndex);
       });
     }
   };

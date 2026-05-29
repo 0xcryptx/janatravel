@@ -1,38 +1,35 @@
 /**
- * Shared hotel image discovery (static hosting friendly — uses Image decode, not HEAD).
+ * Shared hotel image discovery (probes Cloudinary delivery URLs).
  */
 
-export const HOTEL_IMAGE_ROOT = '/assets/hotel_images';
+import {
+    HOTEL_IMAGE_LOGICAL_ROOT,
+    HOTEL_IMAGE_ROOT,
+    buildLogicalImagePath,
+    getAddImageLogicalPath,
+    getCloudinaryImageUrl,
+    getHotelSlugFromLogicalPath,
+    IMAGE_TRANSFORMS
+} from './hotel-cloudinary.js';
+
+export { HOTEL_IMAGE_ROOT, HOTEL_IMAGE_LOGICAL_ROOT };
+
 export const HOTEL_IMAGE_SLOTS = [1, 2, 3, 4];
 export const HOTEL_ROOT_IMAGE_NAMES = ['1', '2', '3', '4', 'add_image'];
-
-/**
- * All browser-renderable image formats we probe for. Includes uppercase and
- * common mixed-case variants because most production hosts (GitHub Pages,
- * Linux/Nginx) serve URLs case-sensitively, so `1.JPG` and `1.jpg` are
- * distinct files. Browsers cannot decode HEIC/HEIF/TIFF/RAW natively — those
- * still need to be converted to a web format before upload.
- */
-const HOTEL_IMAGE_EXT_BASE = [
-    'jpg', 'jpeg', 'png', 'webp', 'avif',
-    'gif', 'bmp', 'svg', 'apng', 'ico'
-];
-const HOTEL_IMAGE_EXT_CASE_VARIANTS = HOTEL_IMAGE_EXT_BASE.flatMap((ext) => {
-    const upper = ext.toUpperCase();
-    const titled = ext.charAt(0).toUpperCase() + ext.slice(1);
-    return [ext, upper, titled];
-});
-export const HOTEL_IMAGE_EXTENSIONS = [...new Set(HOTEL_IMAGE_EXT_CASE_VARIANTS)];
-export const HOTEL_IMAGE_EXT_PRIORITY = [
-    'jpg', 'avif', 'webp', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'apng', 'ico'
-];
 
 const IMAGE_OK_CACHE = new Map();
 const IMAGE_FAIL_CACHE = new Set();
 const IMAGE_PROBE_INFLIGHT = new Map();
-const MAX_CONCURRENT_PROBES = 18;
+/** Browsers limit ~6 concurrent requests per host; keep headroom for real image loads. */
+const MAX_CONCURRENT_PROBES = 5;
+const PROBE_ATTEMPTS = 3;
+const PROBE_RETRY_DELAY_MS = 280;
 let activeProbes = 0;
 const probeQueue = [];
+
+function delay(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
 
 function runWithProbeLimit(task) {
     if (activeProbes < MAX_CONCURRENT_PROBES) {
@@ -50,6 +47,35 @@ function runWithProbeLimit(task) {
     });
 }
 
+function probeImageExistsOnce(url) {
+    const normalized = String(url || '').trim();
+    if (!normalized) return Promise.resolve(false);
+
+    return runWithProbeLimit(
+        () =>
+            new Promise((resolve) => {
+                const img = new Image();
+                let settled = false;
+                const finish = (ok) => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(Boolean(ok));
+                };
+                const timeoutId = window.setTimeout(() => finish(false), 12000);
+                img.onload = () => {
+                    window.clearTimeout(timeoutId);
+                    finish(true);
+                };
+                img.onerror = () => {
+                    window.clearTimeout(timeoutId);
+                    finish(false);
+                };
+                img.decoding = 'async';
+                img.src = normalized;
+            })
+    );
+}
+
 export function probeImageExists(url) {
     const normalized = String(url || '').trim();
     if (!normalized) return Promise.resolve(false);
@@ -57,59 +83,79 @@ export function probeImageExists(url) {
     if (IMAGE_FAIL_CACHE.has(normalized)) return Promise.resolve(false);
     if (IMAGE_PROBE_INFLIGHT.has(normalized)) return IMAGE_PROBE_INFLIGHT.get(normalized);
 
-    const pending = runWithProbeLimit(
-        () =>
-            new Promise((resolve) => {
-                const img = new Image();
-                const finish = (ok) => {
-                    if (ok) IMAGE_OK_CACHE.set(normalized, true);
-                    else IMAGE_FAIL_CACHE.add(normalized);
-                    resolve(ok);
-                };
-                img.onload = () => finish(true);
-                img.onerror = () => finish(false);
-                img.decoding = 'async';
-                img.src = normalized;
-            })
-    );
+    const pending = (async () => {
+        for (let attempt = 0; attempt < PROBE_ATTEMPTS; attempt += 1) {
+            if (attempt > 0) await delay(PROBE_RETRY_DELAY_MS);
+            if (await probeImageExistsOnce(normalized)) {
+                IMAGE_OK_CACHE.set(normalized, true);
+                IMAGE_FAIL_CACHE.delete(normalized);
+                return true;
+            }
+        }
+        IMAGE_FAIL_CACHE.add(normalized);
+        return false;
+    })();
 
     IMAGE_PROBE_INFLIGHT.set(normalized, pending);
     return pending.finally(() => IMAGE_PROBE_INFLIGHT.delete(normalized));
 }
 
+/** Logical path candidates for a slot (folder add_image, then hotel root add_image on main gallery only). */
 export function buildCandidateUrls(folderPath, baseName) {
-    const folder = String(folderPath || '').replace(/\/$/, '');
-    if (!folder) return [];
-    const urls = [];
-    for (const ext of HOTEL_IMAGE_EXT_PRIORITY) {
-        urls.push(`${folder}/${baseName}.${ext}`);
+    const logical = buildLogicalImagePath(folderPath, baseName);
+    if (!logical) return [];
+    const candidates = [logical];
+    const folderAddImage = buildLogicalImagePath(folderPath, 'add_image');
+    if (folderAddImage && folderAddImage !== logical) candidates.push(folderAddImage);
+
+    const folderNorm = String(folderPath || '').replace(/\/$/, '');
+    const slug = getHotelSlugFromLogicalPath(folderNorm);
+    const isHotelRootFolder =
+        Boolean(slug) && folderNorm === `${HOTEL_IMAGE_LOGICAL_ROOT}/${slug}`;
+    if (isHotelRootFolder) {
+        const hotelAddImage = getAddImageLogicalPath(slug);
+        if (hotelAddImage && !candidates.includes(hotelAddImage)) candidates.push(hotelAddImage);
     }
-    for (const ext of HOTEL_IMAGE_EXTENSIONS) {
-        const candidate = `${folder}/${baseName}.${ext}`;
-        if (!urls.includes(candidate)) urls.push(candidate);
-    }
-    return urls;
+    return candidates;
+}
+
+export function getListingImageLogicalPath(slug) {
+    const normalizedSlug = String(slug || '').trim();
+    if (!normalizedSlug) return '';
+    return buildLogicalImagePath(`${HOTEL_IMAGE_LOGICAL_ROOT}/${normalizedSlug}`, '1');
+}
+
+/** Listing cards: predictable slot-1 path, no network probe (detail page probes later). */
+export function resolveListingImageSet(slug) {
+    const normalizedSlug = String(slug || '').trim();
+    if (!normalizedSlug) return null;
+    const primary = getListingImageLogicalPath(normalizedSlug);
+    if (!primary) return null;
+    return { basePath: HOTEL_IMAGE_ROOT, images: [primary] };
+}
+
+export function getOptimisticSlotPathsFromCandidates(imageCandidates) {
+    if (!Array.isArray(imageCandidates)) return [];
+    return imageCandidates
+        .map((slot) => (Array.isArray(slot) ? slot[0] : ''))
+        .filter(Boolean);
 }
 
 export async function findFirstExistingImage(folderPath, baseName) {
     const candidates = buildCandidateUrls(folderPath, baseName);
-    if (!candidates.length) return '';
-
-    const results = await Promise.all(
-        candidates.map(async (url) => [url, await probeImageExists(url)])
-    );
-    const match = results.find(([, exists]) => exists);
-    return match ? match[0] : '';
+    for (const logical of candidates) {
+        const deliveryUrl = getCloudinaryImageUrl(logical, IMAGE_TRANSFORMS.probe);
+        if (await probeImageExists(deliveryUrl)) return logical;
+    }
+    return '';
 }
 
 /**
  * Resolve numbered images in a hotel subfolder (room, restaurant, etc.).
  *
  * Has no fixed slot cap — discovers as many consecutively-numbered images as
- * exist (1.jpg, 2.jpg, 3.jpg, ...). Probes a batch of slots in parallel and
- * stops as soon as a slot is missing, so users only need to drop files in
- * sequence to grow a gallery. `maxSlots` is a safety upper bound to prevent
- * runaway probing in case of unexpected naming.
+ * exist (1, 2, 3, …). Probes a batch of slots in parallel and stops as soon as
+ * a slot is missing.
  */
 export async function resolveFolderGalleryImages(folderPath, options = {}) {
     const folder = String(folderPath || '').replace(/\/$/, '');
@@ -121,7 +167,19 @@ export async function resolveFolderGalleryImages(folderPath, options = {}) {
     const images = [];
     const imageCandidates = [];
 
-    let nextSlot = 1;
+    const slot1Logical = buildLogicalImagePath(folder, '1');
+    if (slot1Logical) {
+        const slot1Resolved = await findFirstExistingImage(folder, '1');
+        const slot1Use = slot1Resolved || slot1Logical;
+        const slot1Candidates = buildCandidateUrls(folder, '1');
+        images.push(slot1Use);
+        imageCandidates.push([
+            slot1Use,
+            ...slot1Candidates.filter((candidate) => candidate !== slot1Use)
+        ]);
+    }
+
+    let nextSlot = 2;
     let stopped = false;
     while (!stopped && nextSlot <= maxSlots) {
         const batchEnd = Math.min(nextSlot + batchSize - 1, maxSlots);
@@ -154,7 +212,7 @@ export async function resolveFolderGalleryImages(folderPath, options = {}) {
 export function buildMainGallerySlotCandidates(slug, slotIndex) {
     const normalizedSlug = String(slug || '').trim();
     if (!normalizedSlug) return [];
-    const folderPath = `${HOTEL_IMAGE_ROOT}/${normalizedSlug}`;
+    const folderPath = `${HOTEL_IMAGE_LOGICAL_ROOT}/${normalizedSlug}`;
     return buildCandidateUrls(folderPath, String(slotIndex));
 }
 
@@ -163,33 +221,48 @@ export function buildOptimisticMainGallery(slug) {
 }
 
 export async function resolveMainGalleryForSlug(slug) {
-    const candidatesBySlot = buildOptimisticMainGallery(slug);
+    const normalizedSlug = String(slug || '').trim();
+    if (!normalizedSlug) return { images: [], imageCandidates: [] };
+
+    const folderPath = `${HOTEL_IMAGE_LOGICAL_ROOT}/${normalizedSlug}`;
+    const candidatesBySlot = buildOptimisticMainGallery(normalizedSlug);
     const resolved = await Promise.all(
-        HOTEL_IMAGE_SLOTS.map((slotIndex) => findFirstExistingImage(`${HOTEL_IMAGE_ROOT}/${slug}`, String(slotIndex)))
+        HOTEL_IMAGE_SLOTS.map((slotIndex) => findFirstExistingImage(folderPath, String(slotIndex)))
     );
 
     const images = [];
     const imageCandidates = [];
 
-    resolved.forEach((url, index) => {
-        if (!url) return;
-        images.push(url);
-        imageCandidates.push([url, ...candidatesBySlot[index].filter((candidate) => candidate !== url)]);
+    resolved.forEach((logicalPath, index) => {
+        if (!logicalPath) return;
+        images.push(logicalPath);
+        imageCandidates.push([
+            logicalPath,
+            ...candidatesBySlot[index].filter((candidate) => candidate !== logicalPath)
+        ]);
     });
 
     if (!images.length) {
-        const fallback = await findFirstExistingImage(`${HOTEL_IMAGE_ROOT}/${slug}`, 'add_image');
+        const fallback = await findFirstExistingImage(folderPath, 'add_image');
         if (fallback) {
             images.push(fallback);
-            imageCandidates.push([fallback, ...buildCandidateUrls(`${HOTEL_IMAGE_ROOT}/${slug}`, 'add_image').filter((c) => c !== fallback)]);
+            imageCandidates.push([
+                fallback,
+                ...buildCandidateUrls(folderPath, 'add_image').filter((c) => c !== fallback)
+            ]);
         }
     }
 
-    return { images, imageCandidates: imageCandidates.length ? imageCandidates : images.map((src) => [src]) };
+    return {
+        images,
+        imageCandidates: imageCandidates.length
+            ? imageCandidates
+            : images.map((src) => [src])
+    };
 }
 
 export async function hotelHasListingImage(slug) {
-    const folderPath = `${HOTEL_IMAGE_ROOT}/${String(slug || '').trim()}`;
+    const folderPath = `${HOTEL_IMAGE_LOGICAL_ROOT}/${String(slug || '').trim()}`;
     if (await findFirstExistingImage(folderPath, '1')) return true;
     if (await findFirstExistingImage(folderPath, 'add_image')) return true;
     return false;
@@ -199,7 +272,7 @@ export async function collectRootGalleryImagesForSlug(slug) {
     const normalizedSlug = String(slug || '').trim();
     if (!normalizedSlug) return [];
 
-    const folderPath = `${HOTEL_IMAGE_ROOT}/${normalizedSlug}`;
+    const folderPath = `${HOTEL_IMAGE_LOGICAL_ROOT}/${normalizedSlug}`;
     const found = await Promise.all(
         HOTEL_ROOT_IMAGE_NAMES.map((baseName) => findFirstExistingImage(folderPath, baseName))
     );
