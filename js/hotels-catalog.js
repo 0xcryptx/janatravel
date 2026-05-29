@@ -710,6 +710,8 @@ function ensureCatalogHasVisibleCards() {
     const totalCards = document.querySelectorAll('.destination-card').length;
     if (!totalCards) return;
     if (countDisplayedHotelCards() > 0) return;
+    // Keep Featured when opened from nav; only auto-expand for ?view=all or empty-state fallback.
+    if (packagesNavScope === 'featured' && getPackagesUrlView() !== 'all') return;
 
     packagesNavScope = 'all';
     setAllPackagesCountriesSelected();
@@ -910,6 +912,13 @@ let packagesNavScope = 'featured';
 
 const PACKAGES_VIEW_STATE_STORAGE_KEY = 'jana:hotelsCatalogView';
 
+function getPackagesUrlView() {
+    if (typeof window === 'undefined') return '';
+    return String(new URLSearchParams(window.location.search).get('view') || '')
+        .trim()
+        .toLowerCase();
+}
+
 // We re-render cards async on every visit, so the browser's native scroll restoration
 // often fires before content height matches and lands in the wrong place. Take over.
 if (typeof history !== 'undefined' && 'scrollRestoration' in history) {
@@ -958,14 +967,11 @@ function loadPackagesViewState() {
 }
 
 function restorePackagesViewState() {
+    const urlView = getPackagesUrlView();
     const saved = loadPackagesViewState();
-    if (!saved) {
-        applyPackagesCatalogView(false);
-        return;
-    }
 
     // Restore country chip selection (defaults to all if missing/invalid).
-    if (Array.isArray(saved.countries) && saved.countries.length) {
+    if (saved && Array.isArray(saved.countries) && saved.countries.length) {
         const valid = saved.countries.filter((c) => PACKAGE_COUNTRY_OPTIONS.includes(c));
         selectedPackagesCountries = valid.length ? new Set(valid) : new Set(PACKAGE_COUNTRY_OPTIONS);
     } else {
@@ -974,8 +980,10 @@ function restorePackagesViewState() {
     updatePackagesCountryFilterUi();
 
     // Restore search-form filters and sync the visible custom selects.
-    appliedTripType = typeof saved.tripType === 'string' ? saved.tripType : 'all';
-    appliedCountry = typeof saved.country === 'string' ? saved.country : 'all';
+    if (saved) {
+        appliedTripType = typeof saved.tripType === 'string' ? saved.tripType : 'all';
+        appliedCountry = typeof saved.country === 'string' ? saved.country : 'all';
+    }
     const tripTypeEl = document.getElementById('tripType');
     const countryEl = document.getElementById('countryFilter');
     if (tripTypeEl) {
@@ -987,12 +995,18 @@ function restorePackagesViewState() {
         syncFilterSelectUI('countryFilter');
     }
 
-    if (saved.scope === 'all') {
+    if (urlView === 'all') {
         packagesNavScope = 'all';
+        setAllPackagesCountriesSelected();
+        updatePackagesCountryFilterUi();
         updatePackagesNavTabs();
         applyPackagesCatalogView(true);
-    } else if (saved.scope === null) {
-        // "Filtered packages" mode (after a Search Hotels run).
+    } else if (urlView === 'featured') {
+        packagesNavScope = 'featured';
+        updatePackagesNavTabs();
+        applyPackagesCatalogView(false);
+    } else if (saved && saved.scope === null) {
+        // "Filtered packages" mode (after a Search Hotels run) — back navigation only.
         packagesNavScope = null;
         updatePackagesNavTabs();
         applyFilteredPackagesHeading();
@@ -1003,6 +1017,7 @@ function restorePackagesViewState() {
         }
         filterHotels();
     } else {
+        // Nav "Hotels" (/hotels/) — Featured; do not restore session "All Hotels".
         packagesNavScope = 'featured';
         updatePackagesNavTabs();
         applyPackagesCatalogView(false);
@@ -1010,7 +1025,7 @@ function restorePackagesViewState() {
 
     // Restore scroll position after layout settles. Try a few times to absorb async
     // image decoding / fade-in transitions that grow the document height incrementally.
-    const targetY = Number(saved.scrollY) || 0;
+    const targetY = Number(saved?.scrollY) || 0;
     if (targetY > 0 && typeof window !== 'undefined') {
         const tryScroll = () => {
             const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
