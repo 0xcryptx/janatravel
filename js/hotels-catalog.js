@@ -1410,6 +1410,8 @@ initFilterCustomSelects();
 // Carousel state
 let currentSlide = 0;
 let currentImages = [];
+let lightboxOpen = false;
+let lightboxScrollPosition = 0;
 
 // Utility function
 function isMobile() {
@@ -1490,7 +1492,6 @@ function setCatalogSlide(index, source = 'api') {
         if (counter && currentImages.length) {
             counter.textContent = `${currentSlide + 1} / ${currentImages.length}`;
         }
-        resetLightboxMagnify();
     }
     catalogSwiperSyncLock = false;
 }
@@ -1534,47 +1535,6 @@ function goToSlide(index) {
     setCatalogSlide(index, 'api');
 }
 
-// Lightbox: fullscreen view with cursor-follow magnify on the image (desktop only)
-let lightboxOpen = false;
-let lightboxScrollPosition = 0;
-const LIGHTBOX_MAGNIFY_SCALE = 2.25;
-
-function resetLightboxMagnify() {
-    const image = lightboxSwiperApi?.getActiveImage?.() || document.querySelector('#lightboxSwipeContainer img');
-    if (!image) return;
-    image.style.transform = '';
-    image.style.transformOrigin = '';
-}
-
-function onLightboxImageMouseMove(e) {
-    if (!lightboxOpen || isMobile()) return;
-    const container = document.getElementById('lightboxSwipeContainer');
-    const img = lightboxSwiperApi?.getActiveImage?.() || document.getElementById('lightboxImage');
-    if (!container || !img || !img.complete || !img.naturalWidth) return;
-    const containerRect = container.getBoundingClientRect();
-    const x = e.clientX - containerRect.left;
-    const y = e.clientY - containerRect.top;
-    const xPct = Math.max(0, Math.min(100, (x / containerRect.width) * 100));
-    const yPct = Math.max(0, Math.min(100, (y / containerRect.height) * 100));
-    img.style.transformOrigin = `${xPct}% ${yPct}%`;
-    img.style.transform = `scale(${LIGHTBOX_MAGNIFY_SCALE})`;
-}
-
-function onLightboxImageMouseLeave() {
-    resetLightboxMagnify();
-}
-
-function initLightboxMagnifyListeners() {
-    const container = document.getElementById('lightboxSwipeContainer');
-    if (!container) return;
-    container.addEventListener('mousemove', onLightboxImageMouseMove);
-    container.addEventListener('mouseleave', onLightboxImageMouseLeave);
-    container.addEventListener('click', function (e) {
-        if (lightboxOpen && e.target.closest('img')) e.stopPropagation();
-    });
-}
-initLightboxMagnifyListeners();
-
 function openLightbox() {
     // Save scroll position before applying fixed positioning
     // Check if body is already fixed (from modal) and get position from top style
@@ -1584,7 +1544,6 @@ function openLightbox() {
         lightboxScrollPosition = window.scrollY;
     }
 
-    resetLightboxMagnify();
     document.getElementById('lightboxCounter').textContent = `${currentSlide + 1} / ${currentImages.length}`;
     document.getElementById('lightboxOverlay').classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -1607,7 +1566,6 @@ function updateLightbox() {
 
 function closeLightbox() {
     document.getElementById('lightboxOverlay').classList.remove('active');
-    resetLightboxMagnify();
     document.body.style.overflow = '';
     document.body.style.position = '';
     document.body.style.width = '';
@@ -1689,6 +1647,10 @@ async function initCatalogSwipers() {
                     : '';
             return `<img src="${escapeAttr(src)}" alt="" draggable="false" loading="eager" decoding="async"${priority}>`;
         }
+    });
+
+    lightboxEl.addEventListener('click', (event) => {
+        if (lightboxOpen && event.target.closest('img')) event.stopPropagation();
     });
 
     window.preloadCatalogImages = (urls) => preloadJanaImages(urls);

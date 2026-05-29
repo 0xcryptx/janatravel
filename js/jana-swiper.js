@@ -121,12 +121,18 @@ export function refreshSwiperLoop(swiperInstance) {
 /**
  * Mobile: infinite loop (last → first slides in from the right).
  * Desktop: rewind for arrow buttons; touch disabled via breakpoints.
+ *
+ * Swiper loop mis-indexes on exactly 3 slides (realIndex sticks on the last slide
+ * after wrap). Use rewind there instead; 4+ slides loop normally.
  */
 export function getJanaTouchCarouselOptions(slideCount = 0) {
   if (slideCount <= 1) {
     return { loop: false, rewind: false };
   }
   if (isJanaMobile()) {
+    if (slideCount === 3) {
+      return { loop: false, rewind: true };
+    }
     return {
       loop: true,
       rewind: false,
@@ -163,6 +169,8 @@ const LIGHTBOX_EDGE_WRAP_DRAG_THRESHOLD = 40;
 export function attachJanaLightboxEdgeWrap(swiperInstance, getImageCount, onWrapTo) {
   if (!swiperInstance || typeof getImageCount !== "function") return;
 
+  let touchStartIndex = 0;
+
   const finishWrap = (targetIndex) => {
     moveSwiperTo(swiperInstance, targetIndex, 0);
     if (typeof onWrapTo === "function") onWrapTo(targetIndex);
@@ -174,6 +182,10 @@ export function attachJanaLightboxEdgeWrap(swiperInstance, getImageCount, onWrap
     });
   };
 
+  swiperInstance.on("touchStart", () => {
+    touchStartIndex = getSwiperLogicalIndex(swiperInstance);
+  });
+
   swiperInstance.on("touchEnd", () => {
     const count = getImageCount();
     if (count <= 1) return;
@@ -183,11 +195,13 @@ export function attachJanaLightboxEdgeWrap(swiperInstance, getImageCount, onWrap
     const wantsNext = diff < -LIGHTBOX_EDGE_WRAP_DRAG_THRESHOLD;
     const wantsPrev = diff > LIGHTBOX_EDGE_WRAP_DRAG_THRESHOLD;
 
-    if (wantsNext && (swiperInstance.isEnd || idx >= count - 1)) {
+    // Only wrap when still on the same slide as touchStart (swipe hit the edge).
+    // Without this, a 1→2 swipe on a 3-slide gallery also has wantsNext and would jump to 0.
+    if (wantsNext && idx >= count - 1 && idx === touchStartIndex) {
       finishWrap(0);
       return;
     }
-    if (wantsPrev && (swiperInstance.isBeginning || idx <= 0)) {
+    if (wantsPrev && idx <= 0 && idx === touchStartIndex) {
       finishWrap(count - 1);
     }
   });
@@ -346,14 +360,17 @@ export async function bindJanaSwiperCarousel({
     if (touchOpts.loop) {
       moveSwiperTo(swiper, index, 0);
     }
+
+    const applyWrapIndex = (wrapIndex) => {
+      index = wrapIndex;
+      markCurrentSlide(index);
+      const activeImg = getSlideImage(swiper.slides[swiper.activeIndex]) || mainImageEl;
+      applySlideToImage(activeImg, wrapIndex);
+      if (onIndexChange) onIndexChange(wrapIndex);
+    };
+
     if (isLightboxViewport) {
-      attachJanaLightboxEdgeWrap(swiper, getSlideCount, (wrapIndex) => {
-        index = wrapIndex;
-        markCurrentSlide(index);
-        const activeImg = getSlideImage(swiper.slides[swiper.activeIndex]) || mainImageEl;
-        applySlideToImage(activeImg, wrapIndex);
-        if (onIndexChange) onIndexChange(wrapIndex);
-      });
+      attachJanaLightboxEdgeWrap(swiper, getSlideCount, applyWrapIndex);
     }
   };
 

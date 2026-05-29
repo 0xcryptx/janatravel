@@ -1568,8 +1568,6 @@ section {
     border-radius: 10px;
     user-select: none;
     -webkit-user-drag: none;
-    transform-origin: center center;
-    will-change: transform;
 }
 
 .lightbox-swipe-container.swiping .lightbox-image-container {

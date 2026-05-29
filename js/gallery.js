@@ -27,7 +27,6 @@ let galleryLightboxSwiper = null;
 let gallerySwiperSyncLock = false;
 let lightboxInitPromise = null;
 let lightboxSuppressCloseUntil = 0;
-const LIGHTBOX_MAGNIFY_SCALE = 2.25;
 
 function openGalleryImage(index) {
     if (!galleryImages.length) return;
@@ -70,7 +69,6 @@ function setGallerySlide(index, source = 'api') {
         if (counter && currentImages.length) {
             counter.textContent = `${currentSlide + 1} / ${currentImages.length}`;
         }
-        resetLightboxMagnify();
         preloadJanaSlideNeighbors(currentImages, currentSlide);
     }
     gallerySwiperSyncLock = false;
@@ -90,7 +88,6 @@ function openLightbox() {
 
     lightboxScrollPosition = window.scrollY;
     lightboxSuppressCloseUntil = Date.now() + 500;
-    resetLightboxMagnify();
     overlay.classList.add('active');
     clearGalleryItemHover();
     document.body.style.overflow = 'hidden';
@@ -108,7 +105,6 @@ function closeLightbox() {
     if (!overlay) return;
 
     overlay.classList.remove('active');
-    resetLightboxMagnify();
     document.body.style.overflow = '';
     document.body.style.position = '';
     document.body.style.width = '';
@@ -121,47 +117,6 @@ function closeLightbox() {
 
 function changeSlide(direction) {
     setGallerySlide(currentSlide + direction, 'api');
-}
-
-function isMobile() {
-    return window.matchMedia('(max-width: 768px)').matches;
-}
-
-function resetLightboxMagnify() {
-    const image =
-        galleryLightboxSwiper?.getActiveImage?.() ||
-        document.querySelector('#lightboxSwipeContainer img');
-    if (!image) return;
-    image.style.transform = '';
-    image.style.transformOrigin = '';
-}
-
-function onLightboxImageMouseMove(e) {
-    if (!lightboxOpen || isMobile()) return;
-    const container = document.getElementById('lightboxSwipeContainer');
-    const img = galleryLightboxSwiper?.getActiveImage?.() || container?.querySelector('img');
-    if (!container || !img || !img.complete || !img.naturalWidth) return;
-    const containerRect = container.getBoundingClientRect();
-    const x = e.clientX - containerRect.left;
-    const y = e.clientY - containerRect.top;
-    const xPct = Math.max(0, Math.min(100, (x / containerRect.width) * 100));
-    const yPct = Math.max(0, Math.min(100, (y / containerRect.height) * 100));
-    img.style.transformOrigin = `${xPct}% ${yPct}%`;
-    img.style.transform = `scale(${LIGHTBOX_MAGNIFY_SCALE})`;
-}
-
-function onLightboxImageMouseLeave() {
-    resetLightboxMagnify();
-}
-
-function initLightboxMagnifyListeners() {
-    const container = document.getElementById('lightboxSwipeContainer');
-    if (!container) return;
-    container.addEventListener('mousemove', onLightboxImageMouseMove);
-    container.addEventListener('mouseleave', onLightboxImageMouseLeave);
-    container.addEventListener('click', (e) => {
-        if (lightboxOpen && e.target.closest('img')) e.stopPropagation();
-    });
 }
 
 async function initGalleryLightboxSwiper() {
@@ -425,6 +380,13 @@ function initLightboxOverlayHandlers() {
     const overlay = document.getElementById('lightboxOverlay');
     if (!overlay) return;
 
+    const container = document.getElementById('lightboxSwipeContainer');
+    if (container) {
+        container.addEventListener('click', (e) => {
+            if (lightboxOpen && e.target.closest('img')) e.stopPropagation();
+        });
+    }
+
     overlay.addEventListener('click', (e) => {
         if (Date.now() < lightboxSuppressCloseUntil) return;
         if (e.target.closest('.lightbox-close, .lightbox-btn, .lightbox-counter')) return;
@@ -462,7 +424,6 @@ async function bootstrapGallery() {
     if (!galleryUiInitialized) {
         initGalleryTouch();
         initGalleryGridTouch();
-        initLightboxMagnifyListeners();
         initLightboxOverlayHandlers();
         galleryUiInitialized = true;
     }
