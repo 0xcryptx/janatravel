@@ -5,6 +5,7 @@
 import {
     HOTEL_IMAGE_LOGICAL_ROOT,
     HOTEL_IMAGE_ROOT,
+    appendCloudinaryCacheBust,
     buildLogicalImagePath,
     getAddImageLogicalPath,
     getCloudinaryImageUrl,
@@ -17,7 +18,7 @@ export { HOTEL_IMAGE_ROOT, HOTEL_IMAGE_LOGICAL_ROOT };
 export const HOTEL_IMAGE_SLOTS = [1, 2, 3, 4];
 export const HOTEL_ROOT_IMAGE_NAMES = ['1', '2', '3', '4', 'add_image'];
 
-const IMAGE_OK_CACHE = new Map();
+/** Known-missing URLs (per session) — avoids hammering dead slots. */
 const IMAGE_FAIL_CACHE = new Set();
 const IMAGE_PROBE_INFLIGHT = new Map();
 /** Browsers limit ~6 concurrent requests per host; keep headroom for real image loads. */
@@ -76,18 +77,23 @@ function probeImageExistsOnce(url) {
     );
 }
 
+/** Drop in-memory probe results (e.g. after deleting assets in Cloudinary). */
+export function clearImageProbeCache() {
+    IMAGE_FAIL_CACHE.clear();
+    IMAGE_PROBE_INFLIGHT.clear();
+}
+
 export function probeImageExists(url) {
     const normalized = String(url || '').trim();
     if (!normalized) return Promise.resolve(false);
-    if (IMAGE_OK_CACHE.has(normalized)) return Promise.resolve(true);
     if (IMAGE_FAIL_CACHE.has(normalized)) return Promise.resolve(false);
     if (IMAGE_PROBE_INFLIGHT.has(normalized)) return IMAGE_PROBE_INFLIGHT.get(normalized);
 
     const pending = (async () => {
         for (let attempt = 0; attempt < PROBE_ATTEMPTS; attempt += 1) {
             if (attempt > 0) await delay(PROBE_RETRY_DELAY_MS);
-            if (await probeImageExistsOnce(normalized)) {
-                IMAGE_OK_CACHE.set(normalized, true);
+            const probeUrl = appendCloudinaryCacheBust(normalized, `${Date.now()}_${attempt}`);
+            if (await probeImageExistsOnce(probeUrl)) {
                 IMAGE_FAIL_CACHE.delete(normalized);
                 return true;
             }
@@ -167,15 +173,13 @@ export async function resolveFolderGalleryImages(folderPath, options = {}) {
     const images = [];
     const imageCandidates = [];
 
-    const slot1Logical = buildLogicalImagePath(folder, '1');
-    if (slot1Logical) {
-        const slot1Resolved = await findFirstExistingImage(folder, '1');
-        const slot1Use = slot1Resolved || slot1Logical;
+    const slot1Resolved = await findFirstExistingImage(folder, '1');
+    if (slot1Resolved) {
         const slot1Candidates = buildCandidateUrls(folder, '1');
-        images.push(slot1Use);
+        images.push(slot1Resolved);
         imageCandidates.push([
-            slot1Use,
-            ...slot1Candidates.filter((candidate) => candidate !== slot1Use)
+            slot1Resolved,
+            ...slot1Candidates.filter((candidate) => candidate !== slot1Resolved)
         ]);
     }
 

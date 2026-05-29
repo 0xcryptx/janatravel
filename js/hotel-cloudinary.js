@@ -53,6 +53,25 @@ export function getCloudinaryImageUrl(path, transform = IMAGE_TRANSFORMS.default
 }
 
 /**
+ * Bust browser/CDN caches for Cloudinary delivery URLs (ignored for placeholders).
+ * @param {string} url
+ * @param {string|number} bustToken
+ */
+export function appendCloudinaryCacheBust(url, bustToken) {
+    const value = String(url || '').trim();
+    if (!value || !bustToken) return value;
+    if (!value.includes('res.cloudinary.com')) return value;
+    try {
+        const parsed = new URL(value);
+        parsed.searchParams.set('_jana', String(bustToken));
+        return parsed.toString();
+    } catch {
+        const sep = value.includes('?') ? '&' : '?';
+        return `${value}${sep}_jana=${encodeURIComponent(String(bustToken))}`;
+    }
+}
+
+/**
  * @param {string} folderPath e.g. /assets/hotel_images/{slug}/rooms/room1
  * @param {string} baseName e.g. 1 or add_image
  * @returns {string}

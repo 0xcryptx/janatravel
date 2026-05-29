@@ -167,6 +167,23 @@
       user-select:none;
       -webkit-user-drag:none;
     }
+    .room-image-viewer--pending {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:210px;
+      margin-bottom:.35rem;
+      border-radius:12px;
+      background:rgba(0,139,139,.06);
+    }
+    .room-image-viewer--pending .room-image-placeholder,
+    .section-media-pending {
+      color:#4a6868;
+      font-size:.9rem;
+    }
+    .section-media-pending {
+      margin:0 0 .5rem;
+    }
     .hero-swipe-viewport .swipe-slide--current img,
     .room-swipe-viewport .swipe-slide--current img {
       pointer-events:auto;
@@ -180,6 +197,17 @@
       margin:0 auto;
       overflow:hidden;
       touch-action:pan-y pinch-zoom;
+      align-self:center;
+      flex-shrink:1;
+      min-height:0;
+    }
+    .lightbox-swipe-viewport .swipe-track {
+      height:100%;
+      align-items:stretch;
+    }
+    .lightbox-swipe-viewport .swiper-wrapper {
+      height:100%;
+      align-items:center;
     }
     .lightbox-swipe-viewport .swiper-slide-duplicate { display:none !important; }
     .lightbox-swipe-viewport .swipe-slide,
@@ -190,6 +218,7 @@
       width:100% !important;
       height:100%;
       min-height:0 !important;
+      box-sizing:border-box;
     }
     .lightbox-swipe-viewport .swipe-slide img,
     .lightbox-swipe-viewport .swiper-slide img {
@@ -198,9 +227,10 @@
       max-width:100%;
       max-height:min(78dvh,calc(100dvh - 9.5rem));
       object-fit:contain;
+      object-position:center center;
       border-radius:12px;
       display:block;
-      margin:0 auto;
+      margin:auto;
       pointer-events:none;
       user-select:none;
       -webkit-user-drag:none;
@@ -317,19 +347,26 @@
       box-sizing:border-box;
     }
     .image-lightbox[hidden] { display:none !important; }
-    .image-lightbox img {
+    .image-lightbox > img {
       width:auto;
       height:auto;
       max-width:min(92vw,1100px);
       max-height:calc(100vh - 9.5rem);
       max-height:calc(100dvh - 9.5rem);
       object-fit:contain;
+      object-position:center center;
       border-radius:12px;
+      display:block;
+      margin:auto;
+      align-self:center;
+      flex-shrink:1;
     }
     .image-lightbox .lightbox-swipe-viewport {
       z-index:1;
       flex-shrink:1;
       min-height:0;
+      margin-inline:auto;
+      align-self:center;
     }
     .lightbox-counter {
       position:absolute;
@@ -834,7 +871,8 @@
       }
       .lightbox-swipe-viewport,
       .lightbox-swipe-viewport .swipe-slide img,
-      .image-lightbox img {
+      .lightbox-swipe-viewport .swiper-slide img,
+      .image-lightbox > img {
         max-height:calc(100vh - 8rem);
         max-height:calc(100dvh - 8rem);
       }

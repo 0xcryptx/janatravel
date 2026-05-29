@@ -1405,6 +1405,7 @@ section {
 .carousel-container.swiper .swiper-wrapper,
 .lightbox-swipe-container.swiper .swiper-wrapper {
     height: 100%;
+    align-items: center;
 }
 
 .carousel-container.swiper .swiper-slide.carousel-slide {
@@ -1452,8 +1453,9 @@ section {
     height: auto;
     max-width: 100%;
     max-height: min(78dvh, calc(100dvh - 9rem));
-    margin: 0 auto;
+    margin: auto;
     object-fit: contain;
+    object-position: center center;
     pointer-events: none;
     -webkit-user-drag: none;
     user-select: none;
@@ -1518,6 +1520,7 @@ section {
     z-index: 3000;
     justify-content: center;
     align-items: center;
+    box-sizing: border-box;
 }
 
 .lightbox-overlay.active {
@@ -1530,7 +1533,12 @@ section {
     position: relative;
     width: 80vw;
     height: 80vh;
+    max-width: min(92vw, 1100px);
+    max-height: min(78dvh, calc(100dvh - 9rem));
+    margin: 0 auto;
     overflow: hidden;
+    flex-shrink: 0;
+    align-self: center;
 }
 
 .lightbox-swipe-container.swiper,
@@ -1562,9 +1570,14 @@ section {
 }
 
 .lightbox-overlay img {
+    display: block;
+    width: auto;
+    height: auto;
     max-width: 100%;
-    max-height: 80vh;
+    max-height: min(78dvh, calc(100dvh - 9rem));
+    margin: auto;
     object-fit: contain;
+    object-position: center center;
     border-radius: 10px;
     user-select: none;
     -webkit-user-drag: none;
@@ -1576,7 +1589,9 @@ section {
 
 @media (max-width: 768px) {
     .lightbox-overlay.active {
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
         padding: 3.25rem 1rem 4.5rem;
         box-sizing: border-box;
     }
@@ -1588,6 +1603,7 @@ section {
         height: min(72dvh, calc(100dvh - 8rem));
         max-height: min(72dvh, calc(100dvh - 8rem));
         margin: 0 auto;
+        align-self: center;
     }
 
     .lightbox-swipe-container.swiper .swiper-wrapper {

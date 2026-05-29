@@ -9,16 +9,15 @@ import {
 } from "./jana-swiper.js";
 import {
   HOTEL_IMAGE_ROOT,
-  HOTEL_IMAGE_SLOTS,
   buildCandidateUrls,
   buildOptimisticMainGallery,
-  getOptimisticSlotPathsFromCandidates,
+  clearImageProbeCache,
   resolveFolderGalleryImages,
   resolveMainGalleryForSlug
 } from "./hotel-image-probe.js";
 import {
+  appendCloudinaryCacheBust,
   getAddImageLogicalPath,
-  resolveHotelImageCandidates,
   resolveHotelImageUrl
 } from "./hotel-cloudinary.js";
 
@@ -27,13 +26,15 @@ const WHATSAPP_NUMBER = "971501771927";
 const HOTEL_PLACEHOLDER_IMAGE = "/assets/images/add_image.webp";
 const GOOGLE_SHEETS_HOTELS_URL = "";
 const HOTEL_IMAGE_BASE_PATHS = [HOTEL_IMAGE_ROOT];
-const IMAGE_INDEXES = HOTEL_IMAGE_SLOTS;
 const HOTEL_VIEW_STATE_PREFIX = "jana:hotelViewState:";
 const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
-const HOTEL_MEDIA_CACHE_VERSION = 10;
+const HOTEL_MEDIA_CACHE_VERSION = 12;
+
+/** New value each hotel page load — busts browser cache for Cloudinary `<img>` URLs. */
+let mediaDeliveryCacheBust = 0;
 let hotelDataCacheCleanupTimerId = null;
 
 function loadJsonData(url) {
@@ -53,16 +54,29 @@ function escapeHtml(value) {
 }
 
 function resolveImagePath(path, transformKey = "default") {
-  return resolveHotelImageUrl(path, transformKey);
+  const url = resolveHotelImageUrl(path, transformKey);
+  if (!url || !mediaDeliveryCacheBust) return url;
+  return appendCloudinaryCacheBust(url, mediaDeliveryCacheBust);
+}
+
+function resolveDeliveryUrls(candidates, transformKey = "default") {
+  const list = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+  return list
+    .map((entry) => {
+      const value = String(entry || "").trim();
+      if (!value) return "";
+      if (/^https?:\/\//i.test(value) || value.startsWith("/assets/images/")) return value;
+      return resolveImagePath(value, transformKey);
+    })
+    .filter(Boolean);
 }
 
 function buildImageCandidatesForSlot(folderPath, index) {
   return buildCandidateUrls(folderPath, String(index));
 }
 
-
 function serializeImageFallbacks(candidates, transformKey = "default") {
-  const fallbacks = resolveHotelImageCandidates(
+  const fallbacks = resolveDeliveryUrls(
     Array.isArray(candidates) ? candidates.slice(1) : [],
     transformKey
   );
@@ -96,7 +110,7 @@ function janaHotelImageFallback(img) {
   if (img.classList.contains("room-image-main")) {
     const folderPath = String(img.dataset.folderPath || "").trim();
     if (folderPath) {
-      const folderAdd = resolveHotelImageUrl(`${folderPath.replace(/\/$/, "")}/add_image`, "default");
+      const folderAdd = resolveImagePath(`${folderPath.replace(/\/$/, "")}/add_image`, "default");
       if (folderAdd) {
         img.src = folderAdd;
         return;
@@ -105,7 +119,7 @@ function janaHotelImageFallback(img) {
   }
   if (img.classList.contains("room-image-main") || img.id === "hotelMainImage" || img.id === "hotelLightboxImage") {
     const slug = String(img.dataset.hotelSlug || "").trim();
-    const addImage = slug ? resolveHotelImageUrl(getAddImageLogicalPath(slug), "hero") : "";
+    const addImage = slug ? resolveImagePath(getAddImageLogicalPath(slug), "hero") : "";
     img.src = addImage || HOTEL_PLACEHOLDER_IMAGE;
   }
 }
@@ -496,6 +510,24 @@ function loadCachedHotelData(slug, signature) {
   }
 }
 
+function hotelDataForSessionCache(hotelData) {
+  if (!hotelData || typeof hotelData !== "object") return hotelData;
+  const copy = { ...hotelData };
+  copy.mainImages = [];
+  copy.galleryImages = [];
+  copy.mainImageCandidates = [];
+  for (const key of ["roomTypeItems", "facilityItems", "wellnessItems", "restaurantItems"]) {
+    if (!Array.isArray(copy[key])) continue;
+    copy[key] = copy[key].map((item) => ({
+      ...item,
+      images: [],
+      imageCandidates: [],
+      loaded: false
+    }));
+  }
+  return copy;
+}
+
 function saveCachedHotelData(slug, signature, hotelData) {
   const key = getHotelDataCacheKey(slug);
   try {
@@ -503,7 +535,7 @@ function saveCachedHotelData(slug, signature, hotelData) {
       expiresAt: Date.now() + HOTEL_DATA_CACHE_TTL_MS,
       signature,
       mediaCacheVersion: HOTEL_MEDIA_CACHE_VERSION,
-      data: hotelData
+      data: hotelDataForSessionCache(hotelData)
     };
     sessionStorage.setItem(key, JSON.stringify(payload));
   } catch (error) {
@@ -514,15 +546,12 @@ function saveCachedHotelData(slug, signature, hotelData) {
 function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, entries) {
   return entries.map((entry, index) => {
     const folderPath = `${basePath}/${slug}/${sectionFolder}/${itemPrefix}${index + 1}`;
-    const imageCandidates = IMAGE_INDEXES.map((slotIndex) =>
-      buildImageCandidatesForSlot(folderPath, slotIndex)
-    );
     return {
       label: entry.label,
       description: entry.description || "",
       folderPath,
-      imageCandidates,
-      images: imageCandidates.map((candidates) => candidates[0]).filter(Boolean),
+      imageCandidates: [],
+      images: [],
       loaded: false
     };
   });
@@ -530,9 +559,7 @@ function buildIndexedSectionItems(basePath, slug, sectionFolder, itemPrefix, ent
 
 function getSectionItemDisplayImages(item) {
   if (!item) return [];
-  const resolved = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
-  if (resolved.length) return resolved;
-  return getOptimisticSlotPathsFromCandidates(item.imageCandidates);
+  return Array.isArray(item.images) ? item.images.filter(Boolean) : [];
 }
 
 function getSectionItemImageCandidates(item, slideIndex) {
@@ -569,16 +596,28 @@ function destroyPanelCardSwipers(container) {
 
 function areSectionItemsHydrated(items) {
   if (!Array.isArray(items) || !items.length) return true;
-  return items.every((item) => item.loaded && getSectionItemDisplayImages(item).length > 0);
+  return items.every((item) => item.loaded);
 }
 
 function mergeHydratedSectionItem(item, resolved) {
-  const optimisticImages = getOptimisticSlotPathsFromCandidates(item.imageCandidates);
-  const images = resolved.images.length ? resolved.images : optimisticImages;
-  const imageCandidates = resolved.images.length
+  const images = Array.isArray(resolved.images) ? resolved.images.filter(Boolean) : [];
+  const imageCandidates = images.length
     ? resolved.imageCandidates
     : item.imageCandidates;
   return { ...item, images, imageCandidates, loaded: true };
+}
+
+function resetHotelSectionHydration(hotel) {
+  if (!hotel || typeof hotel !== "object") return hotel;
+  for (const key of ["roomTypeItems", "facilityItems", "wellnessItems", "restaurantItems"]) {
+    if (!Array.isArray(hotel[key])) continue;
+    hotel[key] = hotel[key].map((item) => ({
+      ...item,
+      loaded: false,
+      images: []
+    }));
+  }
+  return hotel;
 }
 
 async function hydrateSectionItems(section, onProgress) {
@@ -597,7 +636,7 @@ async function hydrateSectionItems(section, onProgress) {
 
   const hydratedItems = await Promise.all(
     items.map(async (item, index) => {
-      if (item.loaded && getSectionItemDisplayImages(item).length) {
+      if (item.loaded) {
         if (typeof onProgress === "function") {
           onProgress(Math.round(((index + 1) / total) * 100));
         }
@@ -827,14 +866,18 @@ async function loadHotelBySlug(slug, onProgress) {
   const hotelSignature = JSON.stringify(matchedHotel);
   const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
 
+  mediaDeliveryCacheBust = Date.now();
+  clearImageProbeCache();
+
   // Reuse cached sheet-derived data when available (skips re-parsing + section URL building),
-  // but ALWAYS re-resolve the main gallery from Cloudinary. New uploads can appear without
-  // waiting for the session cache TTL to expire.
-  const preparedHotel = cachedHotel || prepareHotelMedia(matchedHotel, (mediaProgress) => {
-    if (typeof onProgress === "function") {
-      onProgress(55 + Math.round(mediaProgress * 0.4));
-    }
-  });
+  // but ALWAYS re-resolve galleries from Cloudinary. Section items are re-hydrated on each visit.
+  const preparedHotel = cachedHotel
+    ? resetHotelSectionHydration({ ...cachedHotel })
+    : prepareHotelMedia(matchedHotel, (mediaProgress) => {
+        if (typeof onProgress === "function") {
+          onProgress(55 + Math.round(mediaProgress * 0.4));
+        }
+      });
 
   if (preparedHotel) {
     const resolvedGallery = await resolveMainGalleryForSlug(normalizedSlug);
@@ -843,6 +886,10 @@ async function loadHotelBySlug(slug, onProgress) {
       preparedHotel.mainImageCandidates = resolvedGallery.imageCandidates;
       preparedHotel.galleryImages = resolvedGallery.images;
       preparedHotel.imageUrl = resolvedGallery.images[0];
+    } else {
+      preparedHotel.mainImages = [HOTEL_PLACEHOLDER_IMAGE];
+      preparedHotel.galleryImages = [HOTEL_PLACEHOLDER_IMAGE];
+      preparedHotel.imageUrl = HOTEL_PLACEHOLDER_IMAGE;
     }
     saveCachedHotelData(normalizedSlug, hotelSignature, preparedHotel);
   }
@@ -927,7 +974,7 @@ async function setupImageLightbox(contentEl) {
     const resolved = lightboxContext.resolvedAtIndex.get(normalized);
     const slotCandidates = lightboxContext.imageCandidatesByIndex[normalized];
     if (Array.isArray(slotCandidates) && slotCandidates.length) {
-      const resolvedList = resolveHotelImageCandidates(slotCandidates, "default");
+      const resolvedList = resolveDeliveryUrls(slotCandidates, "default");
       if (resolved) {
         return {
           candidates: [
@@ -1080,7 +1127,7 @@ async function setupImageLightbox(contentEl) {
 function applyImageWithFallbacks(imgEl, candidates, options = {}) {
   if (!imgEl) return;
   const transformKey = options.transformKey || "default";
-  const list = resolveHotelImageCandidates(
+  const list = resolveDeliveryUrls(
     Array.isArray(candidates) ? candidates.filter(Boolean) : [],
     transformKey
   );
@@ -1237,20 +1284,27 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
   const renderedItems = items
     .map((item, itemIndex) => {
       const displayImages = getSectionItemDisplayImages(item);
+      const pendingMedia = Boolean(item.folderPath) && !item.loaded;
       return `
       <article class="section-item${useCardLayout ? " section-item--room" : ""}">
         <h4 class="section-item__title">${escapeHtml(item.label)}</h4>
         ${
-          displayImages.length
+          pendingMedia
             ? useCardLayout
-              ? `<div class="room-image-viewer" data-section-key="${sectionKey}" data-item-index="${itemIndex}" data-folder-path="${escapeHtml(item.folderPath || "")}">
+              ? `<div class="room-image-viewer room-image-viewer--pending" aria-busy="true" aria-label="Loading photos for ${escapeHtml(item.label)}">
+                  <span class="room-image-placeholder">Loading photos…</span>
+                </div>`
+              : `<p class="section-media-pending" aria-busy="true">Loading photos…</p>`
+            : displayImages.length
+              ? useCardLayout
+                ? `<div class="room-image-viewer" data-section-key="${sectionKey}" data-item-index="${itemIndex}" data-folder-path="${escapeHtml(item.folderPath || "")}">
                   <button type="button" class="room-image-nav room-image-nav--prev" data-room-nav="prev" aria-label="Previous image">&#10094;</button>
                   <img class="room-image-main" src="${escapeHtml(resolveImagePath(displayImages[0], "default"))}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-folder-path="${escapeHtml(item.folderPath || "")}" data-fallbacks="${serializeImageFallbacks(getSectionItemImageCandidates(item, 0).slice(1), "default")}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(item.label)} image 1" loading="eager" decoding="async" fetchpriority="high">
                   <button type="button" class="room-image-nav room-image-nav--next" data-room-nav="next" aria-label="Next image">&#10095;</button>
                   <span class="room-image-counter">1 / ${displayImages.length}</span>
                   <span class="room-expand-hint" aria-hidden="true">Click to expand</span>
                 </div>`
-              : `<div class="section-item__thumbs">
+                : `<div class="section-item__thumbs">
                   ${displayImages
                     .map((imageUrl, imageIndex) => `
                       <button
@@ -1266,7 +1320,7 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
                     `)
                     .join("")}
                 </div>`
-            : ""
+              : ""
         }
         ${item.description ? `<p class="section-item__desc">${escapeHtml(item.description)}</p>` : ""}
         ${
@@ -1712,8 +1766,19 @@ async function renderHotel(hotel, persistedState = {}, options = {}) {
 
 }
 
+function bindHotelMediaCacheRefreshOnNavigation() {
+  if (typeof window === "undefined" || window.__janaHotelMediaNavBound) return;
+  window.__janaHotelMediaNavBound = true;
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    mediaDeliveryCacheBust = Date.now();
+    clearImageProbeCache();
+  });
+}
+
 async function initHotelsRoutePage() {
   startHotelDataCacheAutoCleanup();
+  bindHotelMediaCacheRefreshOnNavigation();
   const pageProgress = createLoadingProgress({
     baseMessage: "Loading hotel package",
     estimateMs: 3500,
