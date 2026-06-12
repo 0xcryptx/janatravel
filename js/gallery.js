@@ -142,11 +142,9 @@ async function initGalleryLightboxSwiper() {
             const norm = total > 0 ? ((initialIndex % total) + total) % total : 0;
             const prev = total > 0 ? (norm - 1 + total) % total : 0;
             const next = total > 0 ? (norm + 1) % total : 0;
-            const priority =
-                slideIndex === norm || slideIndex === prev || slideIndex === next
-                    ? ' fetchpriority="high"'
-                    : '';
-            return `<img src="${escapeAttr(src)}" alt="" draggable="false" loading="eager" decoding="async"${priority}>`;
+            const isNearby = slideIndex === norm || slideIndex === prev || slideIndex === next;
+            const priority = isNearby ? ' fetchpriority="high"' : '';
+            return `<img src="${escapeAttr(src)}" alt="" draggable="false" loading="${isNearby ? 'eager' : 'lazy'}" decoding="async"${priority}>`;
         }
     });
 }

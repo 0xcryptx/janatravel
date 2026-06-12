@@ -33,7 +33,7 @@ const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
 const HOTEL_MEDIA_CACHE_VERSION = 12;
 
-/** New value each hotel page load — busts browser cache for Cloudinary `<img>` URLs. */
+/** Stable daily token keyed to HOTEL_MEDIA_CACHE_VERSION — lets CDN cache hits land while still busting when images are updated. */
 let mediaDeliveryCacheBust = 0;
 let hotelDataCacheCleanupTimerId = null;
 
@@ -866,7 +866,7 @@ async function loadHotelBySlug(slug, onProgress) {
   const hotelSignature = JSON.stringify(matchedHotel);
   const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
 
-  mediaDeliveryCacheBust = Date.now();
+  mediaDeliveryCacheBust = `${HOTEL_MEDIA_CACHE_VERSION}_${Math.floor(Date.now() / 86400000)}`;
   clearImageProbeCache();
 
   // Reuse cached sheet-derived data when available (skips re-parsing + section URL building),
@@ -1771,7 +1771,7 @@ function bindHotelMediaCacheRefreshOnNavigation() {
   window.__janaHotelMediaNavBound = true;
   window.addEventListener("pageshow", (event) => {
     if (!event.persisted) return;
-    mediaDeliveryCacheBust = Date.now();
+    mediaDeliveryCacheBust = `${HOTEL_MEDIA_CACHE_VERSION}_${Math.floor(Date.now() / 86400000)}`;
     clearImageProbeCache();
   });
 }
