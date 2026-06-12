@@ -620,51 +620,54 @@ function resetHotelSectionHydration(hotel) {
   return hotel;
 }
 
-async function hydrateSectionItems(section, onProgress) {
+async function hydrateSectionItems(section) {
   if (!section || !Array.isArray(section.items)) return;
-  const items = section.items;
-  if (section.itemsLoaded && areSectionItemsHydrated(items)) return;
-  if (section.itemsLoaded && !areSectionItemsHydrated(items)) {
+  if (section.itemsLoaded && areSectionItemsHydrated(section.items)) return;
+  if (section.itemsLoaded && !areSectionItemsHydrated(section.items)) {
     section.itemsLoaded = false;
   }
-  if (areSectionItemsHydrated(items)) {
+  if (areSectionItemsHydrated(section.items)) {
     section.itemsLoaded = true;
     return;
   }
 
-  const total = items.length || 1;
+  for (let index = 0; index < section.items.length; index++) {
+    const item = section.items[index];
+    if (item.loaded) {
+      section._itemListeners?.forEach((fn) => fn(index, item));
+      continue;
+    }
+    const resolved = await resolveFolderGalleryImages(item.folderPath);
+    const hydratedItem = mergeHydratedSectionItem(item, resolved);
+    section.items[index] = hydratedItem;
+    section._itemListeners?.forEach((fn) => fn(index, hydratedItem));
+  }
 
-  const hydratedItems = await Promise.all(
-    items.map(async (item, index) => {
-      if (item.loaded) {
-        if (typeof onProgress === "function") {
-          onProgress(Math.round(((index + 1) / total) * 100));
-        }
-        return item;
-      }
-      const resolved = await resolveFolderGalleryImages(item.folderPath);
-      if (typeof onProgress === "function") {
-        onProgress(Math.round(((index + 1) / total) * 100));
-      }
-      return mergeHydratedSectionItem(item, resolved);
-    })
-  );
-
-  section.items = hydratedItems;
   section.itemsLoaded = true;
 }
 
-function ensureSectionHydrated(section, onHydrated) {
+function ensureSectionHydrated(section, onHydrated, onItemHydrated) {
   if (!section) {
     if (typeof onHydrated === "function") onHydrated();
     return Promise.resolve();
   }
   if (section.itemsLoaded && areSectionItemsHydrated(section.items)) {
+    if (typeof onItemHydrated === "function") {
+      section.items.forEach((item, index) => onItemHydrated(index, item));
+    }
     if (typeof onHydrated === "function") onHydrated();
     return Promise.resolve();
   }
   if (section.itemsLoaded && !areSectionItemsHydrated(section.items)) {
     section.itemsLoaded = false;
+  }
+  if (typeof onItemHydrated === "function") {
+    if (!section._itemListeners) section._itemListeners = [];
+    section._itemListeners.push(onItemHydrated);
+    // Immediately notify for items already resolved during a concurrent hydration.
+    section.items.forEach((item, index) => {
+      if (item.loaded) onItemHydrated(index, item);
+    });
   }
   if (section._hydratePromise) {
     return section._hydratePromise.then(() => {
@@ -673,6 +676,7 @@ function ensureSectionHydrated(section, onHydrated) {
   }
   section._hydratePromise = hydrateSectionItems(section)
     .then(() => {
+      section._itemListeners = [];
       if (typeof onHydrated === "function") onHydrated();
     })
     .finally(() => {
@@ -1286,7 +1290,7 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
       const displayImages = getSectionItemDisplayImages(item);
       const pendingMedia = Boolean(item.folderPath) && !item.loaded;
       return `
-      <article class="section-item${useCardLayout ? " section-item--room" : ""}">
+      <article class="section-item${useCardLayout ? " section-item--room" : ""}" data-item-index="${itemIndex}">
         <h4 class="section-item__title">${escapeHtml(item.label)}</h4>
         ${
           pendingMedia
@@ -1377,8 +1381,8 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
 
   let activeTabKey = initialTab;
 
-  const bindCardImageViewers = (bindGenerationId) => {
-    const viewers = panelBody.querySelectorAll(".room-image-viewer");
+  const bindCardImageViewers = (bindGenerationId, specificViewers = null) => {
+    const viewers = specificViewers ?? Array.from(panelBody.querySelectorAll(".room-image-viewer"));
     const isStaleBind = () =>
       String(panelBody.dataset.cardBindGeneration || "") !== String(bindGenerationId);
 
@@ -1484,7 +1488,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       });
       mainImageEl.setAttribute("role", "button");
       mainImageEl.setAttribute("tabindex", "0");
-      mainImageEl.setAttribute("aria-label", `View ${sectionItem?.label || "image"} fullscreen`);
+      mainImageEl.setAttribute("aria-label", `View ${getLiveItem()?.label || "image"} fullscreen`);
       mainImageEl.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -1501,6 +1505,44 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       bindHoverChromeToggle(viewer);
       })
     );
+  };
+
+  const patchSectionItemInPanel = (sectionKey, itemIndex, item, bindGenerationId) => {
+    const article = panelBody.querySelector(`article[data-item-index="${itemIndex}"]`);
+    if (!article) return;
+    const isStale = () =>
+      String(panelBody.dataset.cardBindGeneration || "") !== String(bindGenerationId);
+    if (isStale()) return;
+    const useCardLayout = isInfoCardSection(sectionKey);
+    const displayImages = getSectionItemDisplayImages(item);
+    const hotelSlug = String(options.hotelSlug || "").trim();
+    if (useCardLayout) {
+      const placeholder = article.querySelector(".room-image-viewer--pending");
+      if (!placeholder) return;
+      if (!displayImages.length) { placeholder.remove(); return; }
+      placeholder.outerHTML = `<div class="room-image-viewer" data-section-key="${sectionKey}" data-item-index="${itemIndex}" data-folder-path="${escapeHtml(item.folderPath || "")}">
+        <button type="button" class="room-image-nav room-image-nav--prev" data-room-nav="prev" aria-label="Previous image">&#10094;</button>
+        <img class="room-image-main" src="${escapeHtml(resolveImagePath(displayImages[0], "default"))}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-folder-path="${escapeHtml(item.folderPath || "")}" data-fallbacks="${serializeImageFallbacks(getSectionItemImageCandidates(item, 0).slice(1), "default")}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(item.label)} image 1" loading="eager" decoding="async" fetchpriority="high">
+        <button type="button" class="room-image-nav room-image-nav--next" data-room-nav="next" aria-label="Next image">&#10095;</button>
+        <span class="room-image-counter">1 / ${displayImages.length}</span>
+        <span class="room-expand-hint" aria-hidden="true">Click to expand</span>
+      </div>`;
+      if (isStale()) return;
+      const newViewer = article.querySelector(`.room-image-viewer[data-item-index="${itemIndex}"]`);
+      if (newViewer) void bindCardImageViewers(bindGenerationId, [newViewer]);
+    } else {
+      const placeholder = article.querySelector(".section-media-pending");
+      if (!placeholder) return;
+      if (!displayImages.length) { placeholder.remove(); return; }
+      placeholder.outerHTML = `<div class="section-item__thumbs">
+        ${displayImages.map((imageUrl, imageIndex) => `
+          <button type="button" class="section-thumb-btn" data-section-key="${sectionKey}" data-item-index="${itemIndex}" data-image-index="${imageIndex}" aria-label="Open image ${imageIndex + 1}">
+            <img src="${escapeHtml(resolveImagePath(imageUrl, "thumb"))}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-folder-path="${escapeHtml(item.folderPath || "")}" data-fallbacks="${serializeImageFallbacks(getSectionItemImageCandidates(item, imageIndex).slice(1), "thumb")}" alt="${escapeHtml(item.label)} image ${imageIndex + 1}" loading="lazy" decoding="async" ${imageFallbackOnErrorAttr()}>
+          </button>
+        `).join("")}
+      </div>`;
+      if (!isStale()) bindSectionThumbs();
+    }
   };
 
   const renderActivePanel = (key) => {
@@ -1526,9 +1568,16 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       tab.setAttribute("aria-selected", isActive ? "true" : "false");
     });
     renderActivePanel(key);
-    ensureSectionHydrated(section, () => {
-      if (activeTabKey === key) renderActivePanel(key);
-    });
+    const bindGeneration = String(panelBody.dataset.cardBindGeneration || "");
+    ensureSectionHydrated(
+      section,
+      () => {
+        if (activeTabKey === key) panelBody.classList.remove("info-panel__body--hydrating");
+      },
+      (itemIndex, item) => {
+        if (activeTabKey === key) patchSectionItemInPanel(key, itemIndex, item, bindGeneration);
+      }
+    );
     if (onTabChange) onTabChange(key);
   };
 
