@@ -18,13 +18,18 @@ export { HOTEL_IMAGE_ROOT, HOTEL_IMAGE_LOGICAL_ROOT };
 export const HOTEL_IMAGE_SLOTS = [1, 2, 3, 4];
 export const HOTEL_ROOT_IMAGE_NAMES = ['1', '2', '3', '4', 'add_image'];
 
-/** Known-missing URLs (per session) — avoids hammering dead slots. */
+/** Known-missing URLs — avoids hammering dead slots. */
 const IMAGE_FAIL_CACHE = new Set();
+/** Known-existing URLs — skip re-probing within the same session. */
+const IMAGE_SUCCESS_CACHE = new Set();
 const IMAGE_PROBE_INFLIGHT = new Map();
 /** Browsers limit ~6 concurrent requests per host; keep headroom for real image loads. */
 const MAX_CONCURRENT_PROBES = 5;
-const PROBE_ATTEMPTS = 3;
-const PROBE_RETRY_DELAY_MS = 280;
+const PROBE_ATTEMPTS = 2;
+const PROBE_RETRY_DELAY_MS = 150;
+const PROBE_TIMEOUT_MS = 5000;
+const GALLERY_CACHE_PREFIX = 'jana:fgal:';
+const GALLERY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 let activeProbes = 0;
 const probeQueue = [];
 
@@ -62,7 +67,7 @@ function probeImageExistsOnce(url) {
                     settled = true;
                     resolve(Boolean(ok));
                 };
-                const timeoutId = window.setTimeout(() => finish(false), 12000);
+                const timeoutId = window.setTimeout(() => finish(false), PROBE_TIMEOUT_MS);
                 img.onload = () => {
                     window.clearTimeout(timeoutId);
                     finish(true);
@@ -80,20 +85,22 @@ function probeImageExistsOnce(url) {
 /** Drop in-memory probe results (e.g. after deleting assets in Cloudinary). */
 export function clearImageProbeCache() {
     IMAGE_FAIL_CACHE.clear();
+    IMAGE_SUCCESS_CACHE.clear();
     IMAGE_PROBE_INFLIGHT.clear();
 }
 
 export function probeImageExists(url) {
     const normalized = String(url || '').trim();
     if (!normalized) return Promise.resolve(false);
+    if (IMAGE_SUCCESS_CACHE.has(normalized)) return Promise.resolve(true);
     if (IMAGE_FAIL_CACHE.has(normalized)) return Promise.resolve(false);
     if (IMAGE_PROBE_INFLIGHT.has(normalized)) return IMAGE_PROBE_INFLIGHT.get(normalized);
 
     const pending = (async () => {
         for (let attempt = 0; attempt < PROBE_ATTEMPTS; attempt += 1) {
             if (attempt > 0) await delay(PROBE_RETRY_DELAY_MS);
-            const probeUrl = appendCloudinaryCacheBust(normalized, `${Date.now()}_${attempt}`);
-            if (await probeImageExistsOnce(probeUrl)) {
+            if (await probeImageExistsOnce(normalized)) {
+                IMAGE_SUCCESS_CACHE.add(normalized);
                 IMAGE_FAIL_CACHE.delete(normalized);
                 return true;
             }
@@ -169,6 +176,21 @@ export async function resolveFolderGalleryImages(folderPath, options = {}) {
 
     const batchSize = Math.max(1, options.batchSize || 4);
     const maxSlots = Math.max(1, options.maxSlots || 200);
+    const cacheVersion = options.cacheVersion != null ? String(options.cacheVersion) : '';
+    const lsKey = cacheVersion ? `${GALLERY_CACHE_PREFIX}${cacheVersion}:${folder}` : '';
+
+    if (lsKey) {
+        try {
+            const raw = localStorage.getItem(lsKey);
+            if (raw) {
+                const entry = JSON.parse(raw);
+                if (entry && Date.now() < Number(entry.expiresAt || 0)) {
+                    return entry.data;
+                }
+                localStorage.removeItem(lsKey);
+            }
+        } catch { /* ignore */ }
+    }
 
     const images = [];
     const imageCandidates = [];
@@ -208,6 +230,15 @@ export async function resolveFolderGalleryImages(folderPath, options = {}) {
         }
 
         nextSlot = batchEnd + 1;
+    }
+
+    if (lsKey) {
+        try {
+            localStorage.setItem(lsKey, JSON.stringify({
+                data: { images, imageCandidates },
+                expiresAt: Date.now() + GALLERY_CACHE_TTL_MS
+            }));
+        } catch { /* ignore storage quota errors */ }
     }
 
     return { images, imageCandidates };

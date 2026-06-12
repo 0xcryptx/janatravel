@@ -631,17 +631,18 @@ async function hydrateSectionItems(section) {
     return;
   }
 
-  for (let index = 0; index < section.items.length; index++) {
-    const item = section.items[index];
-    if (item.loaded) {
-      section._itemListeners?.forEach((fn) => fn(index, item));
-      continue;
-    }
-    const resolved = await resolveFolderGalleryImages(item.folderPath);
-    const hydratedItem = mergeHydratedSectionItem(item, resolved);
-    section.items[index] = hydratedItem;
-    section._itemListeners?.forEach((fn) => fn(index, hydratedItem));
-  }
+  await Promise.all(
+    section.items.map(async (item, index) => {
+      if (item.loaded) {
+        section._itemListeners?.forEach((fn) => fn(index, item));
+        return;
+      }
+      const resolved = await resolveFolderGalleryImages(item.folderPath, { cacheVersion: HOTEL_MEDIA_CACHE_VERSION });
+      const hydratedItem = mergeHydratedSectionItem(item, resolved);
+      section.items[index] = hydratedItem;
+      section._itemListeners?.forEach((fn) => fn(index, hydratedItem));
+    })
+  );
 
   section.itemsLoaded = true;
 }
@@ -871,7 +872,6 @@ async function loadHotelBySlug(slug, onProgress) {
   const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
 
   mediaDeliveryCacheBust = `${HOTEL_MEDIA_CACHE_VERSION}_${Math.floor(Date.now() / 86400000)}`;
-  clearImageProbeCache();
 
   // Reuse cached sheet-derived data when available (skips re-parsing + section URL building),
   // but ALWAYS re-resolve galleries from Cloudinary. Section items are re-hydrated on each visit.
