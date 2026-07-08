@@ -31,7 +31,7 @@ const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
-const HOTEL_MEDIA_CACHE_VERSION = 12;
+const HOTEL_MEDIA_CACHE_VERSION = 13;
 
 /** Stable daily token keyed to HOTEL_MEDIA_CACHE_VERSION — lets CDN cache hits land while still busting when images are updated. */
 let mediaDeliveryCacheBust = 0;

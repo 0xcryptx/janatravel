@@ -30,6 +30,13 @@ const PROBE_RETRY_DELAY_MS = 150;
 const PROBE_TIMEOUT_MS = 5000;
 const GALLERY_CACHE_PREFIX = 'jana:fgal:';
 const GALLERY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+/**
+ * Empty results (no images found in a folder yet) are cached only briefly so that
+ * images uploaded after a folder was first probed appear on the next visit instead
+ * of being pinned as "empty" for a full day. Populated folders keep the long TTL,
+ * so repeat browsing stays fast.
+ */
+const GALLERY_EMPTY_CACHE_TTL_MS = 5 * 60 * 1000;
 let activeProbes = 0;
 const probeQueue = [];
 
@@ -234,9 +241,10 @@ export async function resolveFolderGalleryImages(folderPath, options = {}) {
 
     if (lsKey) {
         try {
+            const ttl = images.length ? GALLERY_CACHE_TTL_MS : GALLERY_EMPTY_CACHE_TTL_MS;
             localStorage.setItem(lsKey, JSON.stringify({
                 data: { images, imageCandidates },
-                expiresAt: Date.now() + GALLERY_CACHE_TTL_MS
+                expiresAt: Date.now() + ttl
             }));
         } catch { /* ignore storage quota errors */ }
     }
