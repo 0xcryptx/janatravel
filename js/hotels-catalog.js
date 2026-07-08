@@ -718,6 +718,7 @@ function ensureCatalogHasVisibleCards() {
     updatePackagesCountryFilterUi();
     updatePackagesNavTabs();
     applyPackagesCatalogView(true);
+    setPackagesUrlView('all');
 }
 
 function applyDestinationOverrides(validHotels) {
@@ -917,6 +918,28 @@ function getPackagesUrlView() {
     return String(new URLSearchParams(window.location.search).get('view') || '')
         .trim()
         .toLowerCase();
+}
+
+// Reflect the current catalog scope in the URL via replaceState (no new history
+// entry). This makes browser Back/Forward land on the view the user was on:
+// "All Hotels" carries ?view=all, so returning to it restores All instead of
+// resetting to Featured. 'featured' sets ?view=featured; anything else (e.g. a
+// filtered Search) clears the param so its own restore path takes over.
+function setPackagesUrlView(view) {
+    if (typeof window === 'undefined' || !window.history || typeof window.history.replaceState !== 'function') {
+        return;
+    }
+    try {
+        const url = new URL(window.location.href);
+        if (view === 'all' || view === 'featured') {
+            url.searchParams.set('view', view);
+        } else {
+            url.searchParams.delete('view');
+        }
+        window.history.replaceState(window.history.state, '', url.toString());
+    } catch (error) {
+        // Ignore URL update failures.
+    }
 }
 
 // We re-render cards async on every visit, so the browser's native scroll restoration
@@ -1379,6 +1402,7 @@ function selectPackagesCatalog(mode) {
     syncDefaultPackageFilters();
     updatePackagesNavTabs();
     applyPackagesCatalogView(mode === 'all');
+    setPackagesUrlView(packagesNavScope);
     savePackagesViewState();
 }
 
@@ -1397,6 +1421,9 @@ function runPackagesFilterSearch() {
         grid.classList.remove('show-all');
     }
     filterHotels();
+    // Clear ?view so back-navigation restores this filtered view (saved.scope === null),
+    // not an earlier All/Featured tab.
+    setPackagesUrlView(null);
     savePackagesViewState();
 }
 
@@ -1405,6 +1432,7 @@ function resetFilters() {
     updatePackagesNavTabs();
     syncDefaultPackageFilters();
     applyPackagesCatalogView(false);
+    setPackagesUrlView('featured');
     savePackagesViewState();
 }
 
@@ -1415,6 +1443,7 @@ function viewAllPackagesFromEmpty() {
     updatePackagesNavTabs();
     syncDefaultPackageFilters();
     applyPackagesCatalogView(true);
+    setPackagesUrlView('all');
     savePackagesViewState();
 }
 
