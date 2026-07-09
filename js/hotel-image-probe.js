@@ -40,6 +40,28 @@ const GALLERY_EMPTY_CACHE_TTL_MS = 5 * 60 * 1000;
 let activeProbes = 0;
 const probeQueue = [];
 
+/**
+ * Cache-bust token applied to probe (existence-check) URLs. Cloudinary serves
+ * images with a ~30-day immutable cache, so without a token a deleted image's
+ * tiny probe URL keeps loading from the browser cache and the asset is wrongly
+ * reported as still existing. Keyed to the media cache version (+ day) so a
+ * version bump — and each new day — forces a real re-probe against Cloudinary.
+ */
+let probeCacheToken = '';
+
+export function setImageProbeCacheToken(token) {
+    const next = String(token || '');
+    if (next === probeCacheToken) return;
+    probeCacheToken = next;
+    // Drop in-memory results so the next probe uses the new token.
+    clearImageProbeCache();
+}
+
+function buildProbeDeliveryUrl(logical) {
+    const url = getCloudinaryImageUrl(logical, IMAGE_TRANSFORMS.probe);
+    return probeCacheToken ? appendCloudinaryCacheBust(url, probeCacheToken) : url;
+}
+
 function delay(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -164,8 +186,7 @@ export function getOptimisticSlotPathsFromCandidates(imageCandidates) {
 export async function findFirstExistingImage(folderPath, baseName) {
     const candidates = buildCandidateUrls(folderPath, baseName);
     for (const logical of candidates) {
-        const deliveryUrl = getCloudinaryImageUrl(logical, IMAGE_TRANSFORMS.probe);
-        if (await probeImageExists(deliveryUrl)) return logical;
+        if (await probeImageExists(buildProbeDeliveryUrl(logical))) return logical;
     }
     return '';
 }

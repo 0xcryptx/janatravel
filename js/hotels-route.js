@@ -13,7 +13,8 @@ import {
   buildOptimisticMainGallery,
   clearImageProbeCache,
   resolveFolderGalleryImages,
-  resolveMainGalleryForSlug
+  resolveMainGalleryForSlug,
+  setImageProbeCacheToken
 } from "./hotel-image-probe.js";
 import {
   appendCloudinaryCacheBust,
@@ -872,6 +873,7 @@ async function loadHotelBySlug(slug, onProgress) {
   const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
 
   mediaDeliveryCacheBust = `${HOTEL_MEDIA_CACHE_VERSION}_${Math.floor(Date.now() / 86400000)}`;
+  setImageProbeCacheToken(mediaDeliveryCacheBust);
 
   // Reuse cached sheet-derived data when available (skips re-parsing + section URL building),
   // but ALWAYS re-resolve galleries from Cloudinary. Section items are re-hydrated on each visit.
@@ -1821,6 +1823,7 @@ function bindHotelMediaCacheRefreshOnNavigation() {
   window.addEventListener("pageshow", (event) => {
     if (!event.persisted) return;
     mediaDeliveryCacheBust = `${HOTEL_MEDIA_CACHE_VERSION}_${Math.floor(Date.now() / 86400000)}`;
+    setImageProbeCacheToken(mediaDeliveryCacheBust);
     clearImageProbeCache();
   });
 }
