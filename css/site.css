@@ -61,15 +61,15 @@ body {
 
 /* Navigation */
 nav {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(0, 206, 209, 0.2);
     padding: 0.5rem clamp(1rem, 2vw, 1.75rem) 0.5rem clamp(0.75rem, 2%, 1%);
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
 }
 
 
@@ -97,8 +97,8 @@ nav {
 .logo-text {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--white);
-    text-shadow: 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.3);
+    color: var(--aqua-dark);
+    text-shadow: none;
     transition: transform 0.3s ease;
     display: inline-block;
 }
@@ -124,7 +124,7 @@ nav {
 
 .logo-text span {
     color: var(--aqua-light);
-    text-shadow: 0 0 3px rgba(0, 139, 139, 0.5), 0 0 6px rgba(0, 139, 139, 0.3);
+    text-shadow: none;
 }
 
 .nav-wrapper {
@@ -156,24 +156,25 @@ nav {
 
 .nav-links a {
     text-decoration: none;
-    color: var(--white);
+    color: var(--aqua-dark);
     font-weight: 500;
     transition: all 0.3s ease;
-    text-shadow: 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.3);
+    text-shadow: none;
     padding: 0.3rem 0.7rem;
     border-radius: 20px;
     position: relative;
 }
 
 .nav-links a:hover {
-    color: var(--white);
-    background: rgba(0, 206, 209, 0.3);
-    text-shadow: 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.3);
+    color: var(--aqua-dark);
+    background: rgba(0, 206, 209, 0.14);
+    text-shadow: none;
 }
 
+/* Selected page: the hover pill, with white text. */
 .nav-links a.active {
-    color: var(--aqua-dark);
-    background: rgba(0, 206, 209, 0.25);
+    color: var(--white);
+    background: rgba(0, 206, 209, 0.14);
     text-shadow: none;
     font-weight: 600;
 }
@@ -3138,50 +3139,6 @@ body:has(main.destinations-page) {
     background: linear-gradient(180deg, #f6ffff 0%, #eff9f8 100%);
 }
 
-/* Destinations hub: solid fixed nav (matches hotel package topbar). */
-body:has(main.destinations-page) .nav-wrapper {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-}
-
-body:has(main.destinations-page) .nav-wrapper nav {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-bottom: 1px solid rgba(0, 206, 209, 0.2);
-    box-shadow: none;
-}
-
-body:has(main.destinations-page) .logo-text {
-    color: var(--aqua-dark);
-    text-shadow: none;
-}
-
-body:has(main.destinations-page) .logo-text span {
-    color: var(--aqua-light);
-    text-shadow: none;
-}
-
-body:has(main.destinations-page) .nav-links a {
-    color: var(--aqua-dark);
-    text-shadow: none;
-}
-
-body:has(main.destinations-page) .nav-links a:hover {
-    color: var(--aqua-dark);
-    background: rgba(0, 206, 209, 0.14);
-    text-shadow: none;
-}
-
-body:has(main.destinations-page) .nav-links a.active {
-    color: var(--aqua-dark);
-    background: rgba(0, 206, 209, 0.2);
-    text-shadow: none;
-}
-
 .destinations-page {
     background: transparent;
     padding-left: clamp(1rem, 4vw, 4rem);
@@ -3533,10 +3490,10 @@ body:has(main.destinations-page) .nav-links a.active {
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         -ms-overflow-style: none;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 206, 209, 0.25);
         border-radius: 12px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
         z-index: 1001;
@@ -3574,22 +3531,22 @@ body:has(main.destinations-page) .nav-links a.active {
         font-weight: 500;
         font-size: 0.88rem;
         white-space: nowrap;
-        color: var(--white);
-        text-shadow: 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.3);
+        color: var(--aqua-dark);
+        text-shadow: none;
         transition: background 0.2s ease;
     }
 
-    .mobile-nav-list a:hover,
-    .mobile-nav-list a.active {
-        background: rgba(0, 206, 209, 0.3);
-        color: var(--white);
+    .mobile-nav-list a:hover {
+        background: rgba(0, 206, 209, 0.14);
+        color: var(--aqua-dark);
         font-weight: 600;
     }
 
+    /* Selected page: the hover pill, with white text. */
     .mobile-nav-list a.active {
-        color: var(--aqua-dark);
-        background: rgba(0, 206, 209, 0.25);
-        text-shadow: none;
+        background: rgba(0, 206, 209, 0.14);
+        color: var(--white);
+        font-weight: 600;
     }
 
     .mobile-nav-drawer,
