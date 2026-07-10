@@ -603,6 +603,16 @@
       object-fit:cover;
       display:block;
       cursor:zoom-in;
+      /* Shimmer shows through until the image paints over it. */
+      background:linear-gradient(100deg, rgba(0,139,139,.05) 30%, rgba(0,139,139,.12) 50%, rgba(0,139,139,.05) 70%);
+      background-size:200% 100%;
+      animation:jana-card-shimmer 1.2s ease-in-out infinite, jana-card-fade-in .45s ease-out both;
+    }
+    /* Ends at opacity:1 on its own — a stalled image never leaves a blank card. */
+    @keyframes jana-card-fade-in { from { opacity:0 } to { opacity:1 } }
+    @keyframes jana-card-shimmer { from { background-position:200% 0 } to { background-position:-200% 0 } }
+    @media (prefers-reduced-motion: reduce) {
+      .room-image-main { animation:none; }
     }
     .room-image-nav {
       position:absolute;

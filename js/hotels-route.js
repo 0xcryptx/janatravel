@@ -34,7 +34,12 @@ const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
 const HOTEL_MEDIA_CACHE_VERSION = 14;
 
-/** Stable daily token keyed to HOTEL_MEDIA_CACHE_VERSION — lets CDN cache hits land while still busting when images are updated. */
+/**
+ * Delivery cache-bust token. Cloudinary serves images with max-age=2592000, so this
+ * must stay stable to be worth anything — a token that rolls daily (as it once did)
+ * forces every returning visitor to re-download every image. Bump
+ * HOTEL_MEDIA_CACHE_VERSION when images are replaced, alongside a manifest rebuild.
+ */
 let mediaDeliveryCacheBust = 0;
 let hotelDataCacheCleanupTimerId = null;
 
@@ -88,8 +93,43 @@ function imageFallbackOnErrorAttr() {
   return 'onerror="window.janaHotelImageFallback&&window.janaHotelImageFallback(this)"';
 }
 
+/** Room cards render at ~350px wide on desktop, ~46vw across the two-column breakpoints. */
+const ROOM_CARD_SIZES = "(max-width: 1024px) 46vw, 350px";
+/** Cards above the fold load immediately; the rest wait until scrolled near. */
+const ROOM_CARD_EAGER_COUNT = 3;
+
+function roomCardSrcset(logicalPath) {
+  const oneX = resolveImagePath(logicalPath, "roomCard");
+  const twoX = resolveImagePath(logicalPath, "roomCard2x");
+  if (!oneX || !twoX) return "";
+  return `${oneX} 480w, ${twoX} 960w`;
+}
+
+/**
+ * Room-card <img> markup. Every later write to one of these goes through
+ * applyImageWithFallbacks({ responsiveRoomCard: true }), because a stale srcset
+ * silently outranks a freshly-assigned src — janaHotelImageFallback strips it first.
+ */
+function renderRoomCardImageHtml(item, itemIndex, hotelSlug) {
+  const logical = getSectionItemDisplayImages(item)[0];
+  const srcset = roomCardSrcset(logical);
+  const eager = itemIndex < ROOM_CARD_EAGER_COUNT;
+  return `<img class="room-image-main"
+    src="${escapeHtml(resolveImagePath(logical, "roomCard"))}"
+    ${srcset ? `srcset="${escapeHtml(srcset)}" sizes="${ROOM_CARD_SIZES}"` : ""}
+    width="480" height="288"
+    data-hotel-slug="${escapeHtml(hotelSlug)}"
+    data-folder-path="${escapeHtml(item.folderPath || "")}"
+    data-fallbacks="${serializeImageFallbacks(getSectionItemImageCandidates(item, 0).slice(1), "roomCard")}"
+    ${imageFallbackOnErrorAttr()}
+    alt="${escapeHtml(item.label)} image 1"
+    loading="${eager ? "eager" : "lazy"}" decoding="async">`;
+}
+
 function janaHotelImageFallback(img) {
   if (!img) return;
+  // A srcset would keep resolving to the broken asset no matter what src we set.
+  img.removeAttribute("srcset");
   let fallbacks = [];
   try {
     fallbacks = JSON.parse(img.dataset.fallbacks || "[]");
@@ -111,7 +151,7 @@ function janaHotelImageFallback(img) {
   if (img.classList.contains("room-image-main")) {
     const folderPath = String(img.dataset.folderPath || "").trim();
     if (folderPath) {
-      const folderAdd = resolveImagePath(`${folderPath.replace(/\/$/, "")}/add_image`, "default");
+      const folderAdd = resolveImagePath(`${folderPath.replace(/\/$/, "")}/add_image`, "roomCard");
       if (folderAdd) {
         img.src = folderAdd;
         return;
@@ -872,7 +912,7 @@ async function loadHotelBySlug(slug, onProgress) {
   const hotelSignature = JSON.stringify(matchedHotel);
   const cachedHotel = loadCachedHotelData(normalizedSlug, hotelSignature);
 
-  mediaDeliveryCacheBust = `${HOTEL_MEDIA_CACHE_VERSION}_${Math.floor(Date.now() / 86400000)}`;
+  mediaDeliveryCacheBust = String(HOTEL_MEDIA_CACHE_VERSION);
   setImageProbeCacheToken(mediaDeliveryCacheBust);
 
   // Reuse cached sheet-derived data when available (skips re-parsing + section URL building),
@@ -1133,12 +1173,11 @@ async function setupImageLightbox(contentEl) {
 function applyImageWithFallbacks(imgEl, candidates, options = {}) {
   if (!imgEl) return;
   const transformKey = options.transformKey || "default";
-  const list = resolveDeliveryUrls(
-    Array.isArray(candidates) ? candidates.filter(Boolean) : [],
-    transformKey
-  );
+  const logicalCandidates = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+  const list = resolveDeliveryUrls(logicalCandidates, transformKey);
   if (!list.length) {
     imgEl.removeAttribute("data-fallbacks");
+    imgEl.removeAttribute("srcset");
     if (!options.preserveVisibleSrc) {
       imgEl.src = HOTEL_PLACEHOLDER_IMAGE;
     }
@@ -1151,6 +1190,16 @@ function applyImageWithFallbacks(imgEl, candidates, options = {}) {
     ? list.filter((candidate) => candidate !== visibleSrc)
     : list.slice(1);
   imgEl.dataset.fallbacks = JSON.stringify(fallbacks);
+
+  // srcset outranks src, so it must be replaced (or cleared) before src is set.
+  const srcset = options.responsiveRoomCard ? roomCardSrcset(logicalCandidates[0]) : "";
+  if (srcset) {
+    imgEl.sizes = ROOM_CARD_SIZES;
+    imgEl.srcset = srcset;
+  } else {
+    imgEl.removeAttribute("srcset");
+  }
+
   const currentSrc = imgEl.currentSrc || imgEl.src || "";
   if (!currentSrc || currentSrc !== nextSrc) {
     imgEl.src = nextSrc;
@@ -1305,7 +1354,7 @@ function renderSectionItemsHtml(items, sectionKey, options = {}) {
               ? useCardLayout
                 ? `<div class="room-image-viewer" data-section-key="${sectionKey}" data-item-index="${itemIndex}" data-folder-path="${escapeHtml(item.folderPath || "")}">
                   <button type="button" class="room-image-nav room-image-nav--prev" data-room-nav="prev" aria-label="Previous image">&#10094;</button>
-                  <img class="room-image-main" src="${escapeHtml(resolveImagePath(displayImages[0], "default"))}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-folder-path="${escapeHtml(item.folderPath || "")}" data-fallbacks="${serializeImageFallbacks(getSectionItemImageCandidates(item, 0).slice(1), "default")}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(item.label)} image 1" loading="eager" decoding="async" fetchpriority="high">
+                  ${renderRoomCardImageHtml(item, itemIndex, hotelSlug)}
                   <button type="button" class="room-image-nav room-image-nav--next" data-room-nav="next" aria-label="Next image">&#10095;</button>
                   <span class="room-image-counter">1 / ${displayImages.length}</span>
                   <span class="room-expand-hint" aria-hidden="true">Click to expand</span>
@@ -1417,7 +1466,10 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
 
       const applyCardSlide = (imgEl, slideIndex) => {
         const candidates = getSectionItemImageCandidates(getLiveItem(), slideIndex);
-        applyImageWithFallbacks(imgEl, candidates, { transformKey: "default" });
+        applyImageWithFallbacks(imgEl, candidates, {
+          transformKey: "roomCard",
+          responsiveRoomCard: true
+        });
       };
 
       let cardSwipe = null;
@@ -1453,7 +1505,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
         applyImageWithFallbacks(
           mainImageEl,
           getSectionItemImageCandidates(getLiveItem(), normalizedIndex),
-          { transformKey: "default" }
+          { transformKey: "roomCard", responsiveRoomCard: true }
         );
       };
 
@@ -1524,7 +1576,7 @@ function setupHotelInfoTabs(contentEl, sectionData, lightboxApi, options = {}) {
       if (!displayImages.length) { placeholder.remove(); return; }
       placeholder.outerHTML = `<div class="room-image-viewer" data-section-key="${sectionKey}" data-item-index="${itemIndex}" data-folder-path="${escapeHtml(item.folderPath || "")}">
         <button type="button" class="room-image-nav room-image-nav--prev" data-room-nav="prev" aria-label="Previous image">&#10094;</button>
-        <img class="room-image-main" src="${escapeHtml(resolveImagePath(displayImages[0], "default"))}" data-hotel-slug="${escapeHtml(hotelSlug)}" data-folder-path="${escapeHtml(item.folderPath || "")}" data-fallbacks="${serializeImageFallbacks(getSectionItemImageCandidates(item, 0).slice(1), "default")}" ${imageFallbackOnErrorAttr()} alt="${escapeHtml(item.label)} image 1" loading="eager" decoding="async" fetchpriority="high">
+        ${renderRoomCardImageHtml(item, itemIndex, hotelSlug)}
         <button type="button" class="room-image-nav room-image-nav--next" data-room-nav="next" aria-label="Next image">&#10095;</button>
         <span class="room-image-counter">1 / ${displayImages.length}</span>
         <span class="room-expand-hint" aria-hidden="true">Click to expand</span>
@@ -1822,7 +1874,7 @@ function bindHotelMediaCacheRefreshOnNavigation() {
   window.__janaHotelMediaNavBound = true;
   window.addEventListener("pageshow", (event) => {
     if (!event.persisted) return;
-    mediaDeliveryCacheBust = `${HOTEL_MEDIA_CACHE_VERSION}_${Math.floor(Date.now() / 86400000)}`;
+    mediaDeliveryCacheBust = String(HOTEL_MEDIA_CACHE_VERSION);
     setImageProbeCacheToken(mediaDeliveryCacheBust);
     clearImageProbeCache();
   });

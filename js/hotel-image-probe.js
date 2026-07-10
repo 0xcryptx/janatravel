@@ -1,5 +1,9 @@
 /**
- * Shared hotel image discovery (probes Cloudinary delivery URLs).
+ * Shared hotel image discovery.
+ *
+ * Resolution is answered from the build-time manifest (data/hotel-media.json).
+ * Network probing survives only as a fallback for folders the manifest has never
+ * seen — a hotel added to the sheet before the next manifest build.
  */
 
 import {
@@ -12,6 +16,7 @@ import {
     getHotelSlugFromLogicalPath,
     IMAGE_TRANSFORMS
 } from './hotel-cloudinary.js';
+import { loadHotelMediaManifest, manifestImageExists } from './hotel-media-manifest.js';
 
 export { HOTEL_IMAGE_ROOT, HOTEL_IMAGE_LOGICAL_ROOT };
 
@@ -185,7 +190,11 @@ export function getOptimisticSlotPathsFromCandidates(imageCandidates) {
 
 export async function findFirstExistingImage(folderPath, baseName) {
     const candidates = buildCandidateUrls(folderPath, baseName);
+    await loadHotelMediaManifest();
     for (const logical of candidates) {
+        const known = manifestImageExists(logical);
+        if (known === true) return logical;
+        if (known === false) continue;
         if (await probeImageExists(buildProbeDeliveryUrl(logical))) return logical;
     }
     return '';

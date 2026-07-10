@@ -17,6 +17,9 @@ export const IMAGE_TRANSFORMS = {
     hero: 'q_auto,f_auto,c_limit,w_1600',
     /** Hotel grid / offer cards — smaller delivery than hero (faster LCP). */
     card: 'q_auto,f_auto,c_fill,w_480,h_320,dpr_auto',
+    /** Room/facility cards on the hotel detail page. Paired as a 1x/2x srcset. */
+    roomCard: 'q_auto,f_auto,c_fill,ar_5:3,w_480',
+    roomCard2x: 'q_auto,f_auto,c_fill,ar_5:3,w_960',
     thumb: 'q_auto,f_auto,c_fill,w_300,h_220',
     /** Tiny requests when verifying that an asset exists on Cloudinary. */
     probe: 'q_auto,f_auto,c_limit,w_40'
