@@ -481,6 +481,16 @@ function cardMatchesTripType(card, tripType) {
     return pattern ? pattern.test(searchText) : false;
 }
 
+/**
+ * Index of the first word in the hotel name that starts with the query (0 for the
+ * hotel's own first word, 1 for its second, ...), or -1 if no word matches.
+ */
+function hotelNameMatchRank(card, query) {
+    if (!query) return -1;
+    const words = (card.dataset.hotelName || '').split(/[^a-z0-9]+/i).filter(Boolean);
+    return words.findIndex((word) => word.startsWith(query));
+}
+
 function inferKidsAllowed(hotel) {
     const text = `${hotel.experience || ''} ${hotel.description || ''}`.toLowerCase();
     return text.includes('family') || text.includes('kids') || text.includes('children');
@@ -504,6 +514,11 @@ function renderHotelCardsFromData(hotels) {
         if (af !== bf) return bf - af;
         return (a.name || '').localeCompare(b.name || '');
     });
+    const alphaOrder = new Map(
+        [...hotels]
+            .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+            .map((hotel, index) => [hotel.slug, index])
+    );
 
     sorted.forEach((hotel, index) => {
         const slug = hotel.slug || '';
@@ -528,6 +543,8 @@ function renderHotelCardsFromData(hotels) {
         const card = document.createElement('div');
         card.className = `destination-card fade-in${isFeatured ? '' : ' extra-destination'}`;
         card.dataset.hotelSlug = slug;
+        card.dataset.hotelName = String(hotel.name || '').toLowerCase();
+        card.dataset.alphaOrder = String(alphaOrder.get(slug) ?? index);
         card.dataset.price = String(hotel.price || (primaryTag === 'luxury-beach-holidays' ? 2399 : primaryTag === 'family-holidays' ? 1999 : 1799));
         card.dataset.type = experienceTags.join('|');
         card.dataset.searchText = getHotelSearchText(hotel);
@@ -908,6 +925,7 @@ Object.keys(destinationOverrides).forEach(key => {
 /** Snapshot applied when "Search Packages" runs; grid filtering reads these only. */
 let appliedTripType = 'all';
 let appliedCountry = 'all';
+let appliedNameQuery = '';
 /** 'featured' | 'all' when browsing catalog; null after Search (tabs visually inactive). */
 let packagesNavScope = 'featured';
 
@@ -955,6 +973,7 @@ function savePackagesViewState() {
             countries: Array.from(selectedPackagesCountries || []),
             tripType: appliedTripType,
             country: appliedCountry,
+            nameQuery: appliedNameQuery,
             scrollY: typeof window !== 'undefined' ? Math.round(window.scrollY || window.pageYOffset || 0) : 0
         };
         sessionStorage.setItem(PACKAGES_VIEW_STATE_STORAGE_KEY, JSON.stringify(snapshot));
@@ -1006,9 +1025,11 @@ function restorePackagesViewState() {
     if (saved) {
         appliedTripType = typeof saved.tripType === 'string' ? saved.tripType : 'all';
         appliedCountry = typeof saved.country === 'string' ? saved.country : 'all';
+        appliedNameQuery = typeof saved.nameQuery === 'string' ? saved.nameQuery : '';
     }
     const tripTypeEl = document.getElementById('tripType');
     const countryEl = document.getElementById('countryFilter');
+    const nameEl = document.getElementById('hotelNameSearch');
     if (tripTypeEl) {
         tripTypeEl.value = appliedTripType;
         syncFilterSelectUI('tripType');
@@ -1017,6 +1038,8 @@ function restorePackagesViewState() {
         countryEl.value = appliedCountry;
         syncFilterSelectUI('countryFilter');
     }
+    if (nameEl) nameEl.value = appliedNameQuery;
+    updateHotelSearchClearButton();
 
     if (urlView === 'all') {
         packagesNavScope = 'all';
@@ -1202,8 +1225,12 @@ function initFilterCustomSelects() {
 function syncDefaultPackageFilters() {
     appliedTripType = 'all';
     appliedCountry = 'all';
+    appliedNameQuery = '';
     document.getElementById('tripType').value = 'all';
     document.getElementById('countryFilter').value = 'all';
+    const nameEl = document.getElementById('hotelNameSearch');
+    if (nameEl) nameEl.value = '';
+    updateHotelSearchClearButton();
     syncFilterSelectUI('countryFilter');
     syncFilterSelectUI('tripType');
 }
@@ -1339,16 +1366,37 @@ function filterHotels() {
 
         let show = true;
 
+        const nameRank = hotelNameMatchRank(card, appliedNameQuery);
         if (!cardMatchesTripType(card, tripType)) show = false;
         if (appliedCountry !== 'all' && getCardCountry(card) !== appliedCountry) show = false;
         if (filterByCountry && !selectedPackagesCountries.has(getCardCountry(card))) show = false;
+        if (appliedNameQuery && nameRank === -1) show = false;
 
         card.classList.toggle('hidden', !show);
+        if (appliedNameQuery && show) {
+            // Rank matches on the hotel's own first word above matches further into
+            // the name (ties keep alphabetical order).
+            card.style.order = String(nameRank);
+        } else {
+            // Featured and All Hotels both read A-Z; only a name search reorders by match rank.
+            card.style.order = card.dataset.alphaOrder || '';
+        }
         if (show) visibleCount++;
     });
 
     document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
     updatePackagesCountryTag();
+    updateHotelSearchCount(visibleCount);
+}
+
+function updateHotelSearchCount(visibleCount) {
+    const countEl = document.getElementById('hotelSearchCount');
+    if (!countEl) return;
+    if (!appliedNameQuery) {
+        countEl.textContent = '';
+        return;
+    }
+    countEl.textContent = visibleCount === 1 ? '1 hotel found' : `${visibleCount} hotels found`;
 }
 
 function updatePackagesNavTabs() {
@@ -1427,6 +1475,30 @@ function runPackagesFilterSearch() {
     savePackagesViewState();
 }
 
+/** Live hotel-name search: filters as the user types, across Featured/All. */
+function updateHotelSearchClearButton() {
+    const clearBtn = document.getElementById('hotelNameSearchClear');
+    if (clearBtn) clearBtn.hidden = !appliedNameQuery;
+}
+
+function runHotelNameSearch() {
+    const nameEl = document.getElementById('hotelNameSearch');
+    appliedNameQuery = nameEl ? nameEl.value.trim().toLowerCase() : '';
+    updateHotelSearchClearButton();
+
+    packagesNavScope = null;
+    updatePackagesNavTabs();
+    applyFilteredPackagesHeading();
+    const grid = document.getElementById('hotelsGrid');
+    if (grid) {
+        grid.classList.add('hotels-grid--filtering');
+        grid.classList.remove('show-all');
+    }
+    filterHotels();
+    setPackagesUrlView(null);
+    savePackagesViewState();
+}
+
 function resetFilters() {
     packagesNavScope = 'featured';
     updatePackagesNavTabs();
@@ -1447,9 +1519,25 @@ function viewAllPackagesFromEmpty() {
     savePackagesViewState();
 }
 
+function initHotelNameSearch() {
+    const nameEl = document.getElementById('hotelNameSearch');
+    if (!nameEl) return;
+    nameEl.addEventListener('input', runHotelNameSearch);
+
+    const clearBtn = document.getElementById('hotelNameSearchClear');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            nameEl.value = '';
+            runHotelNameSearch();
+            nameEl.focus();
+        });
+    }
+}
+
 updatePackagesCountryFilterUi();
 updatePackagesNavTabs();
 initFilterCustomSelects();
+initHotelNameSearch();
 
 // Carousel state
 let currentSlide = 0;

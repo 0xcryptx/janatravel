@@ -470,6 +470,77 @@ section {
     margin-bottom: 1rem;
 }
 
+.filter-search {
+    margin-bottom: 0.85rem;
+}
+
+.filter-search__field {
+    position: relative;
+}
+
+.filter-search__icon {
+    position: absolute;
+    top: 50%;
+    left: 0.65rem;
+    transform: translateY(-50%);
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+.filter-search__input {
+    width: 100%;
+    padding: 0.6rem 2.35rem 0.6rem 2.35rem;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--white);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+}
+
+.filter-search__input::placeholder {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.filter-search__input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.filter-search__clear {
+    position: absolute;
+    top: 50%;
+    right: 0.55rem;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--white);
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+.filter-search__clear[hidden] {
+    display: none;
+}
+
+.filter-search__clear:hover {
+    opacity: 1;
+}
+
+.filter-search__count {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.85);
+    min-height: 1em;
+}
+
 .filter-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -935,7 +1006,7 @@ section {
 }
 
 .hotels-grid.show-all .destination-card.extra-destination:not(.hidden) {
-    display: block;
+    display: flex;
 }
 
 /* Search / trip-type filter: allow catalog cards to appear when they match criteria (not only on “All packages”). */
