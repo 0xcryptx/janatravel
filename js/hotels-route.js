@@ -32,7 +32,7 @@ const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
-const HOTEL_MEDIA_CACHE_VERSION = 14;
+const HOTEL_MEDIA_CACHE_VERSION = 15;
 
 /**
  * Delivery cache-bust token. Cloudinary serves images with max-age=2592000, so this
