@@ -32,7 +32,7 @@ const HOTEL_DATA_CACHE_PREFIX = "jana:hotelData:";
 const HOTEL_DATA_CACHE_TTL_MINUTES = 5;
 const HOTEL_DATA_CACHE_TTL_MS = HOTEL_DATA_CACHE_TTL_MINUTES * 60 * 1000;
 const HOTEL_DATA_CACHE_CLEANUP_INTERVAL_MS = 60 * 1000;
-const HOTEL_MEDIA_CACHE_VERSION = 16;
+const HOTEL_MEDIA_CACHE_VERSION = 17;
 
 /**
  * Delivery cache-bust token. Cloudinary serves images with max-age=2592000, so this
@@ -904,9 +904,11 @@ async function loadHotelBySlug(slug, onProgress) {
   }
 
   if (typeof onProgress === "function") onProgress(45);
-  const matchedHotel = hotels.find(
-    (item) => String(item?.slug || "").trim().toLowerCase() === normalizedSlug
-  );
+  // Prefer an active row when duplicate slugs exist in the sheet — otherwise the
+  // first matching row (which may be an older inactive duplicate) wins by array
+  // order and hides a perfectly valid active entry further down.
+  const bySlug = (item) => String(item?.slug || "").trim().toLowerCase() === normalizedSlug;
+  const matchedHotel = hotels.find((item) => bySlug(item) && isHotelActive(item?.active)) || hotels.find(bySlug);
   if (!matchedHotel || !isHotelActive(matchedHotel.active)) return null;
   if (typeof onProgress === "function") onProgress(52);
   const hotelSignature = JSON.stringify(matchedHotel);
